@@ -19,16 +19,23 @@ Read the documentation at [https://supernnova.readthedocs.io](https://supernnova
 ### With Docker
 
     cd env
+
     # Build docker images
     make cpu  # cpu image
     make gpu  # gpu image (requires NVIDIA Drivers + nvidia-docker)
+
     # Launch docker container
     python launch_docker.py (--use_gpu to run GPU based container)
 
 ### With Conda
 
     cd env
+
+    # Create conda environment
     conda create --name <env> --file <conda_file_of_your_choice>
+
+    # Activate conda environment
+    source activate <env>
 
 For more detailed instructions, check the full [setup instructions](https://supernnova.readthedocs.io/en/latest/installation/python.html)
 
@@ -45,7 +52,7 @@ For more detailed instructions, check the full [setup instructions](https://supe
 
     python run_paper.py
 
-## Pipeline description
+## General pipeline description
 
 - Parse raw data in FITS format
 - Create processed database in HDF5 format
