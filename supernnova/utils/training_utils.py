@@ -195,10 +195,6 @@ def load_HDF5(settings, test=False):
                 test,
             )
         else:
-            if settings.dryrun:
-                n_samples = 100
-                idxs_train = idxs_train[:n_samples]
-                idxs_val = idxs_val[:n_samples]
 
             list_data_train = fill_data_list(
                 idxs_train,
@@ -407,13 +403,6 @@ def train_step(
     loss = criterion(output.squeeze(), target_tensor)
     # Special case for BayesianRNN, need to use KL loss
     if isinstance(rnn, bayesian_rnn.BayesianRNN):
-        # if settings.KLfactor is not None:
-        #     KLfactor = settings.KLfactor * (loss / rnn.kl).detach().item()
-        #     loss = loss + KLfactor * rnn.kl
-        # else:
-        #     # Adaptive KL factor to keep it under control
-        #     KLfactor = 0.5 * (loss / rnn.kl).detach().item()
-        #     loss = loss + KLfactor * rnn.kl
         loss = loss + rnn.kl / (num_batches * batch_size)
     else:
         loss = criterion(output.squeeze(), target_tensor)

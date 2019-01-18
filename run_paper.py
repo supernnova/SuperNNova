@@ -393,16 +393,12 @@ def run_bayesian_hp(dump_dir, debug, seed):
 
     list_params = [[-2, -7, 4, 3], [-1, -7, 4, 3], [-2, -1, 20, 5]]
     list_params_output = [[-1, -0.5, 2, 1], [-0.5, -0.1, 2, 1], [-0.5, -0.1, 3, 2]]
-    list_KLfactor = [0.1, 0.3, 0.5]
 
     if debug is True:
         list_params = list_params[:1]
         list_params_output = list_params_output[:1]
-        list_KLfactor = list_KLfactor[:1]
 
-    for (params, params_output, KLfactor) in product(
-        list_params, list_params_output, list_KLfactor
-    ):
+    for (params, params_output) in product(list_params, list_params_output):
         log_sigma1, log_sigma2, rho_scale_lower, rho_scale_upper = params
         log_sigma1_output, log_sigma2_output, rho_scale_lower_output, rho_scale_upper_output = (
             params_output
@@ -414,7 +410,6 @@ def run_bayesian_hp(dump_dir, debug, seed):
             f"--dump_dir {dump_dir} "
             f"--data_fraction 0.2 "
             f"--num_inference_samples 10 "
-            f"--KLfactor {KLfactor} "
             f"--log_sigma1 {log_sigma1} "
             f"--log_sigma2 {log_sigma2} "
             f"--rho_scale_lower {rho_scale_lower} "
@@ -453,7 +448,6 @@ def run_bayesian_best(dump_dir, debug, seed):
     #         f"--dump_dir {dump_dir} "
     #         f"--data_fraction {data_fraction} "
     #         f"--nb_classes {nb_classes} "
-    #         f"--KLfactor 0.1 "
     #         f"--log_sigma1 -1 "
     #         f"--log_sigma2 -7 "
     #         f"--rho_scale_lower 4 "
@@ -476,7 +470,6 @@ def run_bayesian_best(dump_dir, debug, seed):
             f"--source_data saltfit "
             f"--dump_dir {dump_dir} "
             f"--data_fraction {data_fraction} "
-            f"--KLfactor 0.1 "
             f"--batch_size 1024 "
             f"--monitor_interval 5 "
             f"--log_sigma1 -1 "

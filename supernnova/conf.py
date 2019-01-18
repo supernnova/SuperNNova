@@ -43,11 +43,6 @@ def get_settings():
     parser.add_argument("--speed", action="store_true", help="Get RNN speed benchmark")
 
     parser.add_argument(
-        "--dryrun",
-        action="store_true",
-        help="Dryrun: run with limited data for faster debugging",
-    )
-    parser.add_argument(
         "--monitor_interval",
         type=int,
         default=1,
@@ -180,12 +175,6 @@ def get_settings():
         type=float,
         default=0.0000001,
         help="L2 decay on weights (variational)",
-    )
-    parser.add_argument(
-        "--KLfactor",
-        type=float,
-        default=None,
-        help="factor for KL regularisation (bayesian)",
     )
     parser.add_argument(
         "--layer_type",

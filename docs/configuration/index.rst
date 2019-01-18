@@ -25,6 +25,7 @@ Argument                  Type                Help
 --source_data             str         Data source: photometry or salt
 --no_overwrite            bool        If True, overwrite preprocessed dir when creating database
 --data_fraction           float       Fraction of data to use
+--override_source_data    str         Change the source data (use saltfit or photometry)
 ======================  ============  ==================================================================
 
 Training parameters
@@ -35,6 +36,7 @@ Argument                  Type                Help
 ======================  ============  ==================================================================
 --train_rnn               bool         Train RNN model
 --train_rf                bool         Train RandomForest model
+--monitor_interval        int          Validate every monitor_interval epochs--metrics
 ======================  ============  ==================================================================
 
 
@@ -51,18 +53,22 @@ Argument                  Type                Help
 --performance             bool         Get performance metrics + plots
 --metrics                 bool         Compute performance metrics
 --science_plots           bool         Plots of scientific interest
+--model_files             bool         Path to model files
+--prediction_files        bool         Path to prediction files
+--metric_files            bool         Path to metric files
 ======================  ============  =====================================================
 
 
 Visualization Parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-======================  ============  =====================================================
-Argument                  Type                Help
-======================  ============  =====================================================
---explore_lightcurves     bool         Plot a random selection of lightcurves
---plot_lcs                bool         Plot a random selection of lightcurves  predictions
-======================  ============  =====================================================
+===============================  ============  ==========================================================
+Argument                          Type                Help
+===============================  ============  ==========================================================
+--explore_lightcurves             bool         Plot a random selection of lightcurves
+--plot_lcs                        bool         Plot a random selection of lightcurves  predictions
+--plot_prediction_distribution    bool         Plot lcs and the histogram of probability for each class
+===============================  ============  ==========================================================
 
 
 
@@ -77,7 +83,6 @@ Argument                  Type                Help
 --random_length           bool          Use random length sequences for training
 --random_redshift         bool          If True, randomly set the spectroscopic redshift
 --weight_decay            float         L2 decay on weights (for variational RNN)
---KLfactor                float         Factor for KL regularisation (BBB RNN)
 --layer_type              str           Recurrent layer type. Choose lstm,gru,rnn
 --model                   str           Recurrent model type. Choose vanilla,variational,bayesian
 --learning_rate           float         Learning rate
