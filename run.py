@@ -83,7 +83,7 @@ if __name__ == "__main__":
             for model_file in settings.model_files:
                 # Restore model settings
                 model_settings = conf.get_settings_from_dump(
-                    model_file, settings.override_source_data
+                    model_file, override_source_data=settings.override_source_data
                 )
                 # Get predictions
                 prediction_file = validate_rnn.get_predictions(
@@ -97,16 +97,14 @@ if __name__ == "__main__":
     if settings.validate_rf:
 
         if settings.model_files is None:
-            validate_randomforest.get_predictions(
-                settings, override_source_data=settings.override_source_data
-            )
+            validate_randomforest.get_predictions(settings)
             # Compute metrics
             metrics.get_metrics_singlemodel(settings, model_type="rf")
         else:
             for model_file in settings.model_files:
                 # Restore model settings
                 model_settings = conf.get_settings_from_dump(
-                    model_file, settings.override_source_data
+                    model_file, override_source_data=settings.override_source_data
                 )
                 # Get predictions
                 prediction_file = validate_randomforest.get_predictions(

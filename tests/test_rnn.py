@@ -1,29 +1,8 @@
 import os
-import glob
 import pytest
+from pathlib import Path
 from tests.test_utils import call_cmd
 from tests.test_utils import testmanager
-
-
-# @pytest.mark.parametrize(
-#     "layer_type, use_cuda, model",
-#     [
-#         # ("lstm", True, "bayesian"),
-#         # ("lstm", False, "bayesian"),
-#         ("lstm", True, "vanilla"),
-#         # ("gru", True, "vanilla"),
-#         # ("rnn", True, "vanilla"),
-#         # ("lstm", False, "vanilla"),
-#         # ("gru", False, "vanilla"),
-#         # ("rnn", False, "vanilla"),
-#         # ("lstm", True, "variational"),
-#         # ("gru", True, "variational"),
-#         # ("rnn", True, "variational"),
-#         # ("lstm", False, "variational"),
-#         # ("gru", False, "variational"),
-#         # ("rnn", False, "variational"),
-#     ],
-# )
 
 
 @pytest.mark.parametrize(
@@ -72,9 +51,9 @@ def test_rnn(dataset, redshift, norm, nb_classes):
 
     # Check we do have predictions saved
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    assert len(glob.glob(os.path.join(dir_path, "dump", "predictions/*"))) == 1
+    assert len([e for e in (Path(dir_path) / "dump/models").glob("*/PRED*")]) == 1
 
 
 if __name__ == "__main__":
 
-    test_rnn()
+    test_rnn("saltfit", None, "perfilter", 2)

@@ -18,6 +18,7 @@ supernnova/validation/.DS_Store
 tests/.ipynb_checkpoints/
 plots_paper/*
 *.pyc
+.coverage*
 .pytest_cache
 .ipynb_checkpoints/
 /tests/dump/processed

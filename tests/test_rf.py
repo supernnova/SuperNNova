@@ -1,6 +1,6 @@
 import os
-import glob
 import pytest
+from pathlib import Path
 from tests.test_utils import call_cmd
 from tests.test_utils import testmanager
 
@@ -22,9 +22,11 @@ def test_rf(redshift):
 
     # Check we do have predictions saved
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    assert len(glob.glob(os.path.join(dir_path, "dump", "predictions/*forest*"))) == 1
+    assert (
+        len([e for e in (Path(dir_path) / "dump/models").glob("*forest*/PRED*")]) == 1
+    )
 
 
 if __name__ == "__main__":
 
-    test_rf()
+    test_rf(None)
