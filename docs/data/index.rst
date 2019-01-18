@@ -12,7 +12,7 @@ Recommended code organization structure:
     │
     ├── supernnova
     │   ├── supernnova
-    │   ├── docker
+    │   ├── env
     │   ├── docs
     │   ├── tests
 
@@ -22,6 +22,22 @@ Recommended code organization structure:
 - Ensure you have raw data saved to ``{dump_dir}/raw``
 - The default settings assume the raw data is saved to ``sndump/raw``
 - You can save the data in any folder, but you then have to specify the ``dump_dir`` with the ``--dump_dir XXX`` command.
+
+
+Activate the environment
+-------------------------------
+
+**Either use docker**
+
+.. code::
+
+    cd env && python launch_docker.py (--use_cuda optional)
+
+**Or activate your conda environment**
+
+.. code::
+
+    source activate <conda_env_name>
 
 
 Creating a debugging database
@@ -80,7 +96,7 @@ Pivot
 We then pivot each FITS file: we will group time-wise close observations on the same row
 and each row in the dataframe will show a value for each of the flux and flux error column
 
-- All observations withing 8 hours of each other are assigned the same MJD
+- All observations within 8 hours of each other are assigned the same MJD
 - Results are cached with pickle for faster loading
 
 

@@ -2,6 +2,20 @@
 Training walkthrough
 =========================
 
+Activate the environment
+-------------------------------
+
+**Either use docker**
+
+.. code::
+
+    cd env && python launch_docker.py (--use_cuda optional)
+
+**Or activate your conda environment**
+
+.. code::
+
+    source activate <conda_env_name>
 
 
 Training a randomforest model

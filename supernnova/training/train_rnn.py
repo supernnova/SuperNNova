@@ -10,7 +10,7 @@ from ..utils import logging_utils as lu
 
 
 def get_lr(settings):
-    """Train RNN models
+    """Select optimal starting learning rate when training with a 1-cycle policy
 
     Args:
         settings (ExperimentSettings): controls experiment hyperparameters
@@ -95,7 +95,7 @@ def get_lr(settings):
 
 
 def train_cyclic(settings):
-    """Train RNN models
+    """Train RNN models with a 1-cycle policy
 
     Args:
         settings (ExperimentSettings): controls experiment hyperparameters
@@ -220,7 +220,7 @@ def train_cyclic(settings):
 
 
 def train(settings):
-    """Train RNN models
+    """Train RNN models with a decay on plateau policy
 
     Args:
         settings (ExperimentSettings): controls experiment hyperparameters
