@@ -1,5 +1,5 @@
 
-Paper reproduction walkthrough
+Paper reproduction
 ====================================
 
 Thread
