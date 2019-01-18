@@ -9,14 +9,14 @@ def launch_docker():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dump_dir", default="../../sndump", help="Dump dir")
-    parser.add_argument("--use_gpu", action="store_true", help="Use gpu image")
+    parser.add_argument("--use_cuda", action="store_true", help="Use gpu image")
 
     args = parser.parse_args()
 
     pwd = os.getcwd()
     UID = os.getuid()
 
-    if args.use_gpu:
+    if args.use_cuda:
         cmd = (
             f"nvidia-docker run -it --rm --user {UID}"
             f" -v {pwd}/../../SuperNNova:/home/SuperNNova"

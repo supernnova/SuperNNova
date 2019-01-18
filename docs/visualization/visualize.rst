@@ -30,8 +30,8 @@ Plotting predictions
 Science plots
 ------------------------------
 
-.. currentmodule:: supernnova.visualization.superNNova_plots.py
+.. currentmodule:: supernnova.paper.superNNova_plots.py
 
-.. automodule:: supernnova.visualization.superNNova_plots
+.. automodule:: supernnova.paper.superNNova_plots
     :members:
     :show-inheritance:
