@@ -53,3 +53,11 @@ Welcome to SuperNNova's documentation!
 
    visualization/index.rst
    visualization/visualize.rst
+
+.. toctree::
+   :glob:
+   :maxdepth: 1
+   :caption: Paper reproduction
+
+   paper/index.rst
+   paper/paper.rst

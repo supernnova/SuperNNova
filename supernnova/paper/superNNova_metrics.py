@@ -90,9 +90,10 @@ def nice_df_print(df, keys="keys"):
 
 
 def get_delta_metrics(df_stats, settings):
-    """Difference between models in SuperNNova paper
-    Saves DF with the delta values
+    """Difference between models in SuperNNova paper.
+
     BEWARE: selection hard coded
+    
     Args:
         df (pandas.DataFrame): dataframe containing summary stats
         settings (ExperimentSettings): custom class to hold hyperparameters
@@ -201,7 +202,8 @@ def get_delta_metrics(df_stats, settings):
 
 
 def create_accuracy_latex_tables(df, settings):
-    """Latex accuracy tables for paper
+    """Latex accuracy tables for paper.
+
     BEWARE: Selection is hardcoded
 
     Args:

@@ -24,7 +24,7 @@ We want to foster reproducibility so you can copy the data and reproduce all our
 
 - **How did you create the simulations used in the paper?**
 
-We used SNANA to generate the supernovae lightcurves. Our data is similar to the Supernova Photometric Classification Challenge (SPCC) data with updated models used in the DES simulations.
+We used `SNANA`_ to generate the supernovae lightcurves. Our data is similar to the Supernova Photometric Classification Challenge (SPCC) data with updated models used in the DES simulations.
 
 - **Why use SuperNNova?**
 
@@ -32,7 +32,7 @@ First, it is open source, so you can modify it for your science goal or just see
 
 - **Can I use SuperNNova for my classification problem?**
 
-Please do but beware: you need to have a large amount of lightcurves (simulated or data) per type of event you are trying to classify, otherwise performance is pretty poor.
+Please do! But beware: you need to have a large amount of lightcurves (simulated or data) per type of event you are trying to classify, otherwise performance is pretty poor.
 
 - **How can I use SuperNNova for my classification problem?**
 
@@ -52,7 +52,7 @@ If you have a GPU, you can activate training on GPU with the ``--use_cuda`` flag
 Alternatively, you may select a smaller data fraction ``--data_fraction 0.1`` to train on a smaller set.
 
 
-- **OSError: Unable to open file (unable to open file: name = '/home/sndump/processed/DES_database.h5'**
+- **OSError: Unable to open file (unable to open file: name = '/home/snndump/processed/DES_database.h5'**
 
 You have probably forgotten to set your ``dump_dir`` correctly. Provide the ``--dump_dir`` argument correctly
 
@@ -62,16 +62,15 @@ You can find it in ``SuperNNova/utils/ExperimentSettings.py`` under ``model_name
 
 - **How do I change the directory where the data can be found?**
 
-You can give add to your terminal command ``--dump_dir foldername``. This folder should have the same structure as our data repositroeis (see :ref:`Data`).
+You can give add to your terminal command ``--dump_dir foldername``. This folder should have the same structure as our data repositories (see :ref:`Data`).
 
 - **If I trained several models, is there a way to see a summary of the statistics?**
 
-Yes, you need to call ``python run.py --performance``. It will be created in ``{dump_dir}/stats`` as ``summary_stats.csv``. It will compute various metrics which can be averaged over multiple random seeds.
-
-
+Yes, you need to call ``python run.py --performance``. It will be created in ``{dump_dir}/stats`` as ``summary_stats.csv``. It will compute various metrics which can be averaged over multiple random seeds. By default, this command will also generate all statistics (latex tables as well printout stats) and plots featured in our SuperNNova paper. To deactivate this, just comment in ``run.py`` the two lines below ``# Stats and plots in paper``.
 
 .. _ArXiv: https:/arxiv.org
-.. _SuperNNovaSimulations: http://mso.anu.edu.au/~anais/SuperNNova.html
+.. _SuperNNovaSimulations: http://www.mso.anu.edu.au/~anais/supernnova_data/
 .. _Fortunato et al 2017: https://arxiv.org/abs/1704.02798
 .. _Gal et Ghahramani 2015: https://arxiv.org/abs/1506.02142
 .. _SALT2: https://arxiv.org/pdf/astro-ph/0701828.pdf
+.. _SNANA: https://arxiv.org/abs/0908.4280

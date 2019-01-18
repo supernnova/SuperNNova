@@ -8,7 +8,7 @@ from pathlib import Path
 def launch_docker():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dump_dir", default="../../sndump", help="Dump dir")
+    parser.add_argument("--dump_dir", default="../../snndump", help="Dump dir")
     parser.add_argument("--use_cuda", action="store_true", help="Use gpu image")
 
     args = parser.parse_args()
@@ -20,7 +20,7 @@ def launch_docker():
         cmd = (
             f"nvidia-docker run -it --rm --user {UID}"
             f" -v {pwd}/../../SuperNNova:/home/SuperNNova"
-            f" -v {pwd}/{args.dump_dir}:/home/sndump rnn-gpu:latest"
+            f" -v {pwd}/{args.dump_dir}:/home/snndump rnn-gpu:latest"
         )
         try:
             subprocess.check_call(shlex.split(cmd))

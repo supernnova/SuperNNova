@@ -7,10 +7,10 @@ Recommended code organization structure:
 
 .. code::
 
-    ├── sndump        (to save the data)
+    ├── snndump        (to save the data)
     │   ├── raw
     │
-    ├── supernnova
+    ├── SuperNNova
     │   ├── supernnova
     │   ├── docker
     │   ├── docs
@@ -20,7 +20,7 @@ Recommended code organization structure:
 **To build the database:**
 
 - Ensure you have raw data saved to ``{dump_dir}/raw``
-- The default settings assume the raw data is saved to ``sndump/raw``
+- The default settings assume the raw data is saved to ``snndump/raw``
 - You can save the data in any folder, but you then have to specify the ``dump_dir`` with the ``--dump_dir XXX`` command.
 
 
