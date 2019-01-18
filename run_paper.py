@@ -469,8 +469,6 @@ def run_bayesian_best(dump_dir, debug, seed):
             f"--source_data saltfit "
             f"--dump_dir {dump_dir} "
             f"--data_fraction {data_fraction} "
-            f"--batch_size 1024 "
-            f"--monitor_interval 5 "
             f"--log_sigma1 -1 "
             f"--log_sigma2 -7 "
             f"--rho_scale_lower 4 "
@@ -503,8 +501,13 @@ def run_representative(dump_dir, debug, seed):
     for model_file in list_saltfit:
 
         # Validate saltfit model on photometry test set
-        cmd = f"python -W ignore run.py --validate_rnn "
-        cmd += f"--override_source_data photometry " f"--model_files {model_file} "
+        cmd = (
+            f"python -W ignore run.py "
+            f"--validate_rnn "
+            f"--override_source_data photometry "
+            f"--model_files {model_file} "
+            f"--dump_dir {dump_dir} "
+        )
 
         run_cmd(cmd, debug, seed)
 
@@ -519,11 +522,13 @@ def run_performance(dump_dir, debug, seed):
     list_predictions = (Path(dump_dir) / "models").glob("**/*PRED*.pickle")
     prediction_files_str = " ".join(list(map(str, list_predictions)))
 
-    cmd = f"python run.py --metrics --prediction_files {prediction_files_str} "
+    cmd = (
+        f"python run.py --metrics --prediction_files {prediction_files_str} --dump_dir {dump_dir} "
+    )
     run_cmd(cmd, debug, seed)
 
     # Aggregate all metrics
-    cmd = "python -W ignore run.py --performance " f"--dump_dir {dump_dir} "
+    cmd = f"python -W ignore run.py --performance --dump_dir {dump_dir} "
     run_cmd(cmd, debug, seed)
 
 
