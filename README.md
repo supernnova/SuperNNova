@@ -1,7 +1,14 @@
 
 ![Logo](docs/SuperNNova.png)
 
-Read the documentation at [https://supernnova.readthedocs.io](https://supernnova.readthedocs.io/en/latest/)
+### Read the documentation
+
+[https://supernnova.readthedocs.io](https://supernnova.readthedocs.io/en/latest/)
+
+
+### Read the paper preprint
+
+[Paper](https://arxiv.org/)
 
 
 ## Table of contents
