@@ -540,7 +540,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="SNIa classification")
 
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    default_dump_dir = Path(dir_path).parent / "supernnovadump"
+    default_dump_dir = Path(dir_path).parent / "snndump"
     parser.add_argument(
         "--dump_dir",
         type=str,

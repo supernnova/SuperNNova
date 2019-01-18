@@ -118,7 +118,7 @@ def get_settings():
     # Data parameters
     ########################
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    default_dump_dir = str(Path(dir_path).parent.parent / "supernnovadump")
+    default_dump_dir = str(Path(dir_path).parent.parent / "snndump")
     parser.add_argument(
         "--dump_dir",
         type=str,
