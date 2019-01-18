@@ -77,8 +77,9 @@ With the ``--debug`` flag on, this should take between 15 and 30 minutes on the 
 
 Naming conventions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-An example on model naming
-vanilla: model used. Our Baseline RNN is called in this case ``vanilla``. For Bayesian RNNs the options are: ``bayesian`` (BBB) and ``variational`` (variational).
+An example on model naming:
+
+- **vanilla**: model used. Our Baseline RNN is called in this case ``vanilla``. For Bayesian RNNs the options are: ``bayesian`` (BBB) and ``variational`` (variational).
 
 - **S_0**: seed used for training. Default is 0.
 

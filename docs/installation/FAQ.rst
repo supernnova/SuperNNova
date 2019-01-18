@@ -7,7 +7,7 @@ General questions
 
 - **What is SuperNNova?**
 
-SuperNNova is a framework for lightcurve classification which uses on supervised learning algorithms. Training of those algorithms rely on large annotated databases. Typically, we use simulations as the training set.
+SuperNNova is a framework for lightcurve classification which uses supervised learning algorithms. Training of these algorithms rely on large annotated databases. Typically, we use simulations as the training set.
 
 - **Do you have a paper describing SuperNNova? How can I cite you?**
 
