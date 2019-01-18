@@ -14,6 +14,24 @@ Read the documentation at [https://supernnova.readthedocs.io](https://supernnova
     ├── tests                   --> unit tests to check data processing
     ├── sandbox                 --> WIP scripts
 
+## Getting started
+
+### With Docker
+
+    cd env
+    # Build docker images
+    make cpu  # cpu image
+    make gpu  # gpu image (requires NVIDIA Drivers + nvidia-docker)
+    # Launch docker container
+    python launch_docker.py (--use_gpu to run GPU based container)
+
+### With Conda
+
+    cd env
+    conda create --name <env> --file <conda_file_of_your_choice>
+
+For more detailed instructions, check the full [setup instructions](https://supernnova.readthedocs.io/en/latest/installation/python.html)
+
 
 ## Minimum instructions for end to end data creation, training and plotting on a toy dataset
 
@@ -39,12 +57,6 @@ Read the documentation at [https://supernnova.readthedocs.io](https://supernnova
 
     PYTHONPATH=$PWD:$PYTHONPATH pytest -W ignore --cov supernnova tests
 
-
-## Build docker images
-
-    cd docker
-    make cpu TAG=cpu  # cpu image
-    make gpu TAG=gpu  # gpu image
 
 ## Build docs
 

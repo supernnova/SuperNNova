@@ -60,7 +60,7 @@ The model folder has been named as follows: ``vanilla_S_0_CLF_2_R_None_saltfit_D
 
 Remember that our data is split in training, validation and test sets.
 
-**You have trained, validated and tested your model.** You can now look at the test light-curves and their predictions in ``tests/dump/lightcurves``.
+**You have trained, validated and tested your model.** You can now inspect the test light-curves and their predictions in ``tests/dump/lightcurves``.
 
 
 Reproduce SuperNNova paper
@@ -77,9 +77,8 @@ With the ``--debug`` flag on, this should take between 15 and 30 minutes on the 
 
 Naming conventions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-An example on model naming:
 
-- **vanilla**: model used. Our Baseline RNN is called in this case ``vanilla``. For Bayesian RNNs the options are: ``bayesian`` (BBB) and ``variational`` (variational).
+- **vanilla/variational/bayesian**: The type of RNN to be trained. ``variational`` and ``bayesian`` are bayesian recurrent networks
 
 - **S_0**: seed used for training. Default is 0.
 
