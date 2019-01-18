@@ -7,8 +7,7 @@ import subprocess
 import pandas as pd
 from pathlib import Path
 from itertools import product
-from supernnova.validation import metrics
-from supernnova.visualization.superNNova_plots import plot_speed_benchmark
+from supernnova.paper.superNNova_plots import plot_speed_benchmark
 from supernnova.utils import logging_utils as lu
 
 """superNNova paper experiments
@@ -430,39 +429,39 @@ def run_bayesian_best(dump_dir, debug, seed):
 
     lu.print_green(f"SEED {seed}: BAYESIAN BEST")
 
-    # list_nb_classes = [2, 3, 7]
-    list_redshift = [None]  # , "zpho", "zspe"]
-    # list_data_fraction = [0.43, 1.0]
-    # for (nb_classes, redshift, data_fraction) in product(
-    #     list_nb_classes, list_redshift, list_data_fraction
-    # ):
+    list_nb_classes = [2, 3, 7]
+    list_redshift = [None, "zpho", "zspe"]
+    list_data_fraction = [0.43, 1.0]
+    for (nb_classes, redshift, data_fraction) in product(
+        list_nb_classes, list_redshift, list_data_fraction
+    ):
 
-    #     # Carry out representativeness only in binary classification
-    #     if data_fraction == 0.43 and nb_classes != 2:
-    #         continue
+        # Carry out representativeness only in binary classification
+        if data_fraction == 0.43 and nb_classes != 2:
+            continue
 
-    #     cmd = (
-    #         f"python -W ignore run.py --train_rnn "
-    #         f"--model bayesian "
-    #         f"--source_data photometry "
-    #         f"--dump_dir {dump_dir} "
-    #         f"--data_fraction {data_fraction} "
-    #         f"--nb_classes {nb_classes} "
-    #         f"--log_sigma1 -1 "
-    #         f"--log_sigma2 -7 "
-    #         f"--rho_scale_lower 4 "
-    #         f"--rho_scale_upper 3 "
-    #         f"--log_sigma1_output -0.5 "
-    #         f"--log_sigma2_output -0.1 "
-    #         f"--rho_scale_lower_output 3 "
-    #         f"--rho_scale_upper_output 2 "
-    #     )
-    #     if redshift is not None:
-    #         cmd += f" --redshift {redshift} "
+        cmd = (
+            f"python -W ignore run.py --train_rnn "
+            f"--model bayesian "
+            f"--source_data photometry "
+            f"--dump_dir {dump_dir} "
+            f"--data_fraction {data_fraction} "
+            f"--nb_classes {nb_classes} "
+            f"--log_sigma1 -1 "
+            f"--log_sigma2 -7 "
+            f"--rho_scale_lower 4 "
+            f"--rho_scale_upper 3 "
+            f"--log_sigma1_output -0.5 "
+            f"--log_sigma2_output -0.1 "
+            f"--rho_scale_lower_output 3 "
+            f"--rho_scale_upper_output 2 "
+        )
+        if redshift is not None:
+            cmd += f" --redshift {redshift} "
 
-    #     run_cmd(cmd, debug, seed)
+        run_cmd(cmd, debug, seed)
 
-    list_data_fraction = [1.0]
+    list_data_fraction = [0.5, 1.0]
     for (redshift, data_fraction) in product(list_redshift, list_data_fraction):
         cmd = (
             f"python -W ignore run.py --train_rnn "
@@ -559,38 +558,38 @@ if __name__ == "__main__":
 
     for seed in list_seeds:
 
-        # if seed == list_seeds[0]:
-        #     ############################
-        #     # Data
-        #     ############################
-        #     run_data(args.dump_dir, args.debug, seed)
+        if seed == list_seeds[0]:
+            ############################
+            # Data
+            ############################
+            run_data(args.dump_dir, args.debug, seed)
 
-        #     ####################
-        #     # Misc. benchmarks
-        #     ####################
-        #     run_speed(args.dump_dir, args.debug, seed)
-        #     run_benchmark_cyclic(args.dump_dir, args.debug, seed)
+            ####################
+            # Misc. benchmarks
+            ####################
+            run_speed(args.dump_dir, args.debug, seed)
+            run_benchmark_cyclic(args.dump_dir, args.debug, seed)
 
-        #     ##################
-        #     # Hyperparams
-        #     ##################
-        #     run_baseline_hp(args.dump_dir, args.debug, seed)
-        #     run_variational_hp(args.dump_dir, args.debug, seed)
-        #     run_bayesian_hp(args.dump_dir, args.debug, seed)
+            ##################
+            # Hyperparams
+            ##################
+            run_baseline_hp(args.dump_dir, args.debug, seed)
+            run_variational_hp(args.dump_dir, args.debug, seed)
+            run_bayesian_hp(args.dump_dir, args.debug, seed)
 
-        # ##################
-        # # Baseline models
-        # ##################
-        # run_baseline(args.dump_dir, args.debug, seed)
+        ##################
+        # Baseline models
+        ##################
+        run_baseline(args.dump_dir, args.debug, seed)
 
-        # ##################
-        # # Bayesian models
-        # ##################
-        # run_variational_best(args.dump_dir, args.debug, seed)
+        ##################
+        # Bayesian models
+        ##################
+        run_variational_best(args.dump_dir, args.debug, seed)
         run_bayesian_best(args.dump_dir, args.debug, seed)
 
-    # ##########################
-    # # Metrics, science plots
-    # ##########################
-    # run_representative(args.dump_dir, args.debug, seed)
-    # run_performance(args.dump_dir, args.debug, seed)
+    ##########################
+    # Metrics, science plots
+    ##########################
+    run_representative(args.dump_dir, args.debug, seed)
+    run_performance(args.dump_dir, args.debug, seed)
