@@ -10,7 +10,7 @@ Recommended code organization structure:
     ├── snndump        (to save the data)
     │   ├── raw
     │
-    ├── supernnova
+    ├── SuperNNova
     │   ├── supernnova
     │   ├── env
     │   ├── docs

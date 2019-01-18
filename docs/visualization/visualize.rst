@@ -25,13 +25,3 @@ Plotting predictions
 .. automodule:: supernnova.visualization.early_prediction
     :members:
     :show-inheritance:
-
-
-Science plots
-------------------------------
-
-.. currentmodule:: supernnova.paper.superNNova_plots.py
-
-.. automodule:: supernnova.paper.superNNova_plots
-    :members:
-    :show-inheritance:

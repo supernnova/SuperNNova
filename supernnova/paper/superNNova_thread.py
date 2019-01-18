@@ -21,12 +21,8 @@ Best performing algorithms in SuperNNova
 Base = (
     "DES_vanilla_CLF_2_R_None_photometry_DF_1.0_N_global_lstm_32x2_0.05_128_True_mean_C"
 )
-Var = (
-    "DES_variational_CLF_2_R_None_photometry_DF_1.0_N_global_lstm_32x2_0.01_128_True_mean_C_WD_1e-07"
-)
-BBB = (
-    "DES_bayesian_CLF_2_R_None_photometry_DF_1.0_N_global_lstm_32x2_0.05_128_True_mean_Bayes_0.75_-1.0_-7.0_4.0_3.0_-0.5_-0.1_3.0_2.0_KL_0.1"
-)
+Var = "DES_variational_CLF_2_R_None_photometry_DF_1.0_N_global_lstm_32x2_0.01_128_True_mean_C_WD_1e-07"
+BBB = "DES_bayesian_CLF_2_R_None_photometry_DF_1.0_N_global_lstm_32x2_0.05_128_True_mean_Bayes_0.75_-1.0_-7.0_4.0_3.0_-0.5_-0.1_3.0_2.0_KL_0.1"
 RF = "DES_randomforest_CLF_2_R_None_saltfit_DF_1.0_N_global"
 list_models = [RF, Base, Var, BBB]
 list_models_rnn = [Base, Var, BBB]
@@ -36,8 +32,10 @@ Base_salt = Base.replace("photometry", "saltfit")
 
 
 def SuperNNova_stats_and_plots(settings):
-    """ Stats and plots used for SuperNNova paper
-        Args:
+    """ Reproduce stats and plots used for SuperNNova paper.
+    BEWARE: Selection is hardcoded
+    
+    Args:
         settings (ExperimentSettings): custom class to hold hyperparameters
     """
 
@@ -59,7 +57,9 @@ def SuperNNova_stats_and_plots_thread(df, settings, plots=True):
         settings (ExperimentSettings): custom class to hold hyperparameters
         plots (Boolean optional): make pltos or only printout stats 
     Returns:
-        prints summary stats
+        printout: stats as organized in paper
+        figures (png) : figures for paper at settings.dump_dir/figures/
+        lightcurves (png): lightcurves used on paper at settings.dump_dir/lightcurves/modelname.*png
     """
 
     """
@@ -76,9 +76,7 @@ def SuperNNova_stats_and_plots_thread(df, settings, plots=True):
         print(
             lu.str_to_yellowstr("Plotting candidates for Baseline binary (Figure 2.)")
         )
-        model_file = (
-            f"{settings.models_dir}/{Base.replace('DES_vanilla_','vanilla_S_0_')}/{Base.replace('DES_vanilla_','vanilla_S_0_')}.pt"
-        )
+        model_file = f"{settings.models_dir}/{Base.replace('DES_vanilla_','vanilla_S_0_')}/{Base.replace('DES_vanilla_','vanilla_S_0_')}.pt"
         if os.path.exists(model_file):
             model_settings = conf.get_settings_from_dump(model_file)
             early_prediction.make_early_prediction(model_settings, nb_lcs=20)
@@ -236,9 +234,7 @@ def SuperNNova_stats_and_plots_thread(df, settings, plots=True):
             )
         )
         for model in [Var, BBB]:
-            model_file = (
-                f"{settings.models_dir}/{model.replace(f'DES_{model}_',f'{model}_S_0_').replace('CLF_2','CLF_7')}/{model.replace(f'DES_{model}_',f'{model}_S_0_').replace('CLF_2','CLF_7')}.pt"
-            )
+            model_file = f"{settings.models_dir}/{model.replace(f'DES_{model}_',f'{model}_S_0_').replace('CLF_2','CLF_7')}/{model.replace(f'DES_{model}_',f'{model}_S_0_').replace('CLF_2','CLF_7')}.pt"
             if os.path.exists(model_file):
                 model_settings = conf.get_settings_from_dump(model_file)
                 early_prediction.make_early_prediction(model_settings, nb_lcs=20)
@@ -363,9 +359,7 @@ def SuperNNova_stats_and_plots_thread(df, settings, plots=True):
                 "Plotting OOD candidates with seven-way classification (Figure 9)"
             )
         )
-        model_file = (
-            f"{settings.models_dir}/{Var.replace('DES_variational_','variational_S_0_').replace('CLF_2', 'CLF_7')}/{Var.replace('DES_variational_','variational_S_0_').replace('CLF_2', 'CLF_7')}.pt"
-        )
+        model_file = f"{settings.models_dir}/{Var.replace('DES_variational_','variational_S_0_').replace('CLF_2', 'CLF_7')}/{Var.replace('DES_variational_','variational_S_0_').replace('CLF_2', 'CLF_7')}.pt"
         if os.path.exists(model_file):
             model_settings = conf.get_settings_from_dump(model_file)
             early_prediction.make_early_prediction(model_settings, nb_lcs=20)
