@@ -89,7 +89,7 @@ def fill_data_list(
         idxs (np.array or list): idx of data point to select
         arr_data (np.array): features
         arr_target (np.array): target
-        arr_SNID (): lightcurve unique ID
+        arr_SNID (np.array): lightcurve unique ID
         settings (ExperimentSettings): controls experiment hyperparameters
         n_features (int): total number of features in arr_data
         desc (str): message to display while loading
@@ -195,10 +195,6 @@ def load_HDF5(settings, test=False):
                 test,
             )
         else:
-            if settings.dryrun:
-                n_samples = 100
-                idxs_train = idxs_train[:n_samples]
-                idxs_val = idxs_val[:n_samples]
 
             list_data_train = fill_data_list(
                 idxs_train,
@@ -274,6 +270,8 @@ def get_data_batch(list_data, idxs, settings, max_lengths=None, OOD=None):
         list_data: (list) tuples of (X, target, lightcurve_ID)
         idxs: (array / list) indices of batch element in list_data
         settings (ExperimentSettings): controls experiment hyperparameters
+        max_length (int): Maximum light curve length to be used Default: ``None``.
+        OOD (str): Whether to modify data to create out of distribution data to be used Default: ``None``.
 
     Returns:
         Tuple containing
@@ -405,13 +403,6 @@ def train_step(
     loss = criterion(output.squeeze(), target_tensor)
     # Special case for BayesianRNN, need to use KL loss
     if isinstance(rnn, bayesian_rnn.BayesianRNN):
-        # if settings.KLfactor is not None:
-        #     KLfactor = settings.KLfactor * (loss / rnn.kl).detach().item()
-        #     loss = loss + KLfactor * rnn.kl
-        # else:
-        #     # Adaptive KL factor to keep it under control
-        #     KLfactor = 0.5 * (loss / rnn.kl).detach().item()
-        #     loss = loss + KLfactor * rnn.kl
         loss = loss + rnn.kl / (num_batches * batch_size)
     else:
         loss = criterion(output.squeeze(), target_tensor)
@@ -556,8 +547,8 @@ def get_loss_string(d_losses_train, d_losses_val):
     """Obtain a loss string to display training progress
 
     Args:
-        d_losses (dict): maps {metric:value}
-        label (str): label to add as prefix of loss_str
+        d_losses_train (dict): maps {metric:value} for the training data
+        d_losses_val (dict): maps {metric:value} for the validation data
 
     Returns:
         loss_str (str): the loss string to display
@@ -582,6 +573,16 @@ def get_loss_string(d_losses_train, d_losses_val):
 
 
 def save_training_results(settings, d_monitor, training_time):
+    """Obtain a loss string to display training progress
+
+    Args:
+        settings (ExperimentSettings): controls experiment hyperparameters
+        d_monitor (dict): maps {metric:value}
+        training_time (float): amount of time training took
+
+    Returns:
+        loss_str (str): the loss string to display
+    """
 
     d_results = {"training_time": training_time}
     for key in ["AUC", "Acc"]:
@@ -626,7 +627,7 @@ def load_randomforest_model(settings, model_file=None):
 
     Args:
         settings (ExperimentSettings): controls experiment hyperparameters
-        model_file (str): path to saved randomforest model
+        model_file (str): path to saved randomforest model. Default: ``None``
 
     Returns:
         (RandomForestClassifier) RandomForest model

@@ -72,16 +72,15 @@ class BayesianRNN(nn.Module):
         )
 
     def forward(self, x, mean_field_inference=False):
-        """Note
-        out = packed output from last layer
-        out has dim (seq_len, batch_size, hidden_size) when unpacked
-        hidden = (hn, cn) for lstm
-        hidden = hn for GRU and RNN
-        hn has dim (num_layers * num_directions, batch, hidden_size)
-        cn has dim (num_layers * num_directions, batch, hidden_size)
-        assuming num_directions = 1, num_layers = 2 :
-        hn[-1, -1] == out[len, -1] where len is the len of the seq at batch index == -1
-        """
+        # out = packed output from last layer
+        # out has dim (seq_len, batch_size, hidden_size) when unpacked
+        # hidden = (hn, cn) for lstm
+        # hidden = hn for GRU and RNN
+        # hn has dim (num_layers * num_directions, batch, hidden_size)
+        # cn has dim (num_layers * num_directions, batch, hidden_size)
+        # assuming num_directions = 1, num_layers = 2 :
+        # hn[-1, -1] == out[len, -1] where len is the len of the seq at batch index == -1
+
         x, hidden = self.rnn_layer(x, mean_field_inference=mean_field_inference)
 
         # Output options

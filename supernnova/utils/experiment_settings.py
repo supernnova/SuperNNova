@@ -157,7 +157,6 @@ class ExperimentSettings:
                 f"_{self.log_sigma1_output}_{self.log_sigma2_output}"
                 f"_{self.rho_scale_lower_output}_{self.rho_scale_upper_output}"
             )
-            name += f"_KL_{self.KLfactor}"
         if self.cyclic:
             name += "_C"
         if self.weight_decay > 0:
@@ -401,7 +400,6 @@ class PlasticcSettings(object):
                 f"_Bayes_{self.pi}_{self.log_sigma1}_{self.log_sigma2}_{self.rho_scale_lower}_{self.rho_scale_upper}"
                 f"_{self.log_sigma1_output}_{self.log_sigma2_output}_{self.rho_scale_lower_output}_{self.rho_scale_upper_output}"
             )
-            name += f"_KL_{self.KLfactor}"
         if self.cyclic:
             name += "_C"
         if self.weight_decay > 0:

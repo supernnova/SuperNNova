@@ -35,16 +35,16 @@ class VanillaRNN(torch.nn.Module):
         self.output_layer = torch.nn.Linear(last_input_size, self.output_size)
 
     def forward(self, x, mean_field_inference=False):
-        """Reminder
-        out = packed output from last layer
-        out has dim (seq_len, batch_size, hidden_size) when unpacked
-        hidden = (hn, cn) for lstm (only final h from each pass and layer)
-        hidden = hn for GRU and RNN (only final h from each pass and layer)
-        hn has dim (num_layers * num_directions, batch, hidden_size)
-        cn has dim (num_layers * num_directions, batch, hidden_size)
-        assuming num_directions = 1, num_layers = 2 :
-        hn[-1, -1] == out[len, -1] where len is the len of the seq at batch index == -1
-        """
+        # Reminder
+        # out = packed output from last layer
+        # out has dim (seq_len, batch_size, hidden_size) when unpacked
+        # hidden = (hn, cn) for lstm (only final h from each pass and layer)
+        # hidden = hn for GRU and RNN (only final h from each pass and layer)
+        # hn has dim (num_layers * num_directions, batch, hidden_size)
+        # cn has dim (num_layers * num_directions, batch, hidden_size)
+        # assuming num_directions = 1, num_layers = 2 :
+        # hn[-1, -1] == out[len, -1] where len is the len of the seq at batch index == -1
+
         x, hidden = self.rnn_layer(x)
 
         # Output options
