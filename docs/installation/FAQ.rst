@@ -52,7 +52,7 @@ If you have a GPU, you can activate training on GPU with the ``--use_cuda`` flag
 Alternatively, you may select a smaller data fraction ``--data_fraction 0.1`` to train on a smaller set.
 
 
-- **OSError: Unable to open file (unable to open file: name = '/home/sndump/processed/DES_database.h5'**
+- **OSError: Unable to open file (unable to open file: name = '/home/snndump/processed/DES_database.h5'**
 
 You have probably forgotten to set your ``dump_dir`` correctly. Provide the ``--dump_dir`` argument correctly
 

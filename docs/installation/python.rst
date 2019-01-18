@@ -16,7 +16,7 @@ Create a docker image:
 
 .. code::
 
-    cd docker && make {device} TAG={device}
+    cd docker && make {device}
 
 where ``device`` is one of ``cpu`` or ``gpu``
 
@@ -29,7 +29,7 @@ Enter docker environment by calling:
 
     python launch_docker.py
 
-- Add ``--use_gpu`` to launch a GPU-supported container
+- Add ``--use_cuda`` to launch a GPU-supported container
 - Add ``--dump_dir /path/to/data`` to mount the folder where you stored the data (see :ref:`DataStructure`) into the container. If unspecified, will use the default location (i.e. ``snndump``)
 
 This will launch an interactive session in the docker container, with zsh support.
