@@ -16,6 +16,8 @@ Read the documentation at [https://supernnova.readthedocs.io](https://supernnova
 
 ## Getting started
 
+### With Docker
+
     cd env
     # Build docker images
     make cpu  # cpu image
@@ -23,7 +25,7 @@ Read the documentation at [https://supernnova.readthedocs.io](https://supernnova
     # Launch docker container
     python launch_docker.py (--use_gpu to run GPU based container)
 
-Or
+### With Conda
 
     cd env
     conda create --name <env> --file <conda_file_of_your_choice>
