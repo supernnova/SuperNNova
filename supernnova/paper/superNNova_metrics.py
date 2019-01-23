@@ -179,6 +179,16 @@ def get_delta_metrics(df_stats, settings):
         df_delta.to_csv(
             Path(settings.stats_dir) / "summary_stats_delta.csv", index=False
         )
+    else:
+        df_delta = pd.DataFrame(
+            columns=[
+                "model_name_left",
+                "model_name_right",
+                "delta_type",
+                "all_accuracy_mean_delta","mean_all_class0_std_dev_mean_delta",
+                "all_entropy_mean_delta",
+            ]
+        )
 
     # Also look for difference between OOD / not OOD
     orderded_columns = ["model_name_noseed"]

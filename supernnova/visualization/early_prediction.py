@@ -7,6 +7,7 @@ import pandas as pd
 import torch.nn as nn
 from tqdm import tqdm
 from pathlib import Path
+import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from ..utils import data_utils as du
@@ -171,7 +172,7 @@ def plot_predictions(
     plt.close()
 
 
-def make_early_prediction(settings, nb_lcs=1):
+def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
     """Load model corresponding to settings
     or (if specified) load a list of models.
 
@@ -277,6 +278,7 @@ def make_early_prediction(settings, nb_lcs=1):
             # TODO: IMPROVE
             df_temp = pd.DataFrame(data=X_unnormed, columns=features)
             arr_time = np.cumsum(df_temp.delta_time.values)
+            df_temp['time'] = arr_time
             for flt in settings.list_filters:
                 non_zero = np.where(
                     ~np.isclose(df_temp[f"FLUXCAL_{flt}"].values, 0, atol=1E-2)
@@ -298,4 +300,107 @@ def make_early_prediction(settings, nb_lcs=1):
                 d_pred,
                 OOD,
             )
+
+            # use to create GIFs
+            if not OOD:
+                if do_gifs:
+                    plot_gif(settings,
+                             df_temp,
+                             SNID,
+                             redshift,
+                             peak_MJD,
+                             target,
+                             arr_time,
+                             d_pred)
     lu.print_green("Finished plotting lightcurves and predictions ")
+
+
+def plot_gif(settings, df_plot, SNID, redshift, peak_MJD, target, arr_time, d_pred
+             ):
+    """ Create GIFs for classification
+    """
+    matplotlib.use('TkAgg')
+    import imageio
+
+    def plot_image_for_gif(fig,gs, df_plot,d_pred,time,SNtype):
+
+        # Plot the lightcurve
+        ax = plt.subplot(gs[0])
+        # Used to keep the limits constant
+        flux_max = max(df_plot[[k for k in df_plot.keys() if 'FLUXCAL_' in k]].max())
+        flux_min = min(df_plot[[k for k in df_plot.keys() if 'FLUXCAL_' in k]].min())
+        ax.set_ylim(flux_min - 5, flux_max + 5)
+        ax.set_xlim(-.5, max(df_plot['time']) + 2)
+
+        # slice for gif
+        df_sel = df_plot[df_plot['time'] <= time]
+        for flt in settings.list_filters:
+            ax.errorbar(df_sel['time'], df_sel[f"FLUXCAL_{flt}"],
+                        yerr=df_sel[f"FLUXCALERR_{flt}"],
+                        fmt="o",
+                        label=f"Filter {flt}",
+                        color=FILTER_COLORS[flt])
+
+        ax.set(xlabel='', ylabel='flux',
+               title=f"{SNtype} (ID: {SNID}, redshift: {redshift:.3g})")
+
+        # Plot the classifications
+        ax = plt.subplot(gs[1])
+        ax.set_ylim(0, 1)
+        ax.set_xlim(-.5, max(df_plot['time']) + 2)
+        # select classification of same length
+        for idx, key in enumerate(d_pred.keys()):
+
+            for class_prob in range(settings.nb_classes):
+                color = ALL_COLORS[class_prob + idx * settings.nb_classes]
+                linestyle = LINE_STYLE[class_prob]
+                label = du.sntype_decoded(class_prob, settings)
+
+                if len(d_pred) > 1:
+                    label += f" {key}"
+
+                ax.plot(
+                    arr_time[:len(df_sel)],
+                    d_pred[key]["median"][:, class_prob][:len(df_sel)],
+                    color=color,
+                    linestyle=linestyle,
+                    label=label,
+                )
+                ax.fill_between(
+                    arr_time[:len(df_sel)],
+                    d_pred[key]["perc_16"][:, class_prob][:len(df_sel)],
+                    d_pred[key]["perc_84"][:, class_prob][:len(df_sel)],
+                    color=color,
+                    alpha=0.4,
+                )
+                ax.fill_between(
+                    arr_time[:len(df_sel)],
+                    d_pred[key]["perc_2"][:, class_prob][:len(df_sel)],
+                    d_pred[key]["perc_98"][:, class_prob][:len(df_sel)],
+                    color=color,
+                    alpha=0.2,
+                )
+        ax.set_ylabel("classification probability")
+        ax.set_xlabel("time")
+
+        # Used to return the plot as an image rray
+        fig.canvas.draw()       # draw the canvas, cache the renderer
+        image = np.frombuffer(fig.canvas.tostring_rgb(), dtype='uint8')
+        image = image.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+
+        return image
+
+    kwargs_write = {'fps':1.0, 'quantizer':'nq'}
+    fig = plt.figure()
+    gs = gridspec.GridSpec(2, 1)
+    SNtype = du.sntype_decoded(target, settings)
+
+    fig_path = (
+        f"{settings.lightcurves_dir}/{settings.pytorch_model_name}/gif"
+    )
+    fig_name = (
+        f"{settings.pytorch_model_name}_class_pred_with_lc_{SNID}.gif"
+    )
+    Path(fig_path).mkdir(parents=True, exist_ok=True)
+    imageio.mimsave(str(Path(fig_path) / fig_name),
+                    [plot_image_for_gif(fig, gs,df_plot,d_pred,time,SNtype) for time in arr_time], fps=1)

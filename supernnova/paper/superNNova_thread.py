@@ -34,7 +34,7 @@ Base_salt = Base.replace("photometry", "saltfit")
 def SuperNNova_stats_and_plots(settings):
     """ Reproduce stats and plots used for SuperNNova paper.
     BEWARE: Selection is hardcoded
-    
+
     Args:
         settings (ExperimentSettings): custom class to hold hyperparameters
     """
@@ -79,7 +79,9 @@ def SuperNNova_stats_and_plots_thread(df, settings, plots=True):
         model_file = f"{settings.models_dir}/{Base.replace('DES_vanilla_','vanilla_S_0_')}/{Base.replace('DES_vanilla_','vanilla_S_0_')}.pt"
         if os.path.exists(model_file):
             model_settings = conf.get_settings_from_dump(model_file)
-            early_prediction.make_early_prediction(model_settings, nb_lcs=20)
+            early_prediction.make_early_prediction(
+                model_settings, nb_lcs=20, do_gifs=True
+            )
         else:
             print(lu.str_to_redstr(f"File not found {model_file}"))
     # 1. Hyper-parameters
@@ -237,9 +239,19 @@ def SuperNNova_stats_and_plots_thread(df, settings, plots=True):
             model_file = f"{settings.models_dir}/{model.replace(f'DES_{model}_',f'{model}_S_0_').replace('CLF_2','CLF_7')}/{model.replace(f'DES_{model}_',f'{model}_S_0_').replace('CLF_2','CLF_7')}.pt"
             if os.path.exists(model_file):
                 model_settings = conf.get_settings_from_dump(model_file)
-                early_prediction.make_early_prediction(model_settings, nb_lcs=20)
+                early_prediction.make_early_prediction(
+                    model_settings, nb_lcs=20, do_gifs=True
+                )
             else:
                 print(lu.str_to_redstr(f"File not found {model_file}"))
+        print(lu.str_to_yellowstr("Adding gifs for binary classification"))
+        for model in [Var, BBB]:
+            model_file = f"{settings.models_dir}/{model.replace(f'DES_{model}_',f'{model}_S_0_')}/{model.replace(f'DES_{model}_',f'{model}_S_0_')}.pt"
+            if os.path.exists(model_file):
+                model_settings = conf.get_settings_from_dump(model_file)
+                early_prediction.make_early_prediction(
+                    model_settings, nb_lcs=10, do_gifs=True
+                )
 
     """
     Towards cosmology
