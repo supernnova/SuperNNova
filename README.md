@@ -8,7 +8,7 @@
 
 ### Read the paper preprint
 
-[Paper](https://arxiv.org/)
+[Paper](https://arxiv.org/abs/1901.06384)
 
 
 ## Table of contents

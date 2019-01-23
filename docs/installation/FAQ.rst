@@ -68,7 +68,7 @@ You can give add to your terminal command ``--dump_dir foldername``. This folder
 
 Yes, you need to call ``python run.py --performance``. It will be created in ``{dump_dir}/stats`` as ``summary_stats.csv``. It will compute various metrics which can be averaged over multiple random seeds. By default, this command will also generate all statistics (latex tables as well printout stats) and plots featured in our SuperNNova paper. To deactivate this, just comment in ``run.py`` the two lines below ``# Stats and plots in paper``.
 
-.. _ArXiv: https:/arxiv.org
+.. _ArXiv: https://arxiv.org/abs/1901.06384
 .. _SuperNNovaSimulations: http://www.mso.anu.edu.au/~anais/supernnova_data/
 .. _Fortunato et al 2017: https://arxiv.org/abs/1704.02798
 .. _Gal et Ghahramani 2015: https://arxiv.org/abs/1506.02142
