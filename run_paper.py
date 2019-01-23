@@ -28,16 +28,12 @@ def run_cmd(cmd, debug, seed):
 
     if debug is True:
         # Run for 1 epoch only
-        cmd = cmd.replace("--cyclic ", " ")
-        cmd = cmd + " --nb_epoch 1 "
+        cmd += "--cyclic_phases 1 1 1 "
+        cmd += "--nb_epoch 1 "
 
         if "num_inference_samples" not in cmd:
             # Make inference faster
             cmd = cmd + "--num_inference_samples 2 "
-
-        if "hidden_dim" not in cmd:
-            # Decrease NN size
-            cmd = cmd + "--hidden_dim 2 "
 
     subprocess.check_call(shlex.split(cmd))
 
