@@ -319,7 +319,6 @@ def plot_gif(settings, df_plot, SNID, redshift, peak_MJD, target, arr_time, d_pr
              ):
     """ Create GIFs for classification
     """
-    matplotlib.use('TkAgg')
     import imageio
 
     def plot_image_for_gif(fig,gs, df_plot,d_pred,time,SNtype):
@@ -346,6 +345,7 @@ def plot_gif(settings, df_plot, SNID, redshift, peak_MJD, target, arr_time, d_pr
 
         # Plot the classifications
         ax = plt.subplot(gs[1])
+        ax.clear()
         ax.set_ylim(0, 1)
         ax.set_xlim(-.5, max(df_plot['time']) + 2)
         # select classification of same length
