@@ -37,48 +37,56 @@
 
 ### With Docker <a name="docker"></a>
 
-    cd env
+```bash
+cd env
 
-    # Build docker images
-    make cpu  # cpu image
-    make gpu  # gpu image (requires NVIDIA Drivers + nvidia-docker)
+# Build docker images
+make cpu  # cpu image
+make gpu  # gpu image (requires NVIDIA Drivers + nvidia-docker)
 
-    # Launch docker container
-    python launch_docker.py (--use_gpu to run GPU based container)
+# Launch docker container
+python launch_docker.py (--use_gpu to run GPU based container)
+```
 
 ### With Conda <a name="conda"></a>
 
-    cd env
+```bash
+cd env
 
-    # Create conda environment
-    conda create --name <env> --file <conda_file_of_your_choice>
+# Create conda environment
+conda create --name <env> --file <conda_file_of_your_choice>
 
-    # Activate conda environment
-    source activate <env>
+# Activate conda environment
+source activate <env>
+```
 
 For more detailed instructions, check the full [setup instructions](https://supernnova.readthedocs.io/en/latest/installation/python.html)
 
 
 ## Usage <a name="usage"></a>
 
-    # Create data
-    python run.py --data  --dump_dir tests/dump
+```bash
+# Create data
+python run.py --data  --dump_dir tests/dump
 
-    # Train a baseline RNN
-    python run.py --train_rnn --dump_dir tests/dump
+# Train a baseline RNN
+python run.py --train_rnn --dump_dir tests/dump
 
-    # Train a variational dropout RNN
-    python run.py --train_rnn --model variational --dump_dir tests/dump
+# Train a variational dropout RNN
+python run.py --train_rnn --model variational --dump_dir tests/dump
 
-    # Train a Bayes By Backprop RNN
-    python run.py --train_rnn --model bayesian --dump_dir tests/dump
+# Train a Bayes By Backprop RNN
+python run.py --train_rnn --model bayesian --dump_dir tests/dump
 
-    # Train a RandomForest
-    python run.py --train_rf --dump_dir tests/dump
+# Train a RandomForest
+python run.py --train_rf --dump_dir tests/dump
+```
 
 ## Reproduce (soon to be published) results <a name="paper"></a>
 
-    python run_paper.py
+```bash
+python run_paper.py
+```
 
 ## General pipeline description <a name="pipeline"></a>
 
@@ -90,10 +98,14 @@ For more detailed instructions, check the full [setup instructions](https://supe
 
 ## Running tests with py.test <a name="tests"></a>
 
-    PYTHONPATH=$PWD:$PYTHONPATH pytest -W ignore --cov supernnova tests
-
+```bash
+PYTHONPATH=$PWD:$PYTHONPATH pytest -W ignore --cov supernnova tests
+```
 
 ## Build docs <a name="docs"></a>
 
-    cd docs && make clean && make html && cd ..
-    firefox docs/_build/html/index.html
+```bash
+
+cd docs && make clean && make html && cd ..
+firefox docs/_build/html/index.html
+```
