@@ -159,10 +159,10 @@ def get_settings():
         "--data_fraction", type=float, default=1.0, help="Fraction of data to use"
     )
     parser.add_argument(
-        "--data_training", default=False, action="store_true", help="Create database with mostly training set of 98%"
+        "--data_training", default=False, action="store_true", help="Create database with mostly training set of 99.5%"
     )
     parser.add_argument(
-        "--data_testing", default=False, action="store_true", help="Create database with mostly validation set of 98%"
+        "--data_testing", default=False, action="store_true", help="Create database with mostly validation set of 99.5%"
     )
 
     ######################
