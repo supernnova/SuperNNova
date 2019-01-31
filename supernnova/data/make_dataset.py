@@ -105,9 +105,10 @@ def build_traintestval_splits(settings):
                 SNID_val = sampled_SNIDs[int(0.99 * n_samples): int(0.995 * n_samples)]
                 SNID_test = sampled_SNIDs[int(0.995 * n_samples):]
             elif settings.data_testing:
-                SNID_val = sampled_SNIDs[: int(0.99 * n_samples)]
-                SNID_train = sampled_SNIDs[int(0.99 * n_samples): int(0.995 * n_samples)]
-                SNID_test = sampled_SNIDs[int(0.995 * n_samples):]
+                SNID_test = sampled_SNIDs[:]
+                # the train and val sets wont be used in this case
+                SNID_train = sampled_SNIDs[0]
+                SNID_val = sampled_SNIDs[1]
             else:
                 SNID_train = sampled_SNIDs[: int(0.8 * n_samples)]
                 SNID_val = sampled_SNIDs[int(0.8 * n_samples): int(0.9 * n_samples)]

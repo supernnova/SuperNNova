@@ -30,7 +30,7 @@ Assuming a database has been created and models have been trained, a model can b
     python run.py --validate_rnn --dump_dir /path/to/dump_dir
     python run.py --validate_rnn --dump_dir /path/to/dump_dir
 
-In that case, the model corresponding to the command line arguments will be loaded and validated.
+In that case, the model corresponding to the command line arguments will be loaded and validated. Output will be written in ``dump_dir/models/yourmodelname/``.
 
 Alternatively, one or more model files can be specified
 
@@ -39,7 +39,7 @@ Alternatively, one or more model files can be specified
     python run.py --validate_rnn --dump_dir /path/to/dump_dir --model_files /path/to/model/file(s)
     python run.py --validate_rnn --dump_dir /path/to/dump_dir --model_files /path/to/model/file(s)
 
-In that case, validation will be carried out for each of the models specified by the model files.
+In that case, validation will be carried out for each of the models specified by the model files. This will use the database in ``dump_dir/processed`` directory. 
 
 
 This will:
@@ -47,6 +47,15 @@ This will:
 - Make predictions on a test set (saved to a file with the ``PRED_`` prefix)
 - Compute metrics on the test (saved to a file with the ``METRICS_`` prefix)
 - All results are dumped in the same folder as the folder where the trained model was dumped
+
+
+To make predictions on an independent database than the one used to train a given model
+
+.. code::
+
+    python run.py --dump_dir  /path/to/dump_dir --validate_rnn --model_files path/to/modelfile/modelfile.pt
+
+In this case it will run the model provided in ``model_files`` on the database available in ``dump_dir/processed``. Predictions will be saved in ``dump_dir/models/modelname/``.
 
 
 RNN speed

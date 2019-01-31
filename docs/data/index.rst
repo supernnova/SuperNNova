@@ -53,7 +53,7 @@ Creating a debugging database
 - The database is saved to the specified ``tests/dump/processed``
 
 
-Creating a training database
+Creating a database
 ------------------------------
 
 .. code::
@@ -75,7 +75,7 @@ We first compute the data splits:
 
 - By default the HEAD FITS files are analyzed to compute 80/10/10 train/test/val splits.
 - You can change if the databse contains 99.5/0.5/0.5 train/test/val splits using ``--data_training`` command. 
-- You can change if the databse contains 0.5/0.5/99.5 train/test/val splits using ``--data_testing`` command.
+- You can change if the databse contains 0/0/100 train/test/val splits using ``--data_testing`` command.
 - The splits are different for the salt/photometry datasets
 - The splits are different depending on the classification target
 - We downsample the dataset so that for a given classification task, all classes have the same cardinality

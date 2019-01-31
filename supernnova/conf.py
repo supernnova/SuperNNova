@@ -123,13 +123,13 @@ def get_settings():
     parser.add_argument(
         "--fits_dir",
         type=str,
-        default=os.path.join(default_dump_dir, "raw"),
+        default=default_dump_dir,
         help="Default path where fits to photometry are",
     )
     parser.add_argument(
         "--raw_dir",
         type=str,
-        default=os.path.join(default_dump_dir, "raw"),
+        default=default_dump_dir,
         help="Default path where raw data is",
     )
     parser.add_argument(
@@ -159,10 +159,16 @@ def get_settings():
         "--data_fraction", type=float, default=1.0, help="Fraction of data to use"
     )
     parser.add_argument(
-        "--data_training", default=False, action="store_true", help="Create database with mostly training set of 99.5%"
+        "--data_training",
+        default=False,
+        action="store_true",
+        help="Create database with mostly training set of 99.5%",
     )
     parser.add_argument(
-        "--data_testing", default=False, action="store_true", help="Create database with mostly validation set of 99.5%"
+        "--data_testing",
+        default=False,
+        action="store_true",
+        help="Create database with mostly validation set of 99.5%",
     )
 
     ######################
@@ -317,7 +323,9 @@ def get_settings():
     return settings
 
 
-def get_settings_from_dump(model_or_pred_or_metrics_file, override_source_data=None):
+def get_settings_from_dump(
+    settings, model_or_pred_or_metrics_file, override_source_data=None
+):
 
     model_dir = Path(model_or_pred_or_metrics_file).parent
     cli_file = model_dir / "cli_args.json"
@@ -330,7 +338,6 @@ def get_settings_from_dump(model_or_pred_or_metrics_file, override_source_data=N
             "validate_rnn",
             "train_rf",
             "validate_rf",
-            "override_source_data",
             "explore_lightcurves",
             "dryrun",
             "metrics",
@@ -340,6 +347,11 @@ def get_settings_from_dump(model_or_pred_or_metrics_file, override_source_data=N
             "prediction_files",
         ]:
             cli_args[arg] = False
+
+    # Using dump/raw/fits dir from settings instead of model
+    cli_args["raw_dir"] = settings.raw_dir
+    cli_args["fits_dir"] = settings.fits_dir
+    cli_args["dump_dir"] = settings.dump_dir
 
     settings = experiment_settings.ExperimentSettings(cli_args)
 
