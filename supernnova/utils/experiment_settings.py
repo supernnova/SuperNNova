@@ -120,16 +120,14 @@ class ExperimentSettings:
         during the course of an experiment
         """
 
-        # Check raw data exists in the dump_dir
-        assert (Path(self.dump_dir) / "raw").exists()
-
         for path in [
+            f"{self.raw_dir}",
+            f"{self.fits_dir}",
             f"{self.dump_dir}/explore",
             f"{self.dump_dir}/stats",
             f"{self.dump_dir}/figures",
             f"{self.dump_dir}/lightcurves",
             f"{self.dump_dir}/latex",
-            f"{self.dump_dir}/raw",
             f"{self.dump_dir}/processed",
             f"{self.dump_dir}/preprocessed",
             f"{self.dump_dir}/models",
@@ -368,14 +366,13 @@ class PlasticcSettings(object):
     def setup_dir(self):
 
         # Check raw data exists in the dump_dir
-        assert os.path.exists(os.path.join(self.dump_dir, "raw"))
+        assert os.path.exists(self.raw_dir)
 
         for path in [
             f"{self.dump_dir}/explore",
             f"{self.dump_dir}/stats",
             f"{self.dump_dir}/figures",
             f"{self.dump_dir}/latex",
-            f"{self.dump_dir}/raw",
             f"{self.dump_dir}/processed",
             f"{self.dump_dir}/preprocessed",
             f"{self.dump_dir}/models",

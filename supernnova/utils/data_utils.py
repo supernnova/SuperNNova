@@ -144,7 +144,7 @@ def load_fitfile(settings, verbose=True):
     except FileNotFoundError:
         # load data
         df = pd.read_csv(
-            f"{settings.raw_dir}/{settings.data_prefix}_FITOPT000.FITRES",
+            f"{settings.fits_dir}/FITOPT000.FITRES",
             index_col=False,
             comment="#",
             delimiter=" ",

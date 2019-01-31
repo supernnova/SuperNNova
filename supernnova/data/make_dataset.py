@@ -100,9 +100,18 @@ def build_traintestval_splits(settings):
             n_samples = len(sampled_SNIDs)
 
             # Now create train/test/validation indices
-            SNID_train = sampled_SNIDs[: int(0.8 * n_samples)]
-            SNID_val = sampled_SNIDs[int(0.8 * n_samples) : int(0.9 * n_samples)]
-            SNID_test = sampled_SNIDs[int(0.9 * n_samples) :]
+            if settings.data_training:
+                SNID_train = sampled_SNIDs[: int(0.99 * n_samples)]
+                SNID_val = sampled_SNIDs[int(0.99 * n_samples): int(0.995 * n_samples)]
+                SNID_test = sampled_SNIDs[int(0.995 * n_samples):]
+            elif settings.data_testing:
+                SNID_val = sampled_SNIDs[: int(0.99 * n_samples)]
+                SNID_train = sampled_SNIDs[int(0.99 * n_samples): int(0.995 * n_samples)]
+                SNID_test = sampled_SNIDs[int(0.995 * n_samples):]
+            else:
+                SNID_train = sampled_SNIDs[: int(0.8 * n_samples)]
+                SNID_val = sampled_SNIDs[int(0.8 * n_samples): int(0.9 * n_samples)]
+                SNID_test = sampled_SNIDs[int(0.9 * n_samples):]
 
             # Find the indices of our train test val splits
             idxs_train = np.where(np.in1d(all_SNIDs, SNID_train))[0]

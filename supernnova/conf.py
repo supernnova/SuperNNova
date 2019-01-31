@@ -121,6 +121,18 @@ def get_settings():
         help="Default path where data and models are dumped",
     )
     parser.add_argument(
+        "--fits_dir",
+        type=str,
+        default=default_dump_dir,
+        help="Default path where fits to photometry are",
+    )
+    parser.add_argument(
+        "--raw_dir",
+        type=str,
+        default=default_dump_dir,
+        help="Default path where raw data is",
+    )
+    parser.add_argument(
         "--redshift",
         choices=[None, "zpho", "zspe"],
         default=None,
@@ -143,10 +155,16 @@ def get_settings():
         action="store_true",
         help="If True: do not clean processed_dir and preprocessed_dir when calling `python run.py --data`",
     )
-
     parser.add_argument(
         "--data_fraction", type=float, default=1.0, help="Fraction of data to use"
     )
+    parser.add_argument(
+        "--data_training", default=False, action="store_true", help="Create database with mostly training set of 98%"
+    )
+    parser.add_argument(
+        "--data_testing", default=False, action="store_true", help="Create database with mostly validation set of 98%"
+    )
+
     ######################
     # RNN  parameters
     ######################
