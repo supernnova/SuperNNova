@@ -123,13 +123,13 @@ def get_settings():
     parser.add_argument(
         "--fits_dir",
         type=str,
-        default=default_dump_dir,
+        default=os.path.join(default_dump_dir, "raw"),
         help="Default path where fits to photometry are",
     )
     parser.add_argument(
         "--raw_dir",
         type=str,
-        default=default_dump_dir,
+        default=os.path.join(default_dump_dir, "raw"),
         help="Default path where raw data is",
     )
     parser.add_argument(

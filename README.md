@@ -2,8 +2,10 @@
 ![Logo](docs/SuperNNova.png)
 
 ### Read the documentation
-
+For the main branch:
 [https://supernnova.readthedocs.io](https://supernnova.readthedocs.io/en/latest/)
+
+For the DES branch you'll need to [Build the docs](#docs).
 
 
 ### Read the paper preprint
@@ -15,7 +17,7 @@
 1. [Repository overview](#overview)
 2. [Getting Started](#start)
     1. [With Docker](#docker)
-    2. [With Docker](#conda)
+    2. [With Conda](#conda)
 3. [Usage](#usage)
 3. [Reproduce paper](#paper)
 4. [Pipeline Description](#pipeline)

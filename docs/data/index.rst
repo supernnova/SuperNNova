@@ -8,7 +8,6 @@ Recommended code organization structure:
 .. code::
 
     ├── snndump        (to save the data)
-    │   ├── raw
     │
     ├── SuperNNova
     │   ├── supernnova
@@ -19,9 +18,11 @@ Recommended code organization structure:
 
 **To build the database:**
 
-- Ensure you have raw data saved to ``{dump_dir}/raw``
-- The default settings assume the raw data is saved to ``snndump/raw``
+- Ensure you have raw data saved to ``{raw_dir}/raw``
+- The default settings assume the raw data and fits are saved to ``snndump/raw``
 - You can save the data in any folder, but you then have to specify the ``dump_dir`` with the ``--dump_dir XXX`` command.
+- You can specify a different place where the raw data is using ``--raw_dir XXX`` command.
+- You can specify a different place where the fits to data is using ``--fits_dir XXX`` command.
 
 
 Activate the environment
@@ -45,9 +46,8 @@ Creating a debugging database
 
 .. code::
 
-    python run.py --data --dump_dir tests/dump
+    python run.py --data --dump_dir tests/dump --raw_dir tests/raw --fits_dir tests/fits
 
-- You do not need to download the raw data for this database, it is already included in ``tests/dump``
 - This creates a database for a very small subset of all available data
 - This is intended for debugging purposes (training, validation can run very fast with this small database)
 - The database is saved to the specified ``tests/dump/processed``
@@ -73,7 +73,9 @@ Preparing data splits
 
 We first compute the data splits:
 
-- The HEAD FITS files are analyzed to compute 80/10/10 train/test/val splits.
+- By default the HEAD FITS files are analyzed to compute 80/10/10 train/test/val splits.
+- You can change if the databse contains 99.5/0.5/0.5 train/test/val splits using ``--data_training`` command. 
+- You can change if the databse contains 0.5/0.5/99.5 train/test/val splits using ``--data_testing`` command.
 - The splits are different for the salt/photometry datasets
 - The splits are different depending on the classification target
 - We downsample the dataset so that for a given classification task, all classes have the same cardinality
