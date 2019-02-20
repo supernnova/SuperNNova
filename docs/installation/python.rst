@@ -44,7 +44,9 @@ Alternatively, one can setup a conda environment  as follows:
 
 .. code::
 
-	conda create --name <env> --file conda_env.txt
+	conda create --name <envname> --file conda_env.txt
+
+you can activate this envirionment with ``source conda <envname>``. Else simply install in your current environment ``conda install --file conda_env.txt``.
 
 example configuration files for linux-64 (cpu and gpu) and osx-64 are provided in ``SuperNNova/env``.
 

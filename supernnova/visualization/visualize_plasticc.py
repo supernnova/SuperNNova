@@ -5,7 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from collections import defaultdict
 
-# plt.switch_backend("agg")
+plt.switch_backend("agg")
 import matplotlib.gridspec as gridspec
 from ..utils.data_utils import DICT_PLASTICC_FILTERS, PLASTICC_FILTERS
 from ..data import make_dataset_plasticc

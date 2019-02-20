@@ -14,6 +14,12 @@ OFFSETS = [-2, -1, 0, 1, 2]
 OOD_TYPES = ["random", "reverse", "shuffle", "sin"]
 OFFSETS_STR = ["-2", "-1", "", "+1", "+2"]
 FILTERS = natsorted(["g", "i", "r", "z"])
+# non data dependent onehot encoding
+FILTERS_COMBINATION = natsorted(['g','r','i','z', 
+                                'gr', 'gi', 'gz', 
+                                'ir','iz',
+                                'rz',
+                                'gir', 'giz', 'grz', 'irz','girz'])
 PLASTICC_FILTERS = natsorted(["u", "g", "r", "i", "z", "y"])
 DICT_PLASTICC_FILTERS = {0: "u", 1: "g", 2: "r", 3: "i", 4: "z", 5: "y"}
 DICT_PLASTICC_CLASS = OrderedDict(
@@ -35,7 +41,8 @@ DICT_PLASTICC_CLASS = OrderedDict(
         99: 14,
     }
 )
-LogStandardized = namedtuple("LogStandardized", ["arr_min", "arr_mean", "arr_std"])
+LogStandardized = namedtuple(
+    "LogStandardized", ["arr_min", "arr_mean", "arr_std"])
 
 
 def load_pandas_from_fit(fit_file_path):
@@ -410,7 +417,8 @@ def save_to_HDF5(settings, df):
                 dtype = np.dtype("int32")
             else:
                 dtype = np.dtype("float32")
-            hf.create_dataset(feat, data=df[feat].values[start_idxs], dtype=dtype)
+            hf.create_dataset(
+                feat, data=df[feat].values[start_idxs], dtype=dtype)
             df.drop(columns=feat, inplace=True)
 
         logging_utils.print_green("Saving class")
@@ -432,7 +440,8 @@ def save_to_HDF5(settings, df):
         for offset, suffix in zip(OFFSETS, OFFSETS_STR):
             new_column = f"PEAKMJD{suffix}_unique_nights"
             df_nights = (
-                df[df["time"] < df["PEAKMJDNORM"] + offset][["PEAKMJDNORM", "SNID"]]
+                df[df["time"] < df["PEAKMJDNORM"] +
+                    offset][["PEAKMJDNORM", "SNID"]]
                 .groupby("SNID")
                 .count()
                 .astype(np.uint8)
@@ -442,7 +451,8 @@ def save_to_HDF5(settings, df):
 
             hf.create_dataset(
                 new_column,
-                data=df_SNID.merge(df_nights, on="SNID", how="left")[new_column].values,
+                data=df_SNID.merge(df_nights, on="SNID", how="left")[
+                    new_column].values,
                 dtype=np.dtype("uint8"),
             )
 
@@ -516,7 +526,8 @@ def save_to_HDF5(settings, df):
         # FLUXERR features
         ###################
         fluxerr_features = [f"FLUXCALERR_{f}" for f in FILTERS]
-        fluxerr_log_standardized = log_standardization(df[fluxerr_features].values)
+        fluxerr_log_standardized = log_standardization(
+            df[fluxerr_features].values)
         # Store normalization parameters
         gnorm.create_dataset(f"FLUXCALERR/min", data=fluxerr_log_standardized.arr_min)
         gnorm.create_dataset(f"FLUXCALERR/mean", data=fluxerr_log_standardized.arr_mean)
@@ -539,7 +550,14 @@ def save_to_HDF5(settings, df):
         assert sorted(df.columns.values.tolist()) == sorted(
             list_training_features + ["FLT"]
         )
-        df = pd.concat([df[list_training_features], pd.get_dummies(df["FLT"])], axis=1)
+        # cheating to have the same onehot for all datasets
+        tmp = pd.Series(FILTERS_COMBINATION).append(df["FLT"])
+        tmp_onehot = pd.get_dummies(tmp)
+        tmp_onehot = tmp_onehot.reset_index()
+        FLT_onehot = tmp_onehot[len(FILTERS_COMBINATION):]
+        FLT_onehot = FLT_onehot.reset_index()
+        df = pd.concat([df[list_training_features],
+                        FLT_onehot], axis=1)
         # store feature names
         list_training_features = df.columns.values.tolist()
         hf.create_dataset(
@@ -549,7 +567,8 @@ def save_to_HDF5(settings, df):
         )
         hf["features"][:] = list_training_features
         print(len(list_training_features))
-        logging_utils.print_green("Saved features:", ",".join(list_training_features))
+        logging_utils.print_green(
+            "Saved features:", ",".join(list_training_features))
 
         # Save training features to hdf5
         logging_utils.print_green("Save data features to HDF5")
@@ -558,5 +577,5 @@ def save_to_HDF5(settings, df):
         for idx, idx_pair in enumerate(
             tqdm(list_start_end, desc="Filling hdf5", ncols=100)
         ):
-            arr = arr_feat[idx_pair[0] : idx_pair[1]]
+            arr = arr_feat[idx_pair[0]: idx_pair[1]]
             hf["data"][idx] = np.ravel(arr)

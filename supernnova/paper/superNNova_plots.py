@@ -16,6 +16,8 @@ from ..utils import logging_utils as lu
 from ..utils import performance_utils as pu
 from ..utils import visualization_utils as vu
 
+plt.switch_backend("agg")
+
 # Plotting styles
 from ..utils.visualization_utils import (
     ALL_COLORS,

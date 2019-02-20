@@ -1,4 +1,5 @@
 import matplotlib.pylab as plt
+plt.switch_backend("agg")
 
 # Plotting styles
 ALL_COLORS = [
