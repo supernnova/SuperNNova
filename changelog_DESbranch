@@ -1,0 +1,6 @@
+- option to specify raw_dir fits_dir which differs from dump_dir
+- option to process data for testing or training only (no splits)
+- hardcoded one-hot encoding to avoid differences between datasets created (implemented for DES only!)
+- fits naming has changed DES_FITPOT.FITRES -> FITOPT.FITRES
+- if testing dataset use normalization constants used in the trained model (--model_files)
+- if testing dataset remove need for fits to be present (--model_files)

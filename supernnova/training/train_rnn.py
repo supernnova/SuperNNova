@@ -1,10 +1,10 @@
+import torch
+import json
 import numpy as np
+import torch.nn as nn
 from tqdm import tqdm
 from time import time
-
-import torch
-import torch.nn as nn
-
+from pathlib import Path
 from ..utils import training_utils as tu
 from ..utils import logging_utils as lu
 
@@ -100,6 +100,8 @@ def train_cyclic(settings):
     Args:
         settings (ExperimentSettings): controls experiment hyperparameters
     """
+    # save training data config
+    save_normalizations(settings)
 
     max_learning_rate = get_lr(settings) / 10
     min_learning_rate = max_learning_rate / 10
@@ -219,12 +221,35 @@ def train_cyclic(settings):
     tu.save_training_results(settings, d_monitor_val, training_time)
 
 
+def save_normalizations(settings):
+    """Save normalization used for training
+
+    Saves a json file with the normalization used for each feature
+
+    Arguments:
+        settings (ExperimentSettings): controls experiment hyperparameters
+    """
+
+    dic_norm = {}
+    for i, f in enumerate(settings.training_features_to_normalize):
+        dic_norm[f] = {}
+        for j, w in enumerate(['min', 'mean', 'std']):
+            dic_norm[f][w] = float(settings.arr_norm[i, j])
+
+    fname = f"{Path(settings.rnn_dir)}/data_norm.json"
+    with open(fname, "w") as f:
+        json.dump(dic_norm, f, indent=4, sort_keys=True)
+
+
 def train(settings):
     """Train RNN models with a decay on plateau policy
 
     Args:
         settings (ExperimentSettings): controls experiment hyperparameters
     """
+
+    # save training data config
+    save_normalizations(settings)
 
     # Data
     list_data_train, list_data_val = tu.load_HDF5(settings, test=False)
@@ -233,7 +258,8 @@ def train(settings):
     if settings.__class__.__name__ == "PlasticcSettings":
         criterion = nn.CrossEntropyLoss(
             weight=torch.from_numpy(
-                np.array([1, 2, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1]).astype(np.float32)
+                np.array([1, 2, 1, 1, 1, 1, 1, 2, 1, 1,
+                          1, 1, 1, 1]).astype(np.float32)
             )
         )
     else:
@@ -302,7 +328,8 @@ def train(settings):
                 settings, list_data_val, rnn, sample_size=None
             )
 
-            end_condition = plateau_accuracy.step(d_losses_val["Acc"], optimizer)
+            end_condition = plateau_accuracy.step(
+                d_losses_val["Acc"], optimizer)
             if end_condition is True:
                 break
 

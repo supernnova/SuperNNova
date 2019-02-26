@@ -30,10 +30,7 @@ def build_traintestval_splits(settings):
 
     logging_utils.print_green(f"Computing splits")
 
-    # load FITOPT file on which we will base our splits
-    df_salt = data_utils.load_fitfile(settings)
-    df_salt["is_salt"] = 1
-
+    # Load photometry
     list_files = natsorted(
         glob.glob(os.path.join(settings.raw_dir, f"{settings.data_prefix}*HEAD.FITS"))
     )
@@ -57,8 +54,24 @@ def build_traintestval_splits(settings):
     df_photo = pd.concat(list_df)
     df_photo["SNID"] = df_photo["SNID"].astype(int)
 
+    # load FITOPT file on which we will base our splits
+    try:
+        df_salt = data_utils.load_fitfile(settings)
+    except Exception:
+        # if no fits file we include all lcs
+        df_salt = pd.DataFrame()
+        df_salt['SNID'] = df_photo["SNID"]
+    df_salt["is_salt"] = 1
+
     # Check all SNID in df_salt are also in df_photo
-    assert np.all(np.in1d(df_salt.SNID.values, df_photo.SNID.values))
+    try:
+        assert np.all(np.in1d(df_salt.SNID.values, df_photo.SNID.values))
+    except Exception:
+        logging_utils.print_red(" BEWARE! This is not the fits file for this photometry ")
+        print(logging_utils.str_to_redstr("   do point at the correct --fits_dir "))
+        print(logging_utils.str_to_redstr("   (cheat: or an empty folder to override use of salt2fits) "))
+        import sys
+        sys.exit(1)
 
     # Merge left on df_photo
     df = df_photo.merge(df_salt[["SNID", "is_salt"]], on=["SNID"], how="left")
@@ -474,7 +487,16 @@ def pivot_dataframe_single(filename, settings):
             df[c] = df[c].astype(np.int8)
 
     # Add some extra columns from the FITOPT file
-    df_salt = data_utils.load_fitfile(settings, verbose=False).set_index("SNID")
+    try:
+        df_salt = data_utils.load_fitfile(settings, verbose=False).set_index("SNID")
+    except Exception:
+        # if no fits file we populate with dummies
+        df_salt = pd.DataFrame()
+        df_salt["SNID"] = np.array(df.index)
+        df_salt["mB"]= np.zeros(len(df))
+        df_salt["c"]= np.zeros(len(df))
+        df_salt["x1"]= np.zeros(len(df))
+        df_salt = df_salt.set_index("SNID")
     df = df.join(df_salt[["mB", "c", "x1"]], how="left")
 
     df.drop(columns="MJD", inplace=True)
@@ -559,7 +581,10 @@ def make_dataset(settings):
     data_utils.save_to_HDF5(settings, df)
 
     # Save plots to visualize the distribution of some of the data features
-    SNinfo_df = data_utils.load_HDF5_SNinfo(settings)
-    datasets_plots(SNinfo_df, settings)
+    try:
+        SNinfo_df = data_utils.load_HDF5_SNinfo(settings)
+        datasets_plots(SNinfo_df, settings)
+    except Exception:
+        logging_utils.print_yellow("Warning: can't do data plots if no saltfit for this dataset")
 
     logging_utils.print_green("Finished making dataset")

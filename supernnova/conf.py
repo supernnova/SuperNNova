@@ -1,5 +1,6 @@
 import os
 import json
+import pickle
 import argparse
 from distutils.util import strtobool
 from pathlib import Path
@@ -10,7 +11,8 @@ def get_settings():
 
     parser = argparse.ArgumentParser(description="SNIa classification")
 
-    parser.add_argument("--seed", type=int, default=0, help="Random seed to be used")
+    parser.add_argument("--seed", type=int, default=0,
+                        help="Random seed to be used")
 
     #######################
     # General parameters
@@ -18,7 +20,8 @@ def get_settings():
     parser.add_argument(
         "--data", action="store_true", help="Create dataset for ML training"
     )
-    parser.add_argument("--train_rnn", action="store_true", help="Train RNN model")
+    parser.add_argument("--train_rnn", action="store_true",
+                        help="Train RNN model")
     parser.add_argument(
         "--train_rf", action="store_true", help="Train RandomForest model"
     )
@@ -40,7 +43,8 @@ def get_settings():
         action="store_true",
         help="Plot a random selection of lightcurves",
     )
-    parser.add_argument("--speed", action="store_true", help="Get RNN speed benchmark")
+    parser.add_argument("--speed", action="store_true",
+                        help="Get RNN speed benchmark")
 
     parser.add_argument(
         "--monitor_interval",
@@ -78,7 +82,8 @@ def get_settings():
     parser.add_argument(
         "--prediction_files", nargs="+", help="Path to prediction files"
     )
-    parser.add_argument("--metric_files", nargs="+", help="Path to metric files")
+    parser.add_argument("--metric_files", nargs="+",
+                        help="Path to metric files")
 
     #######################
     # PLASTICC parameters
@@ -168,7 +173,7 @@ def get_settings():
         "--data_testing",
         default=False,
         action="store_true",
-        help="Create database with mostly validation set of 99.5%",
+        help="Create database with only validation set",
     )
 
     ######################
@@ -227,14 +232,16 @@ def get_settings():
     parser.add_argument(
         "--nb_epoch", default=90, type=int, help="Number of batches per epoch"
     )
-    parser.add_argument("--batch_size", default=128, type=int, help="Batch size")
+    parser.add_argument("--batch_size", default=128,
+                        type=int, help="Batch size")
     parser.add_argument(
         "--hidden_dim", default=32, type=int, help="Hidden layer dimension"
     )
     parser.add_argument(
         "--num_layers", default=2, type=int, help="Number of recurrent layers"
     )
-    parser.add_argument("--dropout", default=0.05, type=float, help="Dropout value")
+    parser.add_argument("--dropout", default=0.05,
+                        type=float, help="Dropout value")
     parser.add_argument(
         "--bidirectional",
         choices=[True, False],
@@ -290,7 +297,8 @@ def get_settings():
         type=int,
         help="Minimum samples required to be a leaf node",
     )
-    parser.add_argument("--n_estimators", default=50, type=int, help="Number of trees")
+    parser.add_argument("--n_estimators", default=50,
+                        type=int, help="Number of trees")
     parser.add_argument(
         "--min_samples_split", default=10, type=int, help="Min samples to create split"
     )
@@ -300,7 +308,8 @@ def get_settings():
     parser.add_argument(
         "--max_features", default=5, type=int, help="Max features per tree"
     )
-    parser.add_argument("--max_depth", default=7, type=int, help="Max tree depth")
+    parser.add_argument("--max_depth", default=7,
+                        type=int, help="Max tree depth")
 
     args = parser.parse_args()
 
@@ -326,7 +335,7 @@ def get_settings():
 def get_settings_from_dump(
     settings, model_or_pred_or_metrics_file, override_source_data=None
 ):
-
+    # Model settings
     model_dir = Path(model_or_pred_or_metrics_file).parent
     cli_file = model_dir / "cli_args.json"
     with open(cli_file, "r") as f:
@@ -349,6 +358,7 @@ def get_settings_from_dump(
             cli_args[arg] = False
 
     # Using dump/raw/fits dir from settings instead of model
+    # raw and fits shouldnt change a thing
     cli_args["raw_dir"] = settings.raw_dir
     cli_args["fits_dir"] = settings.fits_dir
     cli_args["dump_dir"] = settings.dump_dir

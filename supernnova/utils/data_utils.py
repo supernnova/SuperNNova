@@ -1,9 +1,11 @@
 import os
 import glob
 import h5py
+import json
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+from pathlib import Path
 from natsort import natsorted
 from astropy.table import Table
 from collections import namedtuple, OrderedDict
@@ -14,6 +16,12 @@ OFFSETS = [-2, -1, 0, 1, 2]
 OOD_TYPES = ["random", "reverse", "shuffle", "sin"]
 OFFSETS_STR = ["-2", "-1", "", "+1", "+2"]
 FILTERS = natsorted(["g", "i", "r", "z"])
+# non data dependent onehot encoding
+FILTERS_COMBINATION = natsorted(['g', 'r', 'i', 'z',
+                                 'gr', 'gi', 'gz',
+                                 'ir', 'iz',
+                                 'rz',
+                                 'gir', 'giz', 'grz', 'irz', 'girz'])
 PLASTICC_FILTERS = natsorted(["u", "g", "r", "i", "z", "y"])
 DICT_PLASTICC_FILTERS = {0: "u", 1: "g", 2: "r", 3: "i", 4: "z", 5: "y"}
 DICT_PLASTICC_CLASS = OrderedDict(
@@ -35,7 +43,8 @@ DICT_PLASTICC_CLASS = OrderedDict(
         99: 14,
     }
 )
-LogStandardized = namedtuple("LogStandardized", ["arr_min", "arr_mean", "arr_std"])
+LogStandardized = namedtuple(
+    "LogStandardized", ["arr_min", "arr_mean", "arr_std"])
 
 
 def load_pandas_from_fit(fit_file_path):
@@ -341,7 +350,6 @@ def log_standardization(arr):
 
     return LogStandardized(arr_min=arr_min, arr_mean=arr_mean, arr_std=arr_std)
 
-
 def save_to_HDF5(settings, df):
     """Saved processed dataframe to HDF5
 
@@ -410,7 +418,8 @@ def save_to_HDF5(settings, df):
                 dtype = np.dtype("int32")
             else:
                 dtype = np.dtype("float32")
-            hf.create_dataset(feat, data=df[feat].values[start_idxs], dtype=dtype)
+            hf.create_dataset(
+                feat, data=df[feat].values[start_idxs], dtype=dtype)
             df.drop(columns=feat, inplace=True)
 
         logging_utils.print_green("Saving class")
@@ -432,7 +441,8 @@ def save_to_HDF5(settings, df):
         for offset, suffix in zip(OFFSETS, OFFSETS_STR):
             new_column = f"PEAKMJD{suffix}_unique_nights"
             df_nights = (
-                df[df["time"] < df["PEAKMJDNORM"] + offset][["PEAKMJDNORM", "SNID"]]
+                df[df["time"] < df["PEAKMJDNORM"] +
+                    offset][["PEAKMJDNORM", "SNID"]]
                 .groupby("SNID")
                 .count()
                 .astype(np.uint8)
@@ -442,7 +452,8 @@ def save_to_HDF5(settings, df):
 
             hf.create_dataset(
                 new_column,
-                data=df_SNID.merge(df_nights, on="SNID", how="left")[new_column].values,
+                data=df_SNID.merge(df_nights, on="SNID", how="left")[
+                    new_column].values,
                 dtype=np.dtype("uint8"),
             )
 
@@ -480,47 +491,73 @@ def save_to_HDF5(settings, df):
 
         df.drop(columns=["time", "SNID", "PEAKMJDNORM"], inplace=True)
 
-        ########################
-        # Normalize per feature
-        ########################
-        logging_utils.print_green("Compute normalizations")
-        gnorm = hf.create_group("normalizations")
+        if not settings.model_files:
+            ########################
+            # Normalize per feature
+            ########################
+            logging_utils.print_green("Compute normalizations")
+            gnorm = hf.create_group("normalizations")
 
-        # using normalization per feature
-        for feat in settings.training_features_to_normalize:
+            # using normalization per feature
+            for feat in settings.training_features_to_normalize:
+                # Log transform plus mean subtraction and standard dev subtraction
+                log_standardized = log_standardization(df[feat].values)
+                # Store normalization parameters
+                gnorm.create_dataset(f"{feat}/min", data=log_standardized.arr_min)
+                gnorm.create_dataset(f"{feat}/mean", data=log_standardized.arr_mean)
+                gnorm.create_dataset(f"{feat}/std", data=log_standardized.arr_std)
 
-            # Log transform plus mean subtraction and standard dev subtraction
-            log_standardized = log_standardization(df[feat].values)
+            #####################################
+            # Normalize flux and fluxerr globally
+            #####################################
+            logging_utils.print_green("Compute global normalizations")
+            gnorm = hf.create_group("normalizations_global")
+
+            ################
+            # FLUX features
+            #################
+            flux_features = [f"FLUXCAL_{f}" for f in FILTERS]
+            flux_log_standardized = log_standardization(df[flux_features].values)
             # Store normalization parameters
-            gnorm.create_dataset(f"{feat}/min", data=log_standardized.arr_min)
-            gnorm.create_dataset(f"{feat}/mean", data=log_standardized.arr_mean)
-            gnorm.create_dataset(f"{feat}/std", data=log_standardized.arr_std)
+            gnorm.create_dataset(f"FLUXCAL/min", data=flux_log_standardized.arr_min)
+            gnorm.create_dataset(f"FLUXCAL/mean", data=flux_log_standardized.arr_mean)
+            gnorm.create_dataset(f"FLUXCAL/std", data=flux_log_standardized.arr_std)
 
-        #####################################
-        # Normalize flux and fluxerr globally
-        #####################################
-        logging_utils.print_green("Compute global normalizations")
-        gnorm = hf.create_group("normalizations_global")
+            ###################
+            # FLUXERR features
+            ###################
+            fluxerr_features = [f"FLUXCALERR_{f}" for f in FILTERS]
+            fluxerr_log_standardized = log_standardization(
+                df[fluxerr_features].values)
+            # Store normalization parameters
+            gnorm.create_dataset(f"FLUXCALERR/min", data=fluxerr_log_standardized.arr_min)
+            gnorm.create_dataset(f"FLUXCALERR/mean", data=fluxerr_log_standardized.arr_mean)
+            gnorm.create_dataset(f"FLUXCALERR/std", data=fluxerr_log_standardized.arr_std)
 
-        ################
-        # FLUX features
-        #################
-        flux_features = [f"FLUXCAL_{f}" for f in FILTERS]
-        flux_log_standardized = log_standardization(df[flux_features].values)
-        # Store normalization parameters
-        gnorm.create_dataset(f"FLUXCAL/min", data=flux_log_standardized.arr_min)
-        gnorm.create_dataset(f"FLUXCAL/mean", data=flux_log_standardized.arr_mean)
-        gnorm.create_dataset(f"FLUXCAL/std", data=flux_log_standardized.arr_std)
-
-        ###################
-        # FLUXERR features
-        ###################
-        fluxerr_features = [f"FLUXCALERR_{f}" for f in FILTERS]
-        fluxerr_log_standardized = log_standardization(df[fluxerr_features].values)
-        # Store normalization parameters
-        gnorm.create_dataset(f"FLUXCALERR/min", data=fluxerr_log_standardized.arr_min)
-        gnorm.create_dataset(f"FLUXCALERR/mean", data=fluxerr_log_standardized.arr_mean)
-        gnorm.create_dataset(f"FLUXCALERR/std", data=fluxerr_log_standardized.arr_std)
+        else:
+            ########################
+            # Load normalizations from model_file
+            ########################            
+            logging_utils.print_green("Load normalizations from model training")
+            logging_utils.print_yellow("Warning, only valid for the given model!")
+            fname = f"{Path(settings.model_files[0]).parent}/data_norm.json"
+            with open(fname, "r") as f:
+                dic_norm = json.load(f)
+            gnorm = hf.create_group("normalizations")
+            # Store normalization parameters
+            # "as if" per feature
+            for feat in settings.training_features_to_normalize:
+                gnorm.create_dataset(f"{feat}/min", data=dic_norm[feat]['min'])
+                gnorm.create_dataset(f"{feat}/mean", data=dic_norm[feat]['mean'])
+                gnorm.create_dataset(f"{feat}/std", data=dic_norm[feat]['std'])
+            # "as if" global (they are all the same)
+            gnorm = hf.create_group("normalizations_global")
+            gnorm.create_dataset(f"FLUXCAL/min", data=dic_norm["FLUXCAL_g"]['min'])
+            gnorm.create_dataset(f"FLUXCAL/mean", data=dic_norm["FLUXCAL_g"]['mean'])
+            gnorm.create_dataset(f"FLUXCAL/std", data=dic_norm["FLUXCAL_g"]['std'])
+            gnorm.create_dataset(f"FLUXCALERR/min", data=dic_norm["FLUXCALERR_g"]['min'])
+            gnorm.create_dataset(f"FLUXCALERR/mean", data=dic_norm["FLUXCALERR_g"]['mean'])
+            gnorm.create_dataset(f"FLUXCALERR/std", data=dic_norm["FLUXCALERR_g"]['std'])
 
         ####################################
         # Save the rest of the data to hdf5
@@ -539,7 +576,14 @@ def save_to_HDF5(settings, df):
         assert sorted(df.columns.values.tolist()) == sorted(
             list_training_features + ["FLT"]
         )
-        df = pd.concat([df[list_training_features], pd.get_dummies(df["FLT"])], axis=1)
+        # cheating to have the same onehot for all datasets
+        tmp = pd.Series(FILTERS_COMBINATION).append(df["FLT"])
+        tmp_onehot = pd.get_dummies(tmp)
+        tmp_onehot = tmp_onehot.reset_index()
+        FLT_onehot = tmp_onehot[len(FILTERS_COMBINATION):]
+        FLT_onehot = FLT_onehot.reset_index()
+        df = pd.concat([df[list_training_features],
+                        FLT_onehot], axis=1)
         # store feature names
         list_training_features = df.columns.values.tolist()
         hf.create_dataset(
@@ -549,7 +593,8 @@ def save_to_HDF5(settings, df):
         )
         hf["features"][:] = list_training_features
         print(len(list_training_features))
-        logging_utils.print_green("Saved features:", ",".join(list_training_features))
+        logging_utils.print_green(
+            "Saved features:", ",".join(list_training_features))
 
         # Save training features to hdf5
         logging_utils.print_green("Save data features to HDF5")
@@ -558,5 +603,5 @@ def save_to_HDF5(settings, df):
         for idx, idx_pair in enumerate(
             tqdm(list_start_end, desc="Filling hdf5", ncols=100)
         ):
-            arr = arr_feat[idx_pair[0] : idx_pair[1]]
+            arr = arr_feat[idx_pair[0]: idx_pair[1]]
             hf["data"][idx] = np.ravel(arr)

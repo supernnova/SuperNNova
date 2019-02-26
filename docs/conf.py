@@ -41,7 +41,8 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.viewcode",
     "sphinx.ext.autodoc",
-    "sphinxcontrib.napoleon",
+    # "sphinxcontrib.napoleon", # sphinx<=1.2
+    'sphinx.ext.napoleon',
 ]
 
 # Add any paths that contain templates here, relative to this directory.

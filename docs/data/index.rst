@@ -58,12 +58,24 @@ Creating a database
 
 .. code::
 
-    python run.py --data --dump_dir <path/to/full/database/>
+    python run.py --data --dump_dir <path/to/full/database/> --raw_dir <path/to/raw/data/> --fits_dir <path/to/fits/>
 
-- You **DO NEED** to download the raw data for this database
-- This creates a database for all of the available data
-- The database is saved to the specified ``dump_dir``, in the ``processed`` subfolder
+- You **DO NEED** to download the raw data for this database or point where your data is.
+- This creates a database for all the available data with 80/10/10 train/validate/test splits. 
+- Splits can be changed using ``--data_training`` or ``--data_testing`` commands.
+- The database is saved to the specified ``dump_dir``, in the ``processed`` subfolder.
 
+
+Creating a database for testing a trained model
+------------------------------
+Models are dependent on their training sets. When generating a new dataset to be classified by an existing model, the same normalization as in the training must be used. This is how to create that linked database.
+
+.. code::
+python run.py --dump_dir <path/to/save/database/> --data --data_testing  --raw_dir <path/to/raw/data/>  --model_files <path/to/model/to/be/used/modelname.pt> 
+
+Note that:
+- there is no need to specify salt2fits file to make the dataset. It can be used if available but it is not needed.
+- using ``--data_testing`` option will generate a 100% testing set (see below for more details).
 
 Under the hood
 -------------------------------
@@ -74,8 +86,8 @@ Preparing data splits
 We first compute the data splits:
 
 - By default the HEAD FITS files are analyzed to compute 80/10/10 train/test/val splits.
-- You can change if the databse contains 99.5/0.5/0.5 train/test/val splits using ``--data_training`` command. 
-- You can change if the databse contains 0/0/100 train/test/val splits using ``--data_testing`` command.
+- You can change if the database contains 99.5/0.5/0.5 train/test/val splits using ``--data_training`` command. 
+- You can change if the database contains 0/0/100 train/test/val splits using ``--data_testing`` command. Beware, this option has other consequences.
 - The splits are different for the salt/photometry datasets
 - The splits are different depending on the classification target
 - We downsample the dataset so that for a given classification task, all classes have the same cardinality
