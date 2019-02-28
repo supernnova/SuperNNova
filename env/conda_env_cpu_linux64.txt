@@ -74,6 +74,7 @@ https://repo.anaconda.com/pkgs/main/linux-64/ruamel_yaml-0.15.46-py37h14c3975_0.
 https://conda.anaconda.org/conda-forge/noarch/simplegeneric-0.8.1-py_1.tar.bz2
 https://conda.anaconda.org/conda-forge/linux-64/sip-4.18.1-py37hfc679d8_0.tar.bz2
 https://repo.anaconda.com/pkgs/main/linux-64/six-1.11.0-py37_1.tar.bz2
+https://repo.anaconda.com/pkgs/main/linux-64/sphinx_rtd_theme-0.4.2-py37_0.tar.bz2
 https://repo.anaconda.com/pkgs/main/linux-64/tabulate-0.8.2-py37_0.tar.bz2
 https://conda.anaconda.org/conda-forge/linux-64/tornado-5.1.1-py37h470a237_0.tar.bz2
 https://conda.anaconda.org/conda-forge/noarch/tqdm-4.27.0-py_0.tar.bz2
