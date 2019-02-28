@@ -22,7 +22,7 @@ https://repo.anaconda.com/pkgs/main/linux-64/libuuid-1.0.3-h1bed415_2.tar.bz2
 https://repo.continuum.io/pkgs/main/linux-64/libxcb-1.13-h1bed415_1.tar.bz2
 https://repo.anaconda.com/pkgs/main/linux-64/mkl-2018.0.3-1.tar.bz2
 https://repo.anaconda.com/pkgs/main/linux-64/ncurses-6.1-hf484d3e_0.tar.bz2
-https://repo.anaconda.com/pkgs/main/linux-64/openssl-1.1.1a-h7b6447c_0.tar.bz2
+https://repo.anaconda.com/pkgs/main/linux-64/openssl-1.1.1b-h7b6447c_0.tar.bz2
 https://repo.continuum.io/pkgs/main/linux-64/pcre-8.42-h439df22_0.tar.bz2
 https://repo.anaconda.com/pkgs/main/linux-64/tk-8.6.8-hbc83047_0.tar.bz2
 https://repo.anaconda.com/pkgs/main/linux-64/xz-5.2.4-h14c3975_4.tar.bz2
@@ -58,6 +58,7 @@ https://repo.anaconda.com/pkgs/main/linux-64/pytz-2018.5-py36_0.tar.bz2
 https://repo.anaconda.com/pkgs/main/linux-64/qt-5.9.7-h5867ecd_1.tar.bz2
 https://repo.continuum.io/pkgs/main/linux-64/sip-4.19.8-py36hf484d3e_0.tar.bz2
 https://repo.anaconda.com/pkgs/main/linux-64/six-1.11.0-py36_1.tar.bz2
+https://repo.anaconda.com/pkgs/main/linux-64/sphinx_rtd_theme-0.4.2-py36_0.tar.bz2
 https://repo.anaconda.com/pkgs/main/linux-64/tabulate-0.8.2-py36_0.tar.bz2
 https://repo.anaconda.com/pkgs/main/linux-64/tornado-5.0.2-py36h14c3975_0.tar.bz2
 https://repo.anaconda.com/pkgs/main/linux-64/tqdm-4.23.4-py36_0.tar.bz2
