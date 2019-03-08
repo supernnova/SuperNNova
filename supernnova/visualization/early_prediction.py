@@ -99,7 +99,9 @@ def plot_predictions(
     ylim = ax.get_ylim()
 
     SNtype = du.sntype_decoded(target, settings)
-    if OOD is not None:
+    if settings.data_testing:
+        ax.set_title(f"ID: {SNID}")
+    elif OOD is not None:
         ax.set_title(f"OOD {OOD} ID: {SNID}")
     else:
         ax.set_title(SNtype + f" (ID: {SNID}, redshift: {redshift:.3g})")
@@ -145,7 +147,7 @@ def plot_predictions(
     ax.set_xlabel("Time (MJD)")
     ax.set_ylabel("classification probability")
     # Add PEAKMJD
-    if OOD is None:
+    if OOD is None and not settings.data_testing:
         ax.plot([peak_MJD, peak_MJD], [0, 1], "k--", label="Peak MJD")
     ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.0)
 
@@ -209,7 +211,6 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
 
     # Check that the settings match the model file
     base_files = [Path(f).name for f in settings.model_files]
-
     classes = [int(re.search(r"(?<=CLF\_)\d+(?=\_)", f).group()) for f in base_files]
     redshifts = [re.search(r"(?<=R\_)[A-Za-z]+(?=\_)", f).group() for f in base_files]
 
@@ -247,7 +248,7 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
         )
         dict_rnn[name] = rnn
 
-    # lOad SN info
+    # load SN info
     SNinfo_df = du.load_HDF5_SNinfo(settings)
 
     # Loop over data to plot prediction
@@ -261,7 +262,6 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
             flt: {"FLUXCAL": [], "FLUXCALERR": [], "MJD": []}
             for flt in settings.list_filters
         }
-
         for OOD in [None] + du.OOD_TYPES:
             with torch.no_grad():
                 d_pred, X_normed = get_predictions(
@@ -302,7 +302,7 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
             )
 
             # use to create GIFs
-            if not OOD:
+            if not OOD or not settings.data_testing:
                 if do_gifs:
                     plot_gif(settings,
                              df_temp,

@@ -393,7 +393,9 @@ def save_to_HDF5(settings, df):
     # N.B. We could use df.loc[SNID], more elegant but much slower
 
     # Filter list start end so we get only light curves with at least 3 points
-    list_start_end = list(filter(lambda x: x[1] - x[0] >= 3, list_start_end))
+    # except when creating testing data for colas
+    if not settings.data_testing:
+        list_start_end = list(filter(lambda x: x[1] - x[0] >= 3, list_start_end))
 
     # Shuffle
     np.random.shuffle(list_start_end)

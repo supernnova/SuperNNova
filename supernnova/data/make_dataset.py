@@ -121,7 +121,7 @@ def build_traintestval_splits(settings):
                 SNID_test = sampled_SNIDs[:]
                 # the train and val sets wont be used in this case
                 SNID_train = sampled_SNIDs[0]
-                SNID_val = sampled_SNIDs[1]
+                SNID_val = sampled_SNIDs[0]
             else:
                 SNID_train = sampled_SNIDs[: int(0.8 * n_samples)]
                 SNID_val = sampled_SNIDs[int(0.8 * n_samples): int(0.9 * n_samples)]
@@ -492,15 +492,14 @@ def pivot_dataframe_single(filename, settings):
     except Exception:
         # if no fits file we populate with dummies
         df_salt = pd.DataFrame()
-        df_salt["SNID"] = np.array(df.index)
-        df_salt["mB"]= np.zeros(len(df))
-        df_salt["c"]= np.zeros(len(df))
-        df_salt["x1"]= np.zeros(len(df))
+        df_salt["SNID"] = np.array(df.index.unique())
+        df_salt["mB"]= np.zeros(len(df.index.unique()))
+        df_salt["c"]= np.zeros(len(df.index.unique()))
+        df_salt["x1"]= np.zeros(len(df.index.unique()))
         df_salt = df_salt.set_index("SNID")
     df = df.join(df_salt[["mB", "c", "x1"]], how="left")
 
     df.drop(columns="MJD", inplace=True)
-
     # Save to pickle
     dump_filename = os.path.splitext(filename)[0] + "_pivot.pickle"
     df.to_pickle(dump_filename)
