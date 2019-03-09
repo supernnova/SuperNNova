@@ -193,6 +193,27 @@ def process_header_FITS(file_path, settings, columns=None):
 
     return df
 
+def process_header_csv(file_path, settings, columns=None):
+    """Read the HEAD csv file, add target columns and return
+    in pandas DataFrame format
+
+    Args:
+        file_path (str): the  path to the header FIT file
+        settings (ExperimentSettings): controls experiment hyperparameters
+        columns (lsit): list of columns to keep. Default: ``None``
+
+    Returns:
+        (pandas.DataFrame) the dataframe, with new target columns
+    """
+
+    # Data
+    df = pd.read_csv(file_path)
+    df = tag_type(df, settings, type_column="SNTYPE")
+
+    if columns is not None:
+        df = df[columns]
+
+    return df
 
 def add_redshift_features(settings, df):
     """Add redshift features to pandas dataframe.
