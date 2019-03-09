@@ -1,3 +1,8 @@
+
+March 2019
+- added csv input compatibility
+
+February 2019
 - option to specify raw_dir fits_dir which differs from dump_dir
 - option to process data for testing or training only (no splits)
 - hardcoded one-hot encoding to avoid differences between datasets created (implemented for DES only!)

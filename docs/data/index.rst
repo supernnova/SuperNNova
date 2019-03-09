@@ -64,6 +64,10 @@ Creating a database
 - This creates a database for all the available data with 80/10/10 train/validate/test splits. 
 - Splits can be changed using ``--data_training`` or ``--data_testing`` commands.
 - The database is saved to the specified ``dump_dir``, in the ``processed`` subfolder.
+- there is no need to specify salt2fits file to make the dataset. It can be used if available but it is not needed ``--fits_dir <empty/path/>``.
+- Raw data can be in csv format with columns:
+`` DES_PHOT.csv : "SNID","MJD", "FLUXCAL", "FLUXCALERR", "FLT" ``
+`` DES_HEAD.csv: "SNID","PEAKMJD","HOSTGAL_PHOTOZ","HOSTGAL_PHOTOZ_ERR","HOSTGAL_SPECZ","HOSTGAL_SPECZ_ERR","SIM_REDSHIFT_CMB","SIM_PEAKMAG_z","SIM_PEAKMAG_g","SIM_PEAKMAG_r","SIM_PEAKMAG_i","SNTYPE" ``.
 
 
 Creating a database for testing a trained model
@@ -74,7 +78,7 @@ Models are dependent on their training sets. When generating a new dataset to be
 python run.py --dump_dir <path/to/save/database/> --data --data_testing  --raw_dir <path/to/raw/data/>  --model_files <path/to/model/to/be/used/modelname.pt> 
 
 Note that:
-- there is no need to specify salt2fits file to make the dataset. It can be used if available but it is not needed.
+- there is no need to specify salt2fits file to make the dataset. It can be used if available but it is not needed ``--fits_dir <empty/path/>``.
 - using ``--data_testing`` option will generate a 100% testing set (see below for more details).
 
 Under the hood
@@ -85,7 +89,7 @@ Preparing data splits
 
 We first compute the data splits:
 
-- By default the HEAD FITS files are analyzed to compute 80/10/10 train/test/val splits.
+- By default the HEAD FITS/csv files are analyzed to compute 80/10/10 train/test/val splits.
 - You can change if the database contains 99.5/0.5/0.5 train/test/val splits using ``--data_training`` command. 
 - You can change if the database contains 0/0/100 train/test/val splits using ``--data_testing`` command. Beware, this option has other consequences.
 - The splits are different for the salt/photometry datasets
@@ -95,7 +99,7 @@ We first compute the data splits:
 Preprocessing
 ~~~~~~~~~~~~~~
 
-We then pre-process each FITS file
+We then pre-process each FITS/csv file
 
 - Join column from header files
 - Select columns that will be useful later on
@@ -107,7 +111,7 @@ We then pre-process each FITS file
 Pivot
 ~~~~~~~~~~~~~~
 
-We then pivot each FITS file: we will group time-wise close observations on the same row
+We then pivot each preprocessed file: we will group time-wise close observations on the same row
 and each row in the dataframe will show a value for each of the flux and flux error column
 
 - All observations within 8 hours of each other are assigned the same MJD
