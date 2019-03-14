@@ -8,14 +8,18 @@ For the main branch:
 The paper branch differs slightly from the master. Take a look to "changelog_paper_to_new_branch" or [Build the docs for this branch](#docs).
 
 ### Installation
-Clone this repository or use pip
+Clone this repository
+```bash
+git clone https://gitlab.com/tdeboissiere/supernnova.git
+```
+or install pip module
 ```bash
 pip install supernnova
 ```
 
 ### Read the paper preprint
 
-[ArXiv paper version](https://arxiv.org/abs/1901.06384)
+[Paper in ArXiv](https://arxiv.org/abs/1901.06384)
 The paper was produced using the branch "paper".
 
 
@@ -70,6 +74,8 @@ For more detailed instructions, check the full [setup instructions](https://supe
 
 ## Usage <a name="usage"></a>
 
+When cloning this repository:
+
     # Create data
     python run.py --data  --dump_dir tests/dump --raw_dir tests/raw --fits_dir tests/fits
 
@@ -85,7 +91,25 @@ For more detailed instructions, check the full [setup instructions](https://supe
     # Train a RandomForest
     python run.py --train_rf --dump_dir tests/dump
 
+When using pip, a full example is [https://supernnova.readthedocs.io](https://supernnova.readthedocs.io/en/latest/)
+
+    # Python
+    import supernnova.conf as conf
+    from supernnova.data import make_dataset
+
+    # get config args
+    args =  conf.get_args()
+
+    # create database
+    args.data = True            # conf: making new dataset
+    args.dump_dir = "tests/dump"        # conf: where the dataset will be saved
+    args.raw_dir = "tests/raw"      # conf: where raw photometry files are saved 
+    args.fits_dir = "tests/fits"        # conf: where salt2fits are saved 
+    settings = conf.get_settings(args)  # conf: set settings
+    make_dataset.make_dataset(settings) # make dataset
+
 ## Reproduce paper results <a name="paper"></a>
+Please change to branch ``paper``:
 
     python run_paper.py
 

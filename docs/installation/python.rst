@@ -1,4 +1,4 @@
-.. _DockerConfigurations:
+.. _CondaConfigurations:
 
 Environment configuration
 =============================
@@ -14,6 +14,7 @@ The preferred option to setup your environment is through conda environment as f
 
 example configuration files for linux-64 (cpu and gpu) and osx-64 are provided in ``SuperNNova/env``.
 
+.. _DockerConfigurations:
 
 Docker
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -44,9 +45,6 @@ Enter docker environment by calling:
 - Add ``--dump_dir /path/to/data`` to mount the folder where you stored the data (see :ref:`DataStructure`) into the container. If unspecified, will use the default location (i.e. ``snndump``)
 
 This will launch an interactive session in the docker container, with zsh support.
-
-.. _CondaConfigurations:
-
 
 .. _Docker: https://docs.docker.com/install/linux/docker-ce/ubuntu/
 .. _NVDocker: https://github.com/NVIDIA/nvidia-docker

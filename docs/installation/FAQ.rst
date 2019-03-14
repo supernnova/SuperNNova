@@ -15,7 +15,7 @@ We just submitted the paper to the journal. But a copy of the paper can be found
 
 - **How can I install it?**
 
-You can either clone the `GitHub`_ repository or simply ``pip install supernnova``.
+You can either ``clone`` our `GitHub`_ or use ``pip`` for modular installation.
 
 - **What data do I need?**
 
@@ -24,7 +24,7 @@ You only need lightcurves (photometric time-series) to use SuperNNova. Additiona
 - **Is the data used in the paper publicly available?**
 
 Yes it is! `SuperNNovaSimulations`_
-We want to foster reproducibility so you can copy the data and reproduce all our experiments with ``run_paper.py``. Beware, it will take while!
+We want to foster reproducibility so you can copy the data and reproduce all our experiments with ``run_paper.py`` in the ``paper`` branch. Beware, it will take while!
 
 - **How did you create the simulations used in the paper?**
 
@@ -32,7 +32,7 @@ We used `SNANA`_ to generate the supernovae lightcurves. Our data is similar to 
 
 - **Why use SuperNNova?**
 
-First, it is open source, so you can modify it for your science goal or just see for yourself what is the "blackbox". Second, we have pretty good performance. Third, we also provide Bayesian interpretations of RNN which allow better uncertainty handling, which is useful for cosmological analyses.
+First, it is open source, so you can modify it for your science goal or just see for yourself what is the "blackbox". Second, we have pretty good performance. Third, we also provide Bayesian interpretations of RNN which allow better uncertainty handling, which is useful for cosmological or any statistical analyses.
 
 - **Can I use SuperNNova for my classification problem?**
 
@@ -40,7 +40,7 @@ Please do! But beware: you need to have a large amount of lightcurves (simulated
 
 - **How can I use SuperNNova for my classification problem?**
 
-It may require a little bit of code modification depending on your data. We can load data from SNANA formats (``.FITS`` and ``FITRES``, the latter is an ascii file) or ``.csv`` files (like the one from the Kaggle challenge, PlastiCC). Observations are grouped per night, so if you are looking for fast transients, you may need to create your own data pipeline. Contact us if you have questions anais.moller@anu.edu.au and please report any issues!
+It may require a little bit of code modification depending on your data. You can load data from SNANA formats (``.FITS`` and ``FITRES``, the latter is an ascii file) or ``.csv`` files (like the one from the Kaggle challenge, PlastiCC). Observations are grouped per night, so if you are looking for fast transients, you may need to create your own data pipeline or modify SuperNNova time grouping. Contact us if you have questions anais.moller@anu.edu.au and please report any issues!
 
 
 Technical questions
@@ -58,7 +58,7 @@ Alternatively, you may select a smaller data fraction ``--data_fraction 0.1`` to
 
 - **OSError: Unable to open file (unable to open file: name = '/home/snndump/processed/DES_database.h5'**
 
-You have probably forgotten to set your ``dump_dir`` correctly. Provide the ``--dump_dir`` argument correctly
+You have probably forgotten to set your ``dump_dir`` correctly. Provide the ``--dump_dir`` argument correctly.
 
 - **Where do I find the model naming scheme?**
 

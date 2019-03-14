@@ -1,4 +1,3 @@
-import os
 import supernnova.conf as conf
 from supernnova.data import make_dataset
 from supernnova.training import train_rnn
