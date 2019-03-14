@@ -22,7 +22,7 @@ https://repo.anaconda.com/pkgs/main/linux-64/libuuid-1.0.3-h1bed415_2.tar.bz2
 https://repo.continuum.io/pkgs/main/linux-64/libxcb-1.13-h1bed415_1.tar.bz2
 https://repo.anaconda.com/pkgs/main/linux-64/mkl-2018.0.3-1.tar.bz2
 https://repo.anaconda.com/pkgs/main/linux-64/ncurses-6.1-hf484d3e_0.tar.bz2
-https://repo.anaconda.com/pkgs/main/linux-64/openssl-1.1.1b-h7b6447c_0.tar.bz2
+https://repo.anaconda.com/pkgs/main/linux-64/openssl-1.1.1b-h7b6447c_1.tar.bz2
 https://repo.continuum.io/pkgs/main/linux-64/pcre-8.42-h439df22_0.tar.bz2
 https://repo.anaconda.com/pkgs/main/linux-64/tk-8.6.8-hbc83047_0.tar.bz2
 https://repo.anaconda.com/pkgs/main/linux-64/xz-5.2.4-h14c3975_4.tar.bz2
@@ -40,12 +40,13 @@ https://repo.anaconda.com/pkgs/main/linux-64/gst-plugins-base-1.14.0-hbbd80ab_1.
 https://repo.anaconda.com/pkgs/main/linux-64/python-3.6.8-h0371630_0.tar.bz2
 https://repo.anaconda.com/pkgs/main/linux-64/atomicwrites-1.1.5-py36_0.tar.bz2
 https://repo.anaconda.com/pkgs/main/linux-64/attrs-18.1.0-py36_0.tar.bz2
-https://repo.anaconda.com/pkgs/main/linux-64/certifi-2018.11.29-py36_0.tar.bz2
+https://repo.anaconda.com/pkgs/main/linux-64/certifi-2019.3.9-py36_0.tar.bz2
 https://repo.anaconda.com/pkgs/main/linux-64/click-7.0-py36_0.tar.bz2
 https://repo.anaconda.com/pkgs/main/linux-64/colorama-0.3.9-py36_0.tar.bz2
 https://repo.anaconda.com/pkgs/main/linux-64/itsdangerous-1.1.0-py36_0.tar.bz2
 https://repo.anaconda.com/pkgs/main/linux-64/kiwisolver-1.0.1-py36hf484d3e_0.tar.bz2
 https://repo.anaconda.com/pkgs/main/linux-64/markupsafe-1.0-py36h14c3975_1.tar.bz2
+https://repo.anaconda.com/pkgs/main/noarch/natsort-6.0.0-py_0.tar.bz2
 https://repo.anaconda.com/pkgs/main/linux-64/ninja-1.8.2-py36h6bb024c_1.tar.bz2
 https://repo.anaconda.com/pkgs/main/linux-64/numpy-base-1.14.5-py36hdbf6ddf_4.tar.bz2
 https://repo.continuum.io/pkgs/main/linux-64/olefile-0.45.1-py36_0.tar.bz2
