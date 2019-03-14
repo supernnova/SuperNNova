@@ -13,6 +13,10 @@ SuperNNova is a framework for lightcurve classification which uses supervised le
 
 We just submitted the paper to the journal. But a copy of the paper can be found here `ArXiv`_.
 
+- **How can I install it?**
+
+You can either clone the `GitHub`_ repository or simply ``pip install supernnova``.
+
 - **What data do I need?**
 
 You only need lightcurves (photometric time-series) to use SuperNNova. Additional information can be added as well. E.g. we used supernova host-galaxy redshifts in the paper.
@@ -36,7 +40,7 @@ Please do! But beware: you need to have a large amount of lightcurves (simulated
 
 - **How can I use SuperNNova for my classification problem?**
 
-It may require a little bit of code modification depending on your data. We can load data from SNANA formats (``.FITS`` and ``FITRES``, the latter is an ascii file) or ``.csv`` files (like the one from the Kaggle challenge, PlastiCC). Observations are grouped per night, so if you are looking for fast transients, you may need to create your own data pipeline. Contact us if you have questions!
+It may require a little bit of code modification depending on your data. We can load data from SNANA formats (``.FITS`` and ``FITRES``, the latter is an ascii file) or ``.csv`` files (like the one from the Kaggle challenge, PlastiCC). Observations are grouped per night, so if you are looking for fast transients, you may need to create your own data pipeline. Contact us if you have questions anais.moller@anu.edu.au and please report any issues!
 
 
 Technical questions
@@ -74,3 +78,4 @@ Yes, you need to call ``python run.py --performance``. It will be created in ``{
 .. _Gal et Ghahramani 2015: https://arxiv.org/abs/1506.02142
 .. _SALT2: https://arxiv.org/pdf/astro-ph/0701828.pdf
 .. _SNANA: https://arxiv.org/abs/0908.4280
+.. _GitHub: https://github.com/tdeboissiere/SuperNNova

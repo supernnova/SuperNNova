@@ -11,6 +11,7 @@ Welcome to SuperNNova's documentation!
    installation/system.rst
    installation/python.rst
    installation/five_minute_guide.rst
+   installation/five_minute_guide_modular.rst
    installation/FAQ.rst
 
 .. toctree::

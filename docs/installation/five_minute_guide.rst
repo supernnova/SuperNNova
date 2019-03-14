@@ -6,7 +6,9 @@ Quickstart start guide
 
 Welcome to SuperNNova!
 
-This is a quick start guide so you can start testing our framework.
+This is a quick start guide so you can start testing our framework. 
+If you want to install SuperNNova as a module, please take a look at :ref:`Start_module`
+
 
 Installation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -29,14 +31,14 @@ Setup your environment. 3 options
 Usage
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For quick tests, a database that contains a limited number of light-curves is provided. It is located in ``tests/dump/raw``. For more information on the available data, check :ref:`DataStructure`.
+For quick tests, a database that contains a limited number of light-curves is provided. It is located in ``tests/raw``. For more information on the available data, check :ref:`DataStructure`.
 
 Build the database
 -----------------------
 
 .. code::
 
-    python run.py --data --dump_dir tests/dump
+    python run.py --data --dump_dir tests/dump --raw_dir tests/raw --fits_dir tests/fits
 
 Train an RNN
 ---------------------------------------
@@ -65,7 +67,7 @@ Remember that our data is split in training, validation and test sets.
 
 Reproduce SuperNNova paper
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-To reproduce the results of the paper:
+To reproduce the results of the paper please use the branch paper and run:
 
 .. code::
 

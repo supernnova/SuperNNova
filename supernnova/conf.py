@@ -128,13 +128,13 @@ def get_args():
     parser.add_argument(
         "--fits_dir",
         type=str,
-        default=default_dump_dir,
+        default=f"{default_dump_dir}/fits",
         help="Default path where fits to photometry are",
     )
     parser.add_argument(
         "--raw_dir",
         type=str,
-        default=default_dump_dir,
+        default=f"{default_dump_dir}/raw",
         help="Default path where raw data is",
     )
     parser.add_argument(

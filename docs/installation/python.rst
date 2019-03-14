@@ -3,11 +3,22 @@
 Environment configuration
 =============================
 
+Conda virtual env
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The preferred option to setup your environment is through conda environment as follows:
+
+.. code::
+
+	conda create --name <env> --file conda_env.txt
+
+example configuration files for linux-64 (cpu and gpu) and osx-64 are provided in ``SuperNNova/env``.
+
 
 Docker
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The preferred option to setup your environment is through docker:
+You can also use docker:
 
 - Install docker: `Docker`_.
 - For GPU support, install nvidia docker: `NVDocker`_.
@@ -36,17 +47,6 @@ This will launch an interactive session in the docker container, with zsh suppor
 
 .. _CondaConfigurations:
 
-
-Conda virtual env
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Alternatively, one can setup a conda environment  as follows:
-
-.. code::
-
-	conda create --name <env> --file conda_env.txt
-
-example configuration files for linux-64 (cpu and gpu) and osx-64 are provided in ``SuperNNova/env``.
 
 .. _Docker: https://docs.docker.com/install/linux/docker-ce/ubuntu/
 .. _NVDocker: https://github.com/NVIDIA/nvidia-docker

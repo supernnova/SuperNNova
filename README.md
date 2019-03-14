@@ -5,19 +5,25 @@
 For the main branch:
 [https://supernnova.readthedocs.io](https://supernnova.readthedocs.io/en/latest/)
 
-For the DES branch you'll need to [Build the docs](#docs).
+The paper branch differs slightly from the master. Take a look to "changelog_paper_to_new_branch" or [Build the docs for this branch](#docs).
 
+### Installation
+Clone this repository or use pip
+```bash
+pip install supernnova
+```
 
 ### Read the paper preprint
 
-[Paper](https://arxiv.org/abs/1901.06384)
+[ArXiv paper version](https://arxiv.org/abs/1901.06384)
+The paper was produced using the branch "paper".
 
 
 ## Table of contents
 1. [Repository overview](#overview)
 2. [Getting Started](#start)
-    1. [With Docker](#docker)
-    2. [With Conda](#conda)
+    1. [With Conda](#conda)
+    2. [With Docker](#docker)
 3. [Usage](#usage)
 3. [Reproduce paper](#paper)
 4. [Pipeline Description](#pipeline)
@@ -37,6 +43,16 @@ For the DES branch you'll need to [Build the docs](#docs).
 
 ## Getting started <a name="start"></a>
 
+### With Conda <a name="conda"></a>
+
+    cd env
+
+    # Create conda environment
+    conda create --name <env> --file <conda_file_of_your_choice>
+
+    # Activate conda environment
+    source activate <env>
+
 ### With Docker <a name="docker"></a>
 
     cd env
@@ -48,15 +64,6 @@ For the DES branch you'll need to [Build the docs](#docs).
     # Launch docker container
     python launch_docker.py (--use_gpu to run GPU based container)
 
-### With Conda <a name="conda"></a>
-
-    cd env
-
-    # Create conda environment
-    conda create --name <env> --file <conda_file_of_your_choice>
-
-    # Activate conda environment
-    source activate <env>
 
 For more detailed instructions, check the full [setup instructions](https://supernnova.readthedocs.io/en/latest/installation/python.html)
 
@@ -64,7 +71,7 @@ For more detailed instructions, check the full [setup instructions](https://supe
 ## Usage <a name="usage"></a>
 
     # Create data
-    python run.py --data  --dump_dir tests/dump
+    python run.py --data  --dump_dir tests/dump --raw_dir tests/raw --fits_dir tests/fits
 
     # Train a baseline RNN
     python run.py --train_rnn --dump_dir tests/dump
@@ -78,7 +85,7 @@ For more detailed instructions, check the full [setup instructions](https://supe
     # Train a RandomForest
     python run.py --train_rf --dump_dir tests/dump
 
-## Reproduce (soon to be published) results <a name="paper"></a>
+## Reproduce paper results <a name="paper"></a>
 
     python run_paper.py
 

@@ -64,7 +64,7 @@ Creating a database
 - This creates a database for all the available data with 80/10/10 train/validate/test splits. 
 - Splits can be changed using ``--data_training`` or ``--data_testing`` commands.
 - The database is saved to the specified ``dump_dir``, in the ``processed`` subfolder.
-- there is no need to specify salt2fits file to make the dataset. It can be used if available but it is not needed ``--fits_dir <empty/path/>``.
+- There is no need to specify salt2fits file to make the dataset. It can be used if available but it is not needed ``--fits_dir <empty/path/>``.
 - Raw data can be in csv format with columns:
 `` DES_PHOT.csv : "SNID","MJD", "FLUXCAL", "FLUXCALERR", "FLT" ``
 `` DES_HEAD.csv: "SNID","PEAKMJD","HOSTGAL_PHOTOZ","HOSTGAL_PHOTOZ_ERR","HOSTGAL_SPECZ","HOSTGAL_SPECZ_ERR","SIM_REDSHIFT_CMB","SIM_PEAKMAG_z","SIM_PEAKMAG_g","SIM_PEAKMAG_r","SIM_PEAKMAG_i","SNTYPE" ``.
