@@ -7,7 +7,7 @@ from pathlib import Path
 from .utils import experiment_settings
 
 
-def get_settings():
+def get_args():
 
     parser = argparse.ArgumentParser(description="SNIa classification")
 
@@ -313,6 +313,13 @@ def get_settings():
 
     args = parser.parse_args()
 
+    return args
+
+def get_settings(args=None):
+    
+    if not args:
+        args = get_args()
+    
     # Initialize a settings instance
     if any(
         [

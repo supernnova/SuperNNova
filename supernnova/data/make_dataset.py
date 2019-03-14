@@ -1,5 +1,6 @@
 import os
 import glob
+import shutil
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -40,7 +41,7 @@ def build_traintestval_splits(settings):
     # Load photometry
     # either in HEAD.FITS or csv format
     list_files = natsorted(
-        glob.glob(os.path.join(settings.raw_dir, f"{settings.data_prefix}*HEAD.FITS"))
+        glob.glob(os.path.join(settings.raw_dir, f"{settings.data_prefix}*HEAD.FITS*"))
     )
     if len(list_files) > 0:
         print("List files", list_files)
@@ -53,7 +54,7 @@ def build_traintestval_splits(settings):
             list_df = executor.map(process_fn, list_files)
     else:
         list_files = natsorted(
-            glob.glob(os.path.join(settings.raw_dir, f"{settings.data_prefix}*HEAD.csv"))
+            glob.glob(os.path.join(settings.raw_dir, f"{settings.data_prefix}*HEAD.csv*"))
         )
         print("List files", list_files)
         process_fn = partial(
@@ -381,7 +382,7 @@ def process_single_csv(file_path, settings):
     df = pd.read_csv(file_path)
 
     # Keep only columns of interest
-    keep_col = ["SNID","MJD", "FLUXCAL", "FLUXCALERR", "FLT"]
+    keep_col = ["SNID", "MJD", "FLUXCAL", "FLUXCALERR", "FLT"]
     df = df[keep_col].copy()
     df = df.set_index("SNID")
 
@@ -462,20 +463,20 @@ def preprocess_data(settings):
 
     # Get the list of FITS files
     list_files = natsorted(
-        glob.glob(os.path.join(settings.raw_dir, f"{settings.data_prefix}*PHOT.FITS"))
+        glob.glob(os.path.join(settings.raw_dir, f"{settings.data_prefix}*PHOT.FITS*"))
     )
     if len(list_files) > 0:
         # Parameters of multiprocessing below
         parallel_fn = partial(process_single_FITS, settings=settings)
     else:
         list_files = natsorted(
-            glob.glob(os.path.join(settings.raw_dir, f"{settings.data_prefix}*PHOT.csv"))
+            glob.glob(os.path.join(settings.raw_dir, f"{settings.data_prefix}*PHOT.csv*"))
         )
         parallel_fn = partial(process_single_csv, settings=settings)
 
     logging_utils.print_green("List to preprocess ", list_files)
     max_workers = multiprocessing.cpu_count()
-    
+
     # Split list files in chunks of size 10 or less
     # to get a progress bar and alleviate memory constraints
     num_elem = len(list_files)
@@ -704,6 +705,9 @@ def make_dataset(settings):
 
     # Save to HDF5
     data_utils.save_to_HDF5(settings, df)
+
+    # Clean preprocessed directory
+    shutil.rmtree(settings.preprocessed_dir)
 
     # Save plots to visualize the distribution of some of the data features
     try:

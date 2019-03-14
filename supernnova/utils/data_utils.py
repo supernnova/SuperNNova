@@ -152,12 +152,13 @@ def load_fitfile(settings, verbose=True):
         )
     except FileNotFoundError:
         # load data
-        df = pd.read_csv(
-            f"{settings.fits_dir}/FITOPT000.FITRES",
-            index_col=False,
-            comment="#",
-            delimiter=" ",
-        )
+
+        fit_name = f"{settings.fits_dir}/FITOPT000.FITRES" if os.path.exist(f"{settings.fits_dir}/FITOPT000.FITRES") else f"{settings.fits_dir}/FITOPT000.FITRES.gz"
+        df = pd.read_csv(fit_name,
+                         index_col=False,
+                         comment="#",
+                         delimiter=" ",
+                         )
         df = tag_type(df, settings)
 
         # Rename CID to SNID
@@ -193,6 +194,7 @@ def process_header_FITS(file_path, settings, columns=None):
 
     return df
 
+
 def process_header_csv(file_path, settings, columns=None):
     """Read the HEAD csv file, add target columns and return
     in pandas DataFrame format
@@ -214,6 +216,7 @@ def process_header_csv(file_path, settings, columns=None):
         df = df[columns]
 
     return df
+
 
 def add_redshift_features(settings, df):
     """Add redshift features to pandas dataframe.
@@ -371,6 +374,7 @@ def log_standardization(arr):
 
     return LogStandardized(arr_min=arr_min, arr_mean=arr_mean, arr_std=arr_std)
 
+
 def save_to_HDF5(settings, df):
     """Saved processed dataframe to HDF5
 
@@ -416,7 +420,8 @@ def save_to_HDF5(settings, df):
     # Filter list start end so we get only light curves with at least 3 points
     # except when creating testing data for colas
     if not settings.data_testing:
-        list_start_end = list(filter(lambda x: x[1] - x[0] >= 3, list_start_end))
+        list_start_end = list(
+            filter(lambda x: x[1] - x[0] >= 3, list_start_end))
 
     # Shuffle
     np.random.shuffle(list_start_end)
@@ -540,7 +545,8 @@ def save_to_HDF5(settings, df):
             # FLUX features
             #################
             flux_features = [f"FLUXCAL_{f}" for f in FILTERS]
-            flux_log_standardized = log_standardization(df[flux_features].values)
+            flux_log_standardized = log_standardization(
+                df[flux_features].values)
             # Store normalization parameters
             gnorm.create_dataset(f"FLUXCAL/min", data=flux_log_standardized.arr_min)
             gnorm.create_dataset(f"FLUXCAL/mean", data=flux_log_standardized.arr_mean)
@@ -560,9 +566,11 @@ def save_to_HDF5(settings, df):
         else:
             ########################
             # Load normalizations from model_file
-            ########################            
-            logging_utils.print_green("Load normalizations from model training")
-            logging_utils.print_yellow("Warning, only valid for the given model!")
+            ########################
+            logging_utils.print_green(
+                "Load normalizations from model training")
+            logging_utils.print_yellow(
+                "Warning, only valid for the given model!")
             fname = f"{Path(settings.model_files[0]).parent}/data_norm.json"
             with open(fname, "r") as f:
                 dic_norm = json.load(f)
