@@ -193,7 +193,7 @@ def plot_prediction_distribution(settings):
     list_data_test = tu.load_HDF5(settings, test=True)
 
     # Load features list
-    file_name = f"{settings.processed_dir}/{settings.data_prefix}_database.h5"
+    file_name = f"{settings.processed_dir}/database.h5"
     with h5py.File(file_name, "r") as hf:
         features = hf["features"][settings.idx_features]
 

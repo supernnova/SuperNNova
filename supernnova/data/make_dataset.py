@@ -22,8 +22,7 @@ def build_traintestval_splits(settings):
     - Randomly assign lightcurves to a 80/10/10 train test val split (except Out-of-distribution data 1/1/98)
 
     OOD:
-        set almost all samples to testing and does not use saltfits for selection.
-        Will use the complete sample for testing, does not require settings.data_prefix to be changed.
+        Will use the complete sample for testing, does not require settings.
 
     Args:
         settings (ExperimentSettings): controls experiment hyperparameters
@@ -41,7 +40,7 @@ def build_traintestval_splits(settings):
     # Load photometry
     # either in HEAD.FITS or csv format
     list_files = natsorted(
-        glob.glob(os.path.join(settings.raw_dir, f"{settings.data_prefix}*HEAD.FITS*"))
+        glob.glob(os.path.join(settings.raw_dir, "*HEAD.FITS*"))
     )
     if len(list_files) > 0:
         print("List files", list_files)
@@ -54,7 +53,7 @@ def build_traintestval_splits(settings):
             list_df = executor.map(process_fn, list_files)
     else:
         list_files = natsorted(
-            glob.glob(os.path.join(settings.raw_dir, f"{settings.data_prefix}*HEAD.csv*"))
+            glob.glob(os.path.join(settings.raw_dir, "*HEAD.csv*"))
         )
         print("List files", list_files)
         process_fn = partial(
@@ -213,7 +212,7 @@ def build_traintestval_splits(settings):
 
                 logging_utils.print_green(f"{split_name} set", str_)
     # Save to pickle
-    df.to_pickle(f"{settings.processed_dir}/{settings.data_prefix}_SNID.pickle")
+    df.to_pickle(f"{settings.processed_dir}/SNID.pickle")
 
     if not settings.data_testing:
         # Save stats for publication
@@ -229,7 +228,7 @@ def build_traintestval_splits(settings):
             ],
         )
         df_stats.to_csv(
-            os.path.join(settings.stats_dir, f"{settings.data_prefix}_data_stats.csv"),
+            os.path.join(settings.stats_dir, "data_stats.csv"),
             index=False,
         )
         paper_df = pd.DataFrame()
@@ -251,7 +250,7 @@ def build_traintestval_splits(settings):
         paper_df = paper_df.sort_index()
         # save to
         with open(
-            os.path.join(settings.latex_dir, f"{settings.data_prefix}_data_stats.tex"), "w"
+            os.path.join(settings.latex_dir, "data_stats.tex"), "w"
         ) as tf:
             tf.write(paper_df.to_latex())
 
@@ -342,7 +341,7 @@ def process_single_FITS(file_path, settings):
     # Add class and dataset information
     #############################################
     df_SNID = pd.read_pickle(
-        f"{settings.processed_dir}/{settings.data_prefix}_SNID.pickle"
+        f"{settings.processed_dir}/SNID.pickle"
     )
     # Check all SNID in df are in df_SNID
     assert np.all(np.in1d(df.SNID.values, df_SNID.SNID.values))
@@ -426,7 +425,7 @@ def process_single_csv(file_path, settings):
     # Add class and dataset information
     #############################################
     df_SNID = pd.read_pickle(
-        f"{settings.processed_dir}/{settings.data_prefix}_SNID.pickle"
+        f"{settings.processed_dir}/SNID.pickle"
     )
     # Check all SNID in df are in df_SNID
     assert np.all(np.in1d(df.SNID.values, df_SNID.SNID.values))
@@ -463,14 +462,14 @@ def preprocess_data(settings):
 
     # Get the list of FITS files
     list_files = natsorted(
-        glob.glob(os.path.join(settings.raw_dir, f"{settings.data_prefix}*PHOT.FITS*"))
+        glob.glob(os.path.join(settings.raw_dir, f"*PHOT.FITS*"))
     )
     if len(list_files) > 0:
         # Parameters of multiprocessing below
         parallel_fn = partial(process_single_FITS, settings=settings)
     else:
         list_files = natsorted(
-            glob.glob(os.path.join(settings.raw_dir, f"{settings.data_prefix}*PHOT.csv*"))
+            glob.glob(os.path.join(settings.raw_dir, f"*PHOT.csv*"))
         )
         parallel_fn = partial(process_single_csv, settings=settings)
 
@@ -677,7 +676,7 @@ def make_dataset(settings):
     if settings.overwrite is True:
         for folder in [settings.preprocessed_dir, settings.processed_dir]:
             # Dont throw error if folder exists with exist_ok Flag.
-            for f in glob.glob(f"{folder}/{settings.data_prefix}*"):
+            for f in glob.glob(f"{folder}/*"):
                 os.remove(f)
 
     # split dataset in train test and validation
@@ -688,7 +687,7 @@ def make_dataset(settings):
 
     # Pivot dataframe
     list_files = natsorted(
-        glob.glob(f"{settings.preprocessed_dir}/{settings.data_prefix}*PHOT*")
+        glob.glob(f"{settings.preprocessed_dir}/*PHOT*")
     )
     pivot_dataframe_batch(list_files, settings)
 
@@ -696,7 +695,7 @@ def make_dataset(settings):
     list_files = natsorted(
         glob.glob(
             os.path.join(
-                settings.preprocessed_dir, f"{settings.data_prefix}*pivot.pickle"
+                settings.preprocessed_dir, f"*pivot.pickle"
             )
         )
     )

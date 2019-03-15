@@ -146,7 +146,7 @@ def load_HDF5(settings, test=False):
             - list_data_train (list): training data tuples
             - list_data_val (list): validation data tuples
     """
-    file_name = f"{settings.processed_dir}/{settings.data_prefix}_database.h5"
+    file_name = f"{settings.processed_dir}/database.h5"
     lu.print_green(f"Loading {file_name}")
 
     with h5py.File(file_name, "r") as hf:

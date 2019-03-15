@@ -193,7 +193,7 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
     list_data_test = tu.load_HDF5(settings, test=True)
 
     # Load features list
-    file_name = f"{settings.processed_dir}/{settings.data_prefix}_database.h5"
+    file_name = f"{settings.processed_dir}/database.h5"
     with h5py.File(file_name, "r") as hf:
         features = hf["features"][settings.idx_features]
 
@@ -302,7 +302,7 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
             )
 
             # use to create GIFs
-            if not OOD or not settings.data_testing:
+            if not OOD:
                 if do_gifs:
                     plot_gif(settings,
                              df_temp,
@@ -388,6 +388,16 @@ def plot_gif(settings, df_plot, SNID, redshift, peak_MJD, target, arr_time, d_pr
         image = np.frombuffer(fig.canvas.tostring_rgb(), dtype='uint8')
         image = image.reshape(fig.canvas.get_width_height()[::-1] + (3,))
 
+        # make background transparent
+        from PIL import Image
+        import PIL.ImageOps as pops
+        im = Image.fromarray(image)
+        im = im.convert('RGB')
+        tmp =pops.invert(im)
+        tmp = tmp.convert('P', palette=Image.ADAPTIVE, colors=255)
+        tmp.info['transparency'] = 255
+        image = tmp
+
         return image
 
     kwargs_write = {'fps':1.0, 'quantizer':'nq'}
@@ -402,5 +412,9 @@ def plot_gif(settings, df_plot, SNID, redshift, peak_MJD, target, arr_time, d_pr
         f"{settings.pytorch_model_name}_class_pred_with_lc_{SNID}.gif"
     )
     Path(fig_path).mkdir(parents=True, exist_ok=True)
-    imageio.mimsave(str(Path(fig_path) / fig_name),
-                    [plot_image_for_gif(fig, gs,df_plot,d_pred,time,SNtype) for time in arr_time], fps=1)
+    # not transparent
+    # imageio.mimsave(str(Path(fig_path) / fig_name),
+    #                 [plot_image_for_gif(fig, gs,df_plot,d_pred,time,SNtype) for time in arr_time], fps=1)
+    # transparent
+    arr_images = [plot_image_for_gif(fig, gs,df_plot,d_pred,time,SNtype) for time in arr_time]
+    arr_images[0].save(str(Path(fig_path) / fig_name), save_all=True, append_images=arr_images, loop=5, duration=200)

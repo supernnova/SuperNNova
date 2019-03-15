@@ -50,9 +50,6 @@ class ExperimentSettings:
         # Set the filters used in the study
         self.list_filters = FILTERS
 
-        # set database prefix
-        self.data_prefix = "DES"
-
         # Set the database file names
         self.set_database_file_names()
 
@@ -76,13 +73,6 @@ class ExperimentSettings:
         )
 
         self.overwrite = not self.no_overwrite
-
-        # TODO: uncomment ?
-        # if not self.prediction_files:
-        #     this_model_dir = f"{self.models_dir}/{self.pytorch_model_name}"
-        #     self.prediction_files = [
-        #         f"{this_model_dir}/PRED_{self.data_prefix}_{self.pytorch_model_name}.pickle"
-        #     ]
 
     def get_randomforest_features(self):
         """Specify list of features to be used for RandomForest training
@@ -192,7 +182,7 @@ class ExperimentSettings:
         """Utility to check the database has been built
         """
 
-        database_file = f"{self.processed_dir}/{self.data_prefix}_database.h5"
+        database_file = f"{self.processed_dir}/database.h5"
         assert os.path.isfile(database_file)
 
     def set_feature_lists(self):
@@ -236,7 +226,7 @@ class ExperimentSettings:
         by the settings
         """
 
-        out_file = f"{self.processed_dir}/{self.data_prefix}_database"
+        out_file = f"{self.processed_dir}/database"
         self.pickle_file_name = out_file + ".pickle"
         self.hdf5_file_name = out_file + ".h5"
 
@@ -341,9 +331,6 @@ class PlasticcSettings(object):
         # Set the filters used in the study
         self.list_filters = PLASTICC_FILTERS
 
-        # set database prefix
-        self.data_prefix = "plasticc"
-
         # Set the database file names
         self.set_database_file_names()
 
@@ -360,7 +347,7 @@ class PlasticcSettings(object):
 
     def check_data_exists(self):
 
-        database_file = f"{self.processed_dir}/{self.data_prefix}_database.h5"
+        database_file = f"{self.processed_dir}/database.h5"
         assert os.path.isfile(database_file)
 
     def setup_dir(self):
@@ -447,7 +434,7 @@ class PlasticcSettings(object):
                 ]
 
     def set_database_file_names(self):
-        out_file = f"{self.processed_dir}/{self.data_prefix}_database"
+        out_file = f"{self.processed_dir}/database"
         self.pickle_file_name = out_file + ".pickle"
         self.hdf5_file_name = out_file + ".h5"
 

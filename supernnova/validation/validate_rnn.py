@@ -120,7 +120,7 @@ def get_predictions(settings, model_file=None):
         settings.set_pytorch_model_name()
 
     prediction_file = (
-        f"{dump_dir}/PRED_{settings.data_prefix}_{settings.pytorch_model_name}.pickle"
+        f"{dump_dir}/PRED_{settings.pytorch_model_name}.pickle"
     )
 
     rnn_state = torch.load(model_file, map_location=lambda storage, loc: storage)

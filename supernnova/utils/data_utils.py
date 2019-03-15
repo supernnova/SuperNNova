@@ -148,7 +148,7 @@ def load_fitfile(settings, verbose=True):
 
     try:
         df = pd.read_pickle(
-            f"{settings.preprocessed_dir}/{settings.data_prefix}_FITOPT000.FITRES.pickle"
+            f"{settings.preprocessed_dir}/FITOPT000.FITRES.pickle"
         )
     except FileNotFoundError:
         # load data
@@ -167,7 +167,7 @@ def load_fitfile(settings, verbose=True):
 
         # Save to pickle for later use and fast reload
         df.to_pickle(
-            f"{settings.preprocessed_dir}/{settings.data_prefix}_FITOPT000.FITRES.pickle"
+            f"{settings.preprocessed_dir}/FITOPT000.FITRES.pickle"
         )
     return df
 
@@ -240,7 +240,7 @@ def add_redshift_features(settings, df):
         # reading from batch pickles
         list_files = natsorted(
             glob.glob(
-                f"{settings.preprocessed_dir}/{settings.data_prefix}*_PHOT.pickle"
+                f"{settings.preprocessed_dir}/*_PHOT.pickle"
             )
         )
         # Check file with redshift features exist
@@ -336,7 +336,7 @@ def load_HDF5_SNinfo(settings):
         (pandas.DataFrame) dataframe holding physics information about the dataset
     """
 
-    file_name = f"{settings.processed_dir}/{settings.data_prefix}_database.h5"
+    file_name = f"{settings.processed_dir}/database.h5"
 
     dict_SNinfo = {}
     with h5py.File(file_name, "r") as hf:
