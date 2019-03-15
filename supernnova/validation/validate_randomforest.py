@@ -35,7 +35,7 @@ def get_predictions(settings, model_file=None):
         settings.set_pytorch_model_name()
 
     prediction_file = (
-        f"{dump_dir}/PRED_{settings.data_prefix}_{settings.randomforest_model_name}.pickle"
+        f"{dump_dir}/PRED_{settings.randomforest_model_name}.pickle"
     )
 
     # load data

@@ -35,9 +35,8 @@ def aggregate_metrics(settings):
         df = pd.read_pickle(f)
         model_name = df["model_name"][0]
         source_data = df["source_data"][0]
-        data_prefix = re.search(r"(?<=METRICS\_)[A-Za-z]+", f).group()
         model_name_noseed = re.sub(r"S\_\d+_", "", model_name)
-        model_name_noseed = f"{data_prefix}_{model_name_noseed}"
+        model_name_noseed = f"{model_name_noseed}"
         df["model_name_noseed"] = model_name_noseed
         df["source_data"] = source_data
         list_df.append(df)
@@ -100,10 +99,10 @@ def get_metrics_singlemodel(settings, prediction_file=None, model_type="rnn"):
 
         dump_dir = f"{settings.models_dir}/{model_name}"
         prediction_file = (
-            f"{dump_dir}/" f"PRED_{settings.data_prefix}_{model_name}.pickle"
+            f"{dump_dir}/" f"PRED_{model_name}.pickle"
         )
         metrics_file = (
-            f"{dump_dir}/" f"METRICS_{settings.data_prefix}_{model_name}.pickle"
+            f"{dump_dir}/" f"METRICS_{model_name}.pickle"
         )
         source_data = settings.source_data
 
