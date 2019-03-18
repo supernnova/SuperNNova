@@ -2,8 +2,9 @@ import os
 import json
 import pickle
 import argparse
-from distutils.util import strtobool
 from pathlib import Path
+from collections import OrderedDict
+from distutils.util import strtobool
 from .utils import experiment_settings
 
 
@@ -228,6 +229,9 @@ def get_args():
 
     parser.add_argument(
         "--nb_classes", default=2, type=int, help="Number of classification targets"
+    )
+    parser.add_argument(
+        "--sntypes", default = OrderedDict({"101": "Ia", "120": "IIP", "121": "IIn", "122": "IIL1", "123": "IIL2", "132": "Ib", "133": "Ic"}), type=json.loads, help="Sn classes in simulations"
     )
     parser.add_argument(
         "--nb_epoch", default=90, type=int, help="Number of batches per epoch"

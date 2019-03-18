@@ -66,8 +66,8 @@ Creating a database
 - The database is saved to the specified ``dump_dir``, in the ``processed`` subfolder.
 - There is no need to specify salt2fits file to make the dataset. It can be used if available but it is not needed ``--fits_dir <empty/path/>``.
 - Raw data can be in csv format with columns:
-`` DES_PHOT.csv : "SNID","MJD", "FLUXCAL", "FLUXCALERR", "FLT" ``
-`` DES_HEAD.csv: "SNID","PEAKMJD","HOSTGAL_PHOTOZ","HOSTGAL_PHOTOZ_ERR","HOSTGAL_SPECZ","HOSTGAL_SPECZ_ERR","SIM_REDSHIFT_CMB","SIM_PEAKMAG_z","SIM_PEAKMAG_g","SIM_PEAKMAG_r","SIM_PEAKMAG_i","SNTYPE" ``.
+ - `` DES_PHOT.csv ``: SNID,MJD, FLUXCAL, FLUXCALERR, FLT 
+ - `` DES_HEAD.csv``: SNID, PEAKMJD, HOSTGAL_PHOTOZ, HOSTGAL_PHOTOZ_ERR, HOSTGAL_SPECZ, HOSTGAL_SPECZ_ERR, SIM_REDSHIFT_CMB, SIM_PEAKMAG_z, SIM_PEAKMAG_g, SIM_PEAKMAG_r, SIM_PEAKMAG_i, SNTYPE.
 
 
 Creating a database for testing a trained model
@@ -95,6 +95,7 @@ We first compute the data splits:
 - The splits are different for the salt/photometry datasets
 - The splits are different depending on the classification target
 - We downsample the dataset so that for a given classification task, all classes have the same cardinality
+- The supernova/light-curve types supported can be changed using ``--sntypes``. Default contians 7 classes.
 
 Preprocessing
 ~~~~~~~~~~~~~~
@@ -132,11 +133,9 @@ The HDF5 file is organized as follows:
     │
     │
     ├── dataset_photometry_2classes     (0: train set, 1: valid set, 2: test set, -1: not used)
-    ├── dataset_photometry_3classes     (0: train set, 1: valid set, 2: test set, -1: not used)
     ├── dataset_photometry_7classes     (0: train set, 1: valid set, 2: test set, -1: not used)
     │
     ├── target_photometry_2classes      (integer between 0 and 1, included)
-    ├── target_photometry_3classes      (integer between 0 and 2, included)
     ├── target_photometry_7classes      (integer between 0 and 6, included)
     │
     │

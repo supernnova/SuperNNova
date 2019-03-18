@@ -59,19 +59,6 @@ class ExperimentSettings:
         # Get the feature normalization dict
         self.load_normalization()
 
-        # Set SN types for multiclass classification
-        self.sntypes = OrderedDict(
-            {
-                101: "Ia",
-                120: "IIP",
-                121: "IIn",
-                122: "IIL1",
-                123: "IIL2",
-                132: "Ib",
-                133: "Ic",
-            }
-        )
-
         self.overwrite = not self.no_overwrite
 
     def get_randomforest_features(self):

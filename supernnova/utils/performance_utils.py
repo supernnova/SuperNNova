@@ -59,7 +59,7 @@ def contamination_by_SNTYPE(df, settings, sample_target=0):
     # Get contamination percentage
     contribution_arr = []
     type_arr = []
-    for typ in [t for t in settings.sntypes.keys() if t != 101]:
+    for typ in [int(t) for t in settings.sntypes.keys() if t != 101]:
         df_selection = df_cont[df_cont["SNTYPE"] == typ]
         if sample_size > 1:
             contribution_arr.append(round(100 * len(df_selection) / sample_size, 2))

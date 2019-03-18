@@ -80,21 +80,16 @@ def sntype_decoded(target, settings):
         SNtype = list(settings.sntypes.values())[target]
     else:
         if target == 0:
-            SNtype = "SN Ia"
-        if target == 1:
-            if settings.nb_classes == 3:
-                SNtype = "SN II"
-            else:
-                SNtype = "SN CC"
-        if target == 2:
-            SNtype = "SN Ibc"
+            SNtype = f"SN {list(settings.sntypes.values())[0]}"
+        else:
+            SNtype = f"SN {'|'.join(list(settings.sntypes.values())[1:])}"
     return SNtype
 
 
 def tag_type(df, settings, type_column="TYPE"):
     """Create classes based on a type columns
 
-    Depending on the number of classes (2, 3, or all), we create distinct
+    Depending on the number of classes (2 or all), we create distinct
     target columns
 
     Args:
@@ -107,24 +102,14 @@ def tag_type(df, settings, type_column="TYPE"):
     """
 
     # 2 classes
+    # taking the first type vs. others
     arr_temp = df[type_column].values.copy()
-    df["target_2classes"] = (arr_temp != 101).astype(np.uint8)
-
-    # 3 classes
-    arr_temp = df[type_column].values.copy()
-    arr_temp[arr_temp == 101] = 0
-    arr_temp[arr_temp == 120] = 1
-    arr_temp[arr_temp == 121] = 1
-    arr_temp[arr_temp == 122] = 1
-    arr_temp[arr_temp == 123] = 1
-    arr_temp[arr_temp == 132] = 2
-    arr_temp[arr_temp == 133] = 2
-    df["target_3classes"] = arr_temp
+    df["target_2classes"] = (arr_temp != int(list(settings.sntypes.keys())[0])).astype(np.uint8)
 
     # All classes
     arr_temp = df[type_column].values.copy()
-    for class_idx, key in enumerate(settings.sntypes.keys()):
-        arr_temp[arr_temp == key] = class_idx
+    for class_idx, key in enumerate(settings.sntypes):
+        arr_temp[arr_temp == int(key)] = class_idx
     df[f"target_{len(settings.sntypes)}classes"] = arr_temp
 
     return df
@@ -430,7 +415,7 @@ def save_to_HDF5(settings, df):
     with h5py.File(settings.hdf5_file_name, "w") as hf:
 
         n_samples = len(list_start_end)
-        list_classes = [2, 3, len(settings.sntypes.keys())]
+        list_classes = [2, len(settings.sntypes.keys())]
         list_names = ["target", "dataset_photometry", "dataset_saltfit"]
 
         # These arrays can be filled in one shot
