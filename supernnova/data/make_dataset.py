@@ -216,45 +216,45 @@ def build_traintestval_splits(settings):
     # Save to pickle
     df.to_pickle(f"{settings.processed_dir}/SNID.pickle")
 
-    if not settings.data_testing:
-        # Save stats for publication
-        df_stats = pd.DataFrame(
-            np.array(list_stat),
-            columns=[
-                "dataset",
-                "nb_classes",
-                "split",
-                "total_samples",
-                "occurences_per_class",
-                "ocurrences_per_SNTYPE",
-            ],
-        )
-        df_stats.to_csv(
-            os.path.join(settings.stats_dir, "data_stats.csv"),
-            index=False,
-        )
-        paper_df = pd.DataFrame()
-        for dataset in df_stats["dataset"].unique():
-            for classes in df_stats["nb_classes"].unique():
-                paper_df[f"{dataset} {classes} classes"] = (
-                    df_stats[
-                        (df_stats["dataset"] == dataset)
-                        & (df_stats["nb_classes"] == classes)
-                    ]["ocurrences_per_SNTYPE"]
-                    .apply(pd.Series)
-                    .sum()
-                )
-        keep_cols = ["saltfit 2 classes", "photometry 2 classes"]
-        paper_df["SN"] = np.array([settings.sntypes[str(i)]
-                                   for i in paper_df.index])
-        paper_df.index = paper_df["SN"]
-        paper_df = paper_df[keep_cols]
-        paper_df = paper_df.sort_index()
-        # save to
-        with open(
-            os.path.join(settings.latex_dir, "data_stats.tex"), "w"
-        ) as tf:
-            tf.write(paper_df.to_latex())
+    # if not settings.data_testing:
+    #     # Save stats for publication
+    #     df_stats = pd.DataFrame(
+    #         np.array(list_stat),
+    #         columns=[
+    #             "dataset",
+    #             "nb_classes",
+    #             "split",
+    #             "total_samples",
+    #             "occurences_per_class",
+    #             "ocurrences_per_SNTYPE",
+    #         ],
+    #     )
+    #     df_stats.to_csv(
+    #         os.path.join(settings.stats_dir, "data_stats.csv"),
+    #         index=False,
+    #     )
+    #     paper_df = pd.DataFrame()
+    #     for dataset in df_stats["dataset"].unique():
+    #         for classes in df_stats["nb_classes"].unique():
+    #             paper_df[f"{dataset} {classes} classes"] = (
+    #                 df_stats[
+    #                     (df_stats["dataset"] == dataset)
+    #                     & (df_stats["nb_classes"] == classes)
+    #                 ]["ocurrences_per_SNTYPE"]
+    #                 .apply(pd.Series)
+    #                 .sum()
+    #             )
+    #     keep_cols = ["saltfit 2 classes", "photometry 2 classes"]
+    #     paper_df["SN"] = np.array([settings.sntypes[str(i)]
+    #                                for i in paper_df.index])
+    #     paper_df.index = paper_df["SN"]
+    #     paper_df = paper_df[keep_cols]
+    #     paper_df = paper_df.sort_index()
+    #     # save to
+    #     with open(
+    #         os.path.join(settings.latex_dir, "data_stats.tex"), "w"
+    #     ) as tf:
+    #         tf.write(paper_df.to_latex())
 
     logging_utils.print_green("Done")
 
