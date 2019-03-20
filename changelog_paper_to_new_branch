@@ -1,5 +1,6 @@
 
 March 2019
+- added --sntype as dictionary input allowing different types of SNe (always put Its as first entry!)
 - added csv input compatibility
 
 February 2019

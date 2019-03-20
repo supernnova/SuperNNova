@@ -231,7 +231,7 @@ def get_args():
         "--nb_classes", default=2, type=int, help="Number of classification targets"
     )
     parser.add_argument(
-        "--sntypes", default = OrderedDict({"101": "Ia", "120": "IIP", "121": "IIn", "122": "IIL1", "123": "IIL2", "132": "Ib", "133": "Ic"}), type=json.loads, help="Sn classes in simulations"
+        "--sntypes", default = OrderedDict({"101": "Ia", "120": "IIP", "121": "IIn", "122": "IIL1", "123": "IIL2", "132": "Ib", "133": "Ic"}), type=json.loads, help="SN classes in sims (put Ia always first)"
     )
     parser.add_argument(
         "--nb_epoch", default=90, type=int, help="Number of batches per epoch"

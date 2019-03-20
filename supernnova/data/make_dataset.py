@@ -71,10 +71,10 @@ def build_traintestval_splits(settings):
     df_photo["SNID"] = df_photo["SNID"].astype(int)
 
     # load FITOPT file on which we will base our splits
-    try:
-        df_salt = data_utils.load_fitfile(settings)
-    except Exception:
+    df_salt = data_utils.load_fitfile(settings)
+    if len(df_salt) < 1:
         # if no fits file we include all lcs
+        logging_utils.print_yellow(f"All lcs used for salt and photometry samples")
         df_salt = pd.DataFrame()
         df_salt['SNID'] = df_photo["SNID"]
     df_salt["is_salt"] = 1
@@ -563,7 +563,6 @@ def pivot_dataframe_single(filename, settings):
         class_columns += [f"target_{c_}classes"]
         for dataset in ["photometry", "saltfit"]:
             class_columns += [f"dataset_{dataset}_{c_}classes"]
-
     group_features_list = (
         [
             "SNID",
@@ -612,13 +611,14 @@ def pivot_dataframe_single(filename, settings):
             df[c] = df[c].astype(np.float32)
         elif "classes" in c and df[c].dtype == np.int64:
             df[c] = df[c].astype(np.int8)
-
     # Add some extra columns from the FITOPT file
-    try:
-        df_salt = data_utils.load_fitfile(
-            settings, verbose=False).set_index("SNID")
-    except Exception:
+    df_salt = data_utils.load_fitfile(
+        settings, verbose=False)
+    if len(df_salt) > 1:
+        df_salt = df_salt.set_index("SNID")
+    else:
         # if no fits file we populate with dummies
+        # logging_utils.print_yellow(f"Creating dummy mB,c,x1")
         df_salt = pd.DataFrame()
         df_salt["SNID"] = np.array(df.index.unique())
         df_salt["mB"] = np.zeros(len(df.index.unique()))
@@ -707,9 +707,6 @@ def make_dataset(settings):
     # Save to HDF5
     data_utils.save_to_HDF5(settings, df)
 
-    # Clean preprocessed directory
-    shutil.rmtree(settings.preprocessed_dir)
-
     # Save plots to visualize the distribution of some of the data features
     try:
         SNinfo_df = data_utils.load_HDF5_SNinfo(settings)
@@ -717,5 +714,8 @@ def make_dataset(settings):
     except Exception:
         logging_utils.print_yellow(
             "Warning: can't do data plots if no saltfit for this dataset")
+
+    # Clean preprocessed directory
+    shutil.rmtree(settings.preprocessed_dir)
 
     logging_utils.print_green("Finished making dataset")

@@ -127,22 +127,23 @@ def load_fitfile(settings, verbose=True):
     Returns:
         (pandas.DataFrame) dataframe with FITOPT data
     """
-
     if verbose:
         logging_utils.print_green("Loading FITRES file")
 
-    try:
+    if Path(f"{settings.preprocessed_dir}/FITOPT000.FITRES.pickle").exists():
         df = pd.read_pickle(
-            f"{settings.preprocessed_dir}/FITOPT000.FITRES.pickle"
+        f"{settings.preprocessed_dir}/FITOPT000.FITRES.pickle"
         )
-    except FileNotFoundError:
-        # load data
+        if verbose:
+            print(f"Loaded {settings.preprocessed_dir}/FITOPT000.FITRES.pickle")
 
-        fit_name = f"{settings.fits_dir}/FITOPT000.FITRES" if os.path.exist(f"{settings.fits_dir}/FITOPT000.FITRES") else f"{settings.fits_dir}/FITOPT000.FITRES.gz"
+    elif Path(f"{settings.fits_dir}/FITOPT000.FITRES").exists() or Path(f"{settings.fits_dir}/FITOPT000.FITRES.gz").exists():
+        fit_name = f"{settings.fits_dir}/FITOPT000.FITRES" if Path(f"{settings.fits_dir}/FITOPT000.FITRES").exists() else f"{settings.fits_dir}/FITOPT000.FITRES.gz"
         df = pd.read_csv(fit_name,
                          index_col=False,
                          comment="#",
                          delimiter=" ",
+                         skipinitialspace=True,
                          )
         df = tag_type(df, settings)
 
@@ -154,6 +155,14 @@ def load_fitfile(settings, verbose=True):
         df.to_pickle(
             f"{settings.preprocessed_dir}/FITOPT000.FITRES.pickle"
         )
+        if verbose:
+            print(f"Loaded {fit_name}")
+    else:
+        # returning empty df
+        df = pd.DataFrame()
+        if verbose:
+            logging_utils.print_yellow("Warning: No FITRES file to load")
+
     return df
 
 
