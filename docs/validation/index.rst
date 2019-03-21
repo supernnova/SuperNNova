@@ -20,7 +20,7 @@ Activate the environment
 
 
 Validation
-~~~~~~~~~~~~~~~
+-------------------------------
 
 Assuming a database has been created and models have been trained, a model can be validated as follows:
 
@@ -57,9 +57,40 @@ To make predictions on an independent database than the one used to train a give
 
 In this case it will run the model provided in ``model_files`` on the database available in ``dump_dir/processed``. Predictions will be saved in ``dump_dir/models/modelname/``.
 
+Predictions format
+~~~~~~~~~~~~~~~~~~~~~
+For a binary classification task, predictions files contain the follwing columns:
+
+.. code::
+
+    all_class0            float32  - probability of classifying complete light-curves as --sntype [0] (usually Ia)
+    all_class1            float32  - probability of classifying complete light-curves as --sntype [1:] (usually nonIas)
+    PEAKMJD-2_class0      float32  - probability of classifying light-curves up to 2 days before maximum as --sntype [0] (usually Ia)
+    PEAKMJD-2_class1      float32  - probability of classifying light-curves up to 2 days before maximum as  --sntype [1:] (usually nonIas)
+    PEAKMJD-1_class0      float32  - up to one day before maximum light
+    PEAKMJD-1_class1      float32
+    PEAKMJD_class0        float32  - up to maximum light lightcurves
+    PEAKMJD_class1        float32
+    PEAKMJD+1_class0      float32  - one day post maximum lightcurves
+    PEAKMJD+1_class1      float32
+    PEAKMJD+2_class0      float32  - two days post maximum lightcurves
+    PEAKMJD+2_class1      float32
+    all_random_class0     float32  - Out-of-distribution: probability of classifying randomly generated complete lightcurves as --sntype [0]
+    all_random_class1     float32
+    all_reverse_class0    float32  - Out-of-distribution: probability of classifying time reversed complete lightcurves as --sntype [0]
+    all_reverse_class1    float32
+    all_shuffle_class0    float32  - Out-of-distribution: probability of classifying shuffled complete lightcurves (permutations of time-series) as --sntype [0]
+    all_shuffle_class1    float32
+    all_sin_class0        float32  - Out-of-distribution: probability of classifying sinusoidal complete lightcurves (permutations of time-series) as --sntype [0]
+    all_sin_class1        float32
+    target                  int64  - Type of the supernova, simulated class.
+    SNID                    int64  - ID number of the light-curve
+
+these columns rely on maximum light information and target (original type) from simulations. Out-of-distribution classifications are done on the fly.
+
 
 RNN speed
-~~~~~~~~~~
+-------------------------------
 
 Run RNN classification speed benchmark as follows
 
@@ -72,7 +103,7 @@ This will create ``tests/dump/stats/rnn_speed.csv`` showing the classification t
 
 
 Calibration
-~~~~~~~~~~~~~~
+-------------------------------
 
 Assuming a database has been created and models have been trained, evaluate classifier calibration as follows:
 
@@ -86,7 +117,7 @@ Multiple metric files can be specified, the results will be charted on the same 
 
 
 Science plots
-~~~~~~~~~~~~~~
+-------------------------------
 
 Assuming a database has been created and models have been trained, how some graphs of scientific interest:
 
@@ -99,7 +130,7 @@ A prediction file looks like this: ``PRED_{model_name}.pickle``. For instance: `
 
 
 Performance metrics
-~~~~~~~~~~~~~~~~~~~~~
+-------------------------------
 
 Assuming a database has been created and models have been trained, compute performance metrics
 
