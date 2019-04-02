@@ -35,7 +35,7 @@ def build_traintestval_splits(settings):
     photo_columns = ["SNID"] + [
         f"target_{nb_classes}classes"
         # for nb_classes in [2,3, len(settings.sntypes.keys())]
-        for nb_classes in [2, len(settings.sntypes.keys())]
+        for nb_classes in list(set([2, len(settings.sntypes.keys())]))
     ]
 
     # Load photometry
@@ -104,12 +104,11 @@ def build_traintestval_splits(settings):
     # Save a dataframe to record train/test/val split for
     # binary, ternary and all-classes classification
     for dataset in ["saltfit", "photometry"]:
-        for nb_classes in [2, len(settings.sntypes.keys())]:
+        for nb_classes in list(set([2, len(settings.sntypes.keys())])):
             print()
             logging_utils.print_green(
                 f"Computing {dataset} splits for {nb_classes}-way classification"
             )
-
             # Randomly sample SNIDs such that all class have the same number of occurences
             if dataset == "saltfit":
                 g = df[df.is_salt == 1].groupby(f"target_{nb_classes}classes")
@@ -350,7 +349,7 @@ def process_single_FITS(file_path, settings):
     # Merge left on df: len(df) will not change and will now include
     # relevant columns from df_SNID
     merge_columns = ["SNID"]
-    for c_ in [2, len(settings.sntypes.keys())]:
+    for c_ in list(set([2, len(settings.sntypes.keys())])):
         merge_columns += [f"target_{c_}classes"]
         for dataset in ["photometry", "saltfit"]:
             merge_columns += [f"dataset_{dataset}_{c_}classes"]
@@ -434,7 +433,7 @@ def process_single_csv(file_path, settings):
     # Merge left on df: len(df) will not change and will now include
     # relevant columns from df_SNID
     merge_columns = ["SNID"]
-    for c_ in [2, len(settings.sntypes.keys())]:
+    for c_ in [2, list(set(len(settings.sntypes.keys())))]:
         merge_columns += [f"target_{c_}classes"]
         for dataset in ["photometry", "saltfit"]:
             merge_columns += [f"dataset_{dataset}_{c_}classes"]
@@ -559,7 +558,7 @@ def pivot_dataframe_single(filename, settings):
     # drop columns that won"t be used onwards
     df = df.drop(["MJD", "delta_time"], 1)
     class_columns = []
-    for c_ in [2, len(settings.sntypes.keys())]:
+    for c_ in list(set([2, len(settings.sntypes.keys())])):
         class_columns += [f"target_{c_}classes"]
         for dataset in ["photometry", "saltfit"]:
             class_columns += [f"dataset_{dataset}_{c_}classes"]
@@ -658,6 +657,7 @@ def pivot_dataframe_batch(list_files, settings):
         with ProcessPoolExecutor(max_workers=max_workers) as executor:
             start, end = chunk_idx[0], chunk_idx[-1] + 1
             executor.map(parallel_fn, list_files[start:end])
+    # pivot_dataframe_single(list_files[0], settings)
 
     logging_utils.print_green("Finished pivot")
 

@@ -424,7 +424,7 @@ def save_to_HDF5(settings, df):
     with h5py.File(settings.hdf5_file_name, "w") as hf:
 
         n_samples = len(list_start_end)
-        list_classes = [2, len(settings.sntypes.keys())]
+        list_classes = list(set([2, len(settings.sntypes.keys())]))
         list_names = ["target", "dataset_photometry", "dataset_saltfit"]
 
         # These arrays can be filled in one shot
