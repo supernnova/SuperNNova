@@ -373,6 +373,9 @@ def get_settings_from_dump(
     cli_args["raw_dir"] = settings.raw_dir
     cli_args["fits_dir"] = settings.fits_dir
     cli_args["dump_dir"] = settings.dump_dir
+    # and device
+    cli_args["use_cuda"] = settings.use_cuda
+    cli_args["device"] = settings.device
 
     settings = experiment_settings.ExperimentSettings(cli_args)
 

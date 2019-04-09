@@ -303,6 +303,8 @@ def process_single_FITS(file_path, settings):
         "SIM_PEAKMAG_i",
         "SNTYPE",
     ]
+    # check if keys are in header
+    keep_col_header = [k for k in keep_col_header if k in df_header.keys()]
     df_header = df_header[keep_col_header].copy()
     df_header["SNID"] = df_header["SNID"].astype(np.int32)
     #############################################
@@ -403,6 +405,8 @@ def process_single_csv(file_path, settings):
         "SIM_PEAKMAG_i",
         "SNTYPE",
     ]
+    # check if keys are in header
+    keep_col_header = [k for k in keep_col_header if k in df_header.keys()]
     df_header = df_header[keep_col_header].copy()
     df_header["SNID"] = df_header["SNID"].astype(np.int32)
     df_header = df_header.set_index("SNID")
@@ -491,6 +495,7 @@ def preprocess_data(settings):
             # Need to cast to list because executor returns an iterator
             host_spe_tmp += list(executor.map(parallel_fn,
                                               list_files[start:end]))
+    # process_single_FITS(list_files[0], settings)
     # Save host spe for plotting and performance tests
     host_spe = [item for sublist in host_spe_tmp for item in sublist]
     pd.DataFrame(host_spe, columns=["SNID"]).to_pickle(
@@ -578,6 +583,8 @@ def pivot_dataframe_single(filename, settings):
         + [k for k in df.keys() if "HOST" in k]
         + class_columns
     )
+    # check if keys are in header
+    group_features_list = [k for k in group_features_list if k in df.keys()]
     # Pivot so that for a given MJD, we have info on all available fluxes / error
     df = pd.pivot_table(df, index=group_features_list, columns=["FLT"])
 

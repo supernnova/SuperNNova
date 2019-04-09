@@ -400,6 +400,7 @@ def save_to_HDF5(settings, df):
         "SIM_PEAKMAG_r",
         "SIM_PEAKMAG_i",
     ]
+    list_misc_features = [k for k in list_misc_features if k in df.keys()]
 
     assert df.index.name == "SNID", "Must set SNID as index"
 
@@ -604,9 +605,8 @@ def save_to_HDF5(settings, df):
         # cheating to have the same onehot for all datasets
         tmp = pd.Series(FILTERS_COMBINATION).append(df["FLT"])
         tmp_onehot = pd.get_dummies(tmp)
-        tmp_onehot = tmp_onehot.reset_index()
+        # this is ok since it goes by length not by index (which I never reset)
         FLT_onehot = tmp_onehot[len(FILTERS_COMBINATION):]
-        FLT_onehot = FLT_onehot.reset_index()
         df = pd.concat([df[list_training_features],
                         FLT_onehot], axis=1)
         # store feature names
