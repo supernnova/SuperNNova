@@ -105,7 +105,6 @@ def build_traintestval_splits(settings):
     # binary, ternary and all-classes classification
     for dataset in ["saltfit", "photometry"]:
         for nb_classes in list(set([2, len(settings.sntypes.keys())])):
-            print()
             logging_utils.print_green(
                 f"Computing {dataset} splits for {nb_classes}-way classification"
             )

@@ -572,13 +572,25 @@ def save_to_HDF5(settings, df):
             gnorm = hf.create_group("normalizations")
             # Store normalization parameters
             # "as if" per feature
+
             for feat in settings.training_features_to_normalize:
-                gnorm.create_dataset(f"{feat}/min", data=dic_norm[feat]['min'])
+                log_standardized = log_standardization(df[feat].values)
+                # we need to use our validation set min, else log error
+                # it just shifts allfluxes to the same start point
+                gnorm.create_dataset(f"{feat}/min", data=log_standardized.arr_min)
                 gnorm.create_dataset(f"{feat}/mean", data=dic_norm[feat]['mean'])
                 gnorm.create_dataset(f"{feat}/std", data=dic_norm[feat]['std'])
             # "as if" global (they are all the same)
+            
+            # The min value can be used from this array
+            # what is important is the dispersion
+            flux_features = [f"FLUXCAL_{f}" for f in FILTERS]
+            flux_log_standardized = log_standardization(
+                df[flux_features].values)
             gnorm = hf.create_group("normalizations_global")
-            gnorm.create_dataset(f"FLUXCAL/min", data=dic_norm["FLUXCAL_g"]['min'])
+            # we need to use our validation set min, else log error
+            # it just shifts allfluxes to the same start point
+            gnorm.create_dataset(f"FLUXCAL/min", data=flux_log_standardized.arr_min))
             gnorm.create_dataset(f"FLUXCAL/mean", data=dic_norm["FLUXCAL_g"]['mean'])
             gnorm.create_dataset(f"FLUXCAL/std", data=dic_norm["FLUXCAL_g"]['std'])
             gnorm.create_dataset(f"FLUXCALERR/min", data=dic_norm["FLUXCALERR_g"]['min'])
@@ -617,7 +629,6 @@ def save_to_HDF5(settings, df):
             dtype=h5py.special_dtype(vlen=str),
         )
         hf["features"][:] = list_training_features
-        print(len(list_training_features))
         logging_utils.print_green(
             "Saved features:", ",".join(list_training_features))
 
