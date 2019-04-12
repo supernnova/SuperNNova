@@ -254,8 +254,12 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
     # Loop over data to plot prediction
     for X, target, SNID, _, X_ori in tqdm(list_data_test[:nb_lcs], ncols=100):
 
-        redshift = SNinfo_df[SNinfo_df["SNID"] == SNID]["SIM_REDSHIFT_CMB"].values[0]
-        peak_MJD = SNinfo_df[SNinfo_df["SNID"] == SNID]["PEAKMJDNORM"].values[0]
+        try:
+            redshift = SNinfo_df[SNinfo_df["SNID"] == SNID]["SIM_REDSHIFT_CMB"].values[0]
+            peak_MJD = SNinfo_df[SNinfo_df["SNID"] == SNID]["PEAKMJDNORM"].values[0]
+        except Exception:
+            redshift = 0.0
+            peak_MJD = 0.0
 
         # Prepare plotting data in a dict
         d_plot = {
