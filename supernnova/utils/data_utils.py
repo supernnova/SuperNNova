@@ -590,7 +590,7 @@ def save_to_HDF5(settings, df):
             gnorm = hf.create_group("normalizations_global")
             # we need to use our validation set min, else log error
             # it just shifts allfluxes to the same start point
-            gnorm.create_dataset(f"FLUXCAL/min", data=flux_log_standardized.arr_min))
+            gnorm.create_dataset(f"FLUXCAL/min", data=flux_log_standardized.arr_min)
             gnorm.create_dataset(f"FLUXCAL/mean", data=dic_norm["FLUXCAL_g"]['mean'])
             gnorm.create_dataset(f"FLUXCAL/std", data=dic_norm["FLUXCAL_g"]['std'])
             gnorm.create_dataset(f"FLUXCALERR/min", data=dic_norm["FLUXCALERR_g"]['min'])
