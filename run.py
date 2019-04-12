@@ -1,4 +1,5 @@
 import numpy as np
+from pathlib import Path
 import supernnova.conf as conf
 from supernnova.utils import logging_utils as lu
 from supernnova.visualization import (
@@ -185,3 +186,7 @@ if __name__ == "__main__":
 
     if settings.predict_plasticc:
         validate_plasticc.get_predictions(settings)
+
+    if settings.done_file:
+    	Path(f"{settings.done_file}/done_task.txt").touch()
+
