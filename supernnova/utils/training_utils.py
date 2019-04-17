@@ -350,7 +350,10 @@ def get_data_batch(list_data, idxs, settings, max_lengths=None, OOD=None):
     # Assign values for the tensor
     for i, idx in enumerate(idx_sort):
         X, target = list_batch[idx]
-        X_tensor[: X.shape[0], i, :] = torch.FloatTensor(X)
+        try:
+            X_tensor[: X.shape[0], i, :] = torch.FloatTensor(X)
+        except Exception:
+            X_tensor[: X.shape[0], i, :] = torch.FloatTensor(torch.from_numpy(np.flip(X,axis=0).copy()))
         list_target.append(target)
         lengths.append(list_len[idx])
 

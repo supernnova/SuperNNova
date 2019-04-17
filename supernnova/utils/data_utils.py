@@ -404,6 +404,16 @@ def save_to_HDF5(settings, df):
 
     assert df.index.name == "SNID", "Must set SNID as index"
 
+    if settings.model_files:
+        # skiming lcs where min<min(model_file training set)
+        logging_utils.print_green(
+                "Load normalizations from model training for min skiming")
+        fname = f"{Path(settings.model_files[0]).parent}/data_norm.json"
+        with open(fname, "r") as f:
+            dic_norm = json.load(f)
+        for feat in settings.training_features_to_normalize:
+            # only need to do this once
+            df = df[df[feat]>=dic_norm[feat]['min']].copy()
     # Get the list of lightcurve IDs
     ID = df.index.values
     # Find out when ID changes => find start and end idx of each lightcurve
@@ -413,7 +423,7 @@ def save_to_HDF5(settings, df):
     # N.B. We could use df.loc[SNID], more elegant but much slower
 
     # Filter list start end so we get only light curves with at least 3 points
-    # except when creating testing data for colas
+    # except when creating testing data (we want to classify all lcs even w. 1-2 epochs)
     if not settings.data_testing:
         list_start_end = list(
             filter(lambda x: x[1] - x[0] >= 3, list_start_end))
@@ -572,25 +582,13 @@ def save_to_HDF5(settings, df):
             gnorm = hf.create_group("normalizations")
             # Store normalization parameters
             # "as if" per feature
-
             for feat in settings.training_features_to_normalize:
-                log_standardized = log_standardization(df[feat].values)
-                # we need to use our validation set min, else log error
-                # it just shifts allfluxes to the same start point
-                gnorm.create_dataset(f"{feat}/min", data=log_standardized.arr_min)
+                gnorm.create_dataset(f"{feat}/min", data=dic_norm[feat]['min'])
                 gnorm.create_dataset(f"{feat}/mean", data=dic_norm[feat]['mean'])
                 gnorm.create_dataset(f"{feat}/std", data=dic_norm[feat]['std'])
             # "as if" global (they are all the same)
-            
-            # The min value can be used from this array
-            # what is important is the dispersion
-            flux_features = [f"FLUXCAL_{f}" for f in FILTERS]
-            flux_log_standardized = log_standardization(
-                df[flux_features].values)
             gnorm = hf.create_group("normalizations_global")
-            # we need to use our validation set min, else log error
-            # it just shifts allfluxes to the same start point
-            gnorm.create_dataset(f"FLUXCAL/min", data=flux_log_standardized.arr_min)
+            gnorm.create_dataset(f"FLUXCAL/min", data=dic_norm["FLUXCAL_g"]['min'])
             gnorm.create_dataset(f"FLUXCAL/mean", data=dic_norm["FLUXCAL_g"]['mean'])
             gnorm.create_dataset(f"FLUXCAL/std", data=dic_norm["FLUXCAL_g"]['std'])
             gnorm.create_dataset(f"FLUXCALERR/min", data=dic_norm["FLUXCALERR_g"]['min'])

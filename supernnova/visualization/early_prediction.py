@@ -252,7 +252,10 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
     SNinfo_df = du.load_HDF5_SNinfo(settings)
 
     # Loop over data to plot prediction
-    for X, target, SNID, _, X_ori in tqdm(list_data_test[:nb_lcs], ncols=100):
+    # randomly select lcs to plot
+    list_entries = np.random.randint(0,high=len(list_data_test),size=nb_lcs)
+    subset_to_plot = [list_data_test[i] for i in list_entries]
+    for X, target, SNID, _, X_ori in tqdm(subset_to_plot, ncols=100):
 
         try:
             redshift = SNinfo_df[SNinfo_df["SNID"] == SNID]["SIM_REDSHIFT_CMB"].values[0]
@@ -292,7 +295,6 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
                     non_zero
                 ]
                 d_plot[flt]["MJD"] = arr_time[non_zero]
-
             plot_predictions(
                 settings,
                 d_plot,

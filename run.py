@@ -127,7 +127,7 @@ if __name__ == "__main__":
         visualize.visualize(settings)
 
     if settings.plot_lcs:
-        early_prediction.make_early_prediction(settings)
+        early_prediction.make_early_prediction(settings,nb_lcs =20)
 
     if settings.plot_prediction_distribution:
         prediction_distribution.plot_prediction_distribution(settings)
