@@ -85,7 +85,7 @@ def get_args():
     )
     parser.add_argument("--metric_files", nargs="+",
                         help="Path to metric files")
-    parser.add_argument("--done_file", default=None, type=str,help="Path to done file (task completed)")
+    parser.add_argument("--done_file", default=None, type=str,help="Done or failure file name")
 
 
     #######################

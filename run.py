@@ -22,171 +22,180 @@ from supernnova.validation import (
 
 if __name__ == "__main__":
 
-    # Get conf parameters
-    settings = conf.get_settings()
+    try:
 
-    # setting random seeds
-    np.random.seed(settings.seed)
-    import torch
+        # Get conf parameters
+        settings = conf.get_settings()
 
-    torch.manual_seed(settings.seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(settings.seed)
+        # setting random seeds
+        np.random.seed(settings.seed)
+        import torch
 
-    ################
-    # DATA
-    ################
-    if settings.data:
-        # Build an HDF5 database
-        make_dataset.make_dataset(settings)
-        lu.print_blue("Finished constructing dataset")
+        torch.manual_seed(settings.seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(settings.seed)
 
-    ################
-    # TRAINING
-    ################
-    if settings.train_rnn:
+        ################
+        # DATA
+        ################
+        if settings.data:
+            # Build an HDF5 database
+            make_dataset.make_dataset(settings)
+            lu.print_blue("Finished constructing dataset")
 
-        # Train
-        if settings.cyclic:
-            train_rnn.train_cyclic(settings)
-        else:
-            train_rnn.train(settings)
+        ################
+        # TRAINING
+        ################
+        if settings.train_rnn:
 
-        # Obtain predictions
-        validate_rnn.get_predictions(settings)
-        # Compute metrics
-        metrics.get_metrics_singlemodel(settings, model_type="rnn")
-        # Plot some lightcurves
-        early_prediction.make_early_prediction(settings)
+            # Train
+            if settings.cyclic:
+                train_rnn.train_cyclic(settings)
+            else:
+                train_rnn.train(settings)
 
-        lu.print_blue("Finished rnn training, validating, testing and plotting lcs")
-
-    if settings.train_rf:
-
-        train_randomforest.train(settings)
-        # Obtain predictions
-        validate_randomforest.get_predictions(settings)
-        # Compute metrics
-        metrics.get_metrics_singlemodel(settings, model_type="rf")
-
-        lu.print_blue("Finished rf training, validating and testing")
-
-    ################
-    # VALIDATION
-    ################
-    if settings.validate_rnn:
-
-        if settings.model_files is None:
+            # Obtain predictions
             validate_rnn.get_predictions(settings)
             # Compute metrics
             metrics.get_metrics_singlemodel(settings, model_type="rnn")
-        else:
-            for model_file in settings.model_files:
-                # Restore model settings
-                model_settings = conf.get_settings_from_dump(
-                    settings,
-                    model_file,
-                    override_source_data=settings.override_source_data,
-                )
-                # Get predictions
-                prediction_file = validate_rnn.get_predictions(
-                    model_settings, model_file=model_file
-                )
-                # Compute metrics
-                metrics.get_metrics_singlemodel(
-                    model_settings, prediction_file=prediction_file, model_type="rnn"
-                )
+            # Plot some lightcurves
+            early_prediction.make_early_prediction(settings)
 
-    if settings.validate_rf:
+            lu.print_blue("Finished rnn training, validating, testing and plotting lcs")
 
-        if settings.model_files is None:
+        if settings.train_rf:
+
+            train_randomforest.train(settings)
+            # Obtain predictions
             validate_randomforest.get_predictions(settings)
             # Compute metrics
             metrics.get_metrics_singlemodel(settings, model_type="rf")
-        else:
-            for model_file in settings.model_files:
-                # Restore model settings
-                model_settings = conf.get_settings_from_dump(
-                    settings,
-                    model_file,
-                    override_source_data=settings.override_source_data,
-                )
-                # Get predictions
-                prediction_file = validate_randomforest.get_predictions(
-                    model_settings, model_file=model_file
-                )
+
+            lu.print_blue("Finished rf training, validating and testing")
+
+        ################
+        # VALIDATION
+        ################
+        if settings.validate_rnn:
+
+            if settings.model_files is None:
+                validate_rnn.get_predictions(settings)
                 # Compute metrics
+                metrics.get_metrics_singlemodel(settings, model_type="rnn")
+            else:
+                for model_file in settings.model_files:
+                    # Restore model settings
+                    model_settings = conf.get_settings_from_dump(
+                        settings,
+                        model_file,
+                        override_source_data=settings.override_source_data,
+                    )
+                    # Get predictions
+                    prediction_file = validate_rnn.get_predictions(
+                        model_settings, model_file=model_file
+                    )
+                    # Compute metrics
+                    metrics.get_metrics_singlemodel(
+                        model_settings, prediction_file=prediction_file, model_type="rnn"
+                    )
+
+        if settings.validate_rf:
+
+            if settings.model_files is None:
+                validate_randomforest.get_predictions(settings)
+                # Compute metrics
+                metrics.get_metrics_singlemodel(settings, model_type="rf")
+            else:
+                for model_file in settings.model_files:
+                    # Restore model settings
+                    model_settings = conf.get_settings_from_dump(
+                        settings,
+                        model_file,
+                        override_source_data=settings.override_source_data,
+                    )
+                    # Get predictions
+                    prediction_file = validate_randomforest.get_predictions(
+                        model_settings, model_file=model_file
+                    )
+                    # Compute metrics
+                    metrics.get_metrics_singlemodel(
+                        model_settings, prediction_file=prediction_file, model_type="rf"
+                    )
+
+        ##################################
+        # VISUALIZE
+        ##################################
+        if settings.explore_lightcurves:
+            visualize.visualize(settings)
+
+        if settings.plot_lcs:
+            early_prediction.make_early_prediction(settings,nb_lcs =20)
+
+        if settings.plot_prediction_distribution:
+            prediction_distribution.plot_prediction_distribution(settings)
+
+        if settings.science_plots:
+            # Provide a prediction_files argument to carry out plot
+            sp.science_plots(settings)
+
+        if settings.calibration:
+            # Provide a metric_files arguments to carry out plot
+            sp.plot_calibration(settings)
+
+        ##################################
+        # PERFORMANCE
+        ##################################
+
+        if settings.metrics:
+            for prediction_file in settings.prediction_files:
+                model_type = "rf" if "randomforest" in prediction_file else "rnn"
                 metrics.get_metrics_singlemodel(
-                    model_settings, prediction_file=prediction_file, model_type="rf"
+                    conf.get_settings_from_dump(settings, prediction_file),
+                    prediction_file=prediction_file,
+                    model_type=model_type,
                 )
+            lu.print_blue("Finished computing metrics")
 
-    ##################################
-    # VISUALIZE
-    ##################################
-    if settings.explore_lightcurves:
-        visualize.visualize(settings)
+        if settings.performance:
+            metrics.aggregate_metrics(settings)
+            lu.print_blue("Finished aggregating performance")
+            # Stats and plots in paper
+            st.SuperNNova_stats_and_plots(settings)
+            lu.print_blue("Finished assembling paper performance")
 
-    if settings.plot_lcs:
-        early_prediction.make_early_prediction(settings,nb_lcs =20)
+        # Speec benchmarks
+        if settings.speed:
+            validate_rnn.get_predictions_for_speed_benchmark(settings)
 
-    if settings.plot_prediction_distribution:
-        prediction_distribution.plot_prediction_distribution(settings)
+        ################
+        # PLASTICC
+        ################
 
-    if settings.science_plots:
-        # Provide a prediction_files argument to carry out plot
-        sp.science_plots(settings)
+        if settings.viz_plasticc:
+            visualize_plasticc.visualize_plasticc(settings)
 
-    if settings.calibration:
-        # Provide a metric_files arguments to carry out plot
-        sp.plot_calibration(settings)
+        if settings.data_plasticc_train:
+            make_dataset_plasticc.make_dataset(settings)
 
-    ##################################
-    # PERFORMANCE
-    ##################################
+        if settings.data_plasticc_test:
+            make_dataset_plasticc.make_test_dataset(settings)
 
-    if settings.metrics:
-        for prediction_file in settings.prediction_files:
-            model_type = "rf" if "randomforest" in prediction_file else "rnn"
-            metrics.get_metrics_singlemodel(
-                conf.get_settings_from_dump(settings, prediction_file),
-                prediction_file=prediction_file,
-                model_type=model_type,
-            )
-        lu.print_blue("Finished computing metrics")
+        if settings.train_plasticc:
+            if settings.cyclic:
+                train_rnn.train_cyclic(settings)
+            else:
+                train_rnn.train(settings)
 
-    if settings.performance:
-        metrics.aggregate_metrics(settings)
-        lu.print_blue("Finished aggregating performance")
-        # Stats and plots in paper
-        st.SuperNNova_stats_and_plots(settings)
-        lu.print_blue("Finished assembling paper performance")
+        if settings.predict_plasticc:
+            validate_plasticc.get_predictions(settings)
 
-    # Speec benchmarks
-    if settings.speed:
-        validate_rnn.get_predictions_for_speed_benchmark(settings)
+        if settings.done_file:
+            with open(Path(settings.done_file), 'w') as the_file:
+                the_file.write('SUCCESS\n')
 
-    ################
-    # PLASTICC
-    ################
-
-    if settings.viz_plasticc:
-        visualize_plasticc.visualize_plasticc(settings)
-
-    if settings.data_plasticc_train:
-        make_dataset_plasticc.make_dataset(settings)
-
-    if settings.data_plasticc_test:
-        make_dataset_plasticc.make_test_dataset(settings)
-
-    if settings.train_plasticc:
-        if settings.cyclic:
-            train_rnn.train_cyclic(settings)
-        else:
-            train_rnn.train(settings)
-
-    if settings.predict_plasticc:
-        validate_plasticc.get_predictions(settings)
-
-    if settings.done_file:
-    	Path(f"{settings.done_file}/done_task.txt").touch()
+    except Exception as e:
+        if settings.done_file:
+            with open(Path(settings.done_file), 'w') as the_file:
+                the_file.write('FAILURE\n')
+        raise e
 
