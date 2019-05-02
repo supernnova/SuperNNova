@@ -194,6 +194,7 @@ if __name__ == "__main__":
                 the_file.write('SUCCESS\n')
 
     except Exception as e:
+        settings = conf.get_settings()
         if settings.done_file:
             with open(Path(settings.done_file), 'w') as the_file:
                 the_file.write('FAILURE\n')

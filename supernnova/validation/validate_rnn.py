@@ -316,6 +316,18 @@ def get_predictions(settings, model_file=None):
     # Save predictions
     df_pred.to_pickle(prediction_file)
 
+    # Saving aggregated preds for bayesian models
+    if settings.model == 'variational' or settings.model == 'bayesian':
+        med_pred = df_pred.groupby("SNID").median()
+        med_pred.columns = [str(col) + '_median' for col in med_pred.columns]
+        std_pred = df_pred.groupby("SNID").std()
+        std_pred.columns = [str(col) + '_std' for col in std_pred.columns]
+        df_bayes = pd.merge(med_pred,std_pred,on="SNID")
+        df_bayes["SNID"] = df_bayes.index
+        df_bayes["target"] = df_bayes["target_median"]
+        bay_pred_file = prediction_file.replace(".pickle","_aggregated.pickle")
+        df_bayes.to_pickle(bay_pred_file)
+
     g_pred = df_pred.groupby("SNID").median()
     preds = g_pred[[f"all_class{i}" for i in range(settings.nb_classes)]].values
     preds = np.argmax(preds, 1)
