@@ -43,7 +43,11 @@ def normalize_arr(arr, settings):
 
     arr_to_norm = arr[:, settings.idx_features_to_normalize]
 
-    arr_normed = np.log(arr_to_norm - arr_min + 1e-5)
+    subtracted_min = arr_to_norm - arr_min
+    # setting to min values below normalization
+    # necessary if using an already trained model
+    subtracted_min[subtracted_min<0] = 0
+    arr_normed = np.log(subtracted_min + 1e-5)
     arr_normed = (arr_normed - arr_mean) / arr_std
 
     arr[:, settings.idx_features_to_normalize] = arr_normed

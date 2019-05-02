@@ -412,8 +412,8 @@ def save_to_HDF5(settings, df):
         with open(fname, "r") as f:
             dic_norm = json.load(f)
         for feat in settings.training_features_to_normalize:
-            # only need to do this once
-            df = df[df[feat]>=dic_norm[feat]['min']].copy()
+            # should keep the values, just set them to the min
+            df_tmp = df[feat].apply(lambda x: x if x>=dic_norm[feat]['min'] else dic_norm[feat]['min'])
     # Get the list of lightcurve IDs
     ID = df.index.values
     # Find out when ID changes => find start and end idx of each lightcurve
