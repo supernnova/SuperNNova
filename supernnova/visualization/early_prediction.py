@@ -200,6 +200,7 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
     # Load RNN model
     dict_rnn = {}
     if settings.model_files is None:
+        import ipdb; ipdb.set_trace()
         settings.model_files = [f"{settings.rnn_dir}/{settings.pytorch_model_name}.pt"]
     else:
         # check if the model files are there
@@ -278,9 +279,19 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
             X_unnormed = tu.unnormalize_arr(X_normed, settings)
             # Check we do recover X_ori when OOD is None
             if OOD is None:
-                assert np.all(
+                try:
+                    assert np.all(
                     np.isclose(np.ravel(X_ori), np.ravel(X_unnormed), atol=1e-2)
                 )
+                except Exception:
+                    # if this is due to the new min for the norm, continues
+                    idxs = np.where(~np.isclose(np.ravel(X_ori), np.ravel(X_unnormed), atol=1e-2))
+                    checking = []
+                    for idx in idxs:
+                        if np.ravel(X_ori)[idx]<np.ravel(settings.arr_norm).min():
+                            continue
+                        else:
+                            raise Exception
 
             # TODO: IMPROVE
             df_temp = pd.DataFrame(data=X_unnormed, columns=features)
