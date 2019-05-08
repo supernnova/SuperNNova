@@ -384,4 +384,24 @@ def get_settings_from_dump(
     if override_source_data is not None:
         settings.override_source_data = override_source_data
 
+    # load normalization from json dump
+    settings = get_norm_from_model(model_or_pred_or_metrics_file,settings)
+    
+    return settings
+
+def get_norm_from_model(model_file,settings):
+
+    import json
+    import numpy as np
+    norm_file = Path(model_file).parent / "data_norm.json"
+    with open(norm_file, "r") as f:
+        norm_args = json.load(f)
+        list_norm = []
+        for f in settings.training_features_to_normalize:
+                minv = norm_args[f]['min']
+                meanv = norm_args[f]['mean']
+                stdv = norm_args[f]['std']
+                list_norm.append([minv, meanv, stdv])
+    settings.arr_norm = np.array(list_norm)
+
     return settings

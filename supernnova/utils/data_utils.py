@@ -404,16 +404,6 @@ def save_to_HDF5(settings, df):
 
     assert df.index.name == "SNID", "Must set SNID as index"
 
-    if settings.model_files:
-        # skiming lcs where min<min(model_file training set)
-        logging_utils.print_green(
-                "Load normalizations from model training for min skiming")
-        fname = f"{Path(settings.model_files[0]).parent}/data_norm.json"
-        with open(fname, "r") as f:
-            dic_norm = json.load(f)
-        for feat in settings.training_features_to_normalize:
-            # should keep the values, just set them to the min
-            df_tmp = df[feat].apply(lambda x: x if x>=dic_norm[feat]['min'] else dic_norm[feat]['min'])
     # Get the list of lightcurve IDs
     ID = df.index.values
     # Find out when ID changes => find start and end idx of each lightcurve
@@ -524,76 +514,49 @@ def save_to_HDF5(settings, df):
 
         df.drop(columns=["time", "SNID", "PEAKMJDNORM"], inplace=True)
 
-        if not settings.model_files:
-            ########################
-            # Normalize per feature
-            ########################
-            logging_utils.print_green("Compute normalizations")
-            gnorm = hf.create_group("normalizations")
+        ########################
+        # Normalize per feature
+        ########################
+        logging_utils.print_green("Compute normalizations")
+        gnorm = hf.create_group("normalizations")
 
-            # using normalization per feature
-            for feat in settings.training_features_to_normalize:
-                # Log transform plus mean subtraction and standard dev subtraction
-                log_standardized = log_standardization(df[feat].values)
-                # Store normalization parameters
-                gnorm.create_dataset(f"{feat}/min", data=log_standardized.arr_min)
-                gnorm.create_dataset(f"{feat}/mean", data=log_standardized.arr_mean)
-                gnorm.create_dataset(f"{feat}/std", data=log_standardized.arr_std)
-
-            #####################################
-            # Normalize flux and fluxerr globally
-            #####################################
-            logging_utils.print_green("Compute global normalizations")
-            gnorm = hf.create_group("normalizations_global")
-
-            ################
-            # FLUX features
-            #################
-            flux_features = [f"FLUXCAL_{f}" for f in FILTERS]
-            flux_log_standardized = log_standardization(
-                df[flux_features].values)
+        # using normalization per feature
+        for feat in settings.training_features_to_normalize:
+            # Log transform plus mean subtraction and standard dev subtraction
+            log_standardized = log_standardization(df[feat].values)
             # Store normalization parameters
-            gnorm.create_dataset(f"FLUXCAL/min", data=flux_log_standardized.arr_min)
-            gnorm.create_dataset(f"FLUXCAL/mean", data=flux_log_standardized.arr_mean)
-            gnorm.create_dataset(f"FLUXCAL/std", data=flux_log_standardized.arr_std)
+            gnorm.create_dataset(f"{feat}/min", data=log_standardized.arr_min)
+            gnorm.create_dataset(f"{feat}/mean", data=log_standardized.arr_mean)
+            gnorm.create_dataset(f"{feat}/std", data=log_standardized.arr_std)
 
-            ###################
-            # FLUXERR features
-            ###################
-            fluxerr_features = [f"FLUXCALERR_{f}" for f in FILTERS]
-            fluxerr_log_standardized = log_standardization(
-                df[fluxerr_features].values)
-            # Store normalization parameters
-            gnorm.create_dataset(f"FLUXCALERR/min", data=fluxerr_log_standardized.arr_min)
-            gnorm.create_dataset(f"FLUXCALERR/mean", data=fluxerr_log_standardized.arr_mean)
-            gnorm.create_dataset(f"FLUXCALERR/std", data=fluxerr_log_standardized.arr_std)
+        #####################################
+        # Normalize flux and fluxerr globally
+        #####################################
+        logging_utils.print_green("Compute global normalizations")
+        gnorm = hf.create_group("normalizations_global")
 
-        else:
-            ########################
-            # Load normalizations from model_file
-            ########################
-            logging_utils.print_green(
-                "Load normalizations from model training")
-            logging_utils.print_yellow(
-                "Warning, only valid for the given model!")
-            fname = f"{Path(settings.model_files[0]).parent}/data_norm.json"
-            with open(fname, "r") as f:
-                dic_norm = json.load(f)
-            gnorm = hf.create_group("normalizations")
-            # Store normalization parameters
-            # "as if" per feature
-            for feat in settings.training_features_to_normalize:
-                gnorm.create_dataset(f"{feat}/min", data=dic_norm[feat]['min'])
-                gnorm.create_dataset(f"{feat}/mean", data=dic_norm[feat]['mean'])
-                gnorm.create_dataset(f"{feat}/std", data=dic_norm[feat]['std'])
-            # "as if" global (they are all the same)
-            gnorm = hf.create_group("normalizations_global")
-            gnorm.create_dataset(f"FLUXCAL/min", data=dic_norm["FLUXCAL_g"]['min'])
-            gnorm.create_dataset(f"FLUXCAL/mean", data=dic_norm["FLUXCAL_g"]['mean'])
-            gnorm.create_dataset(f"FLUXCAL/std", data=dic_norm["FLUXCAL_g"]['std'])
-            gnorm.create_dataset(f"FLUXCALERR/min", data=dic_norm["FLUXCALERR_g"]['min'])
-            gnorm.create_dataset(f"FLUXCALERR/mean", data=dic_norm["FLUXCALERR_g"]['mean'])
-            gnorm.create_dataset(f"FLUXCALERR/std", data=dic_norm["FLUXCALERR_g"]['std'])
+        ################
+        # FLUX features
+        #################
+        flux_features = [f"FLUXCAL_{f}" for f in FILTERS]
+        flux_log_standardized = log_standardization(
+            df[flux_features].values)
+        # Store normalization parameters
+        gnorm.create_dataset(f"FLUXCAL/min", data=flux_log_standardized.arr_min)
+        gnorm.create_dataset(f"FLUXCAL/mean", data=flux_log_standardized.arr_mean)
+        gnorm.create_dataset(f"FLUXCAL/std", data=flux_log_standardized.arr_std)
+
+        ###################
+        # FLUXERR features
+        ###################
+        fluxerr_features = [f"FLUXCALERR_{f}" for f in FILTERS]
+        fluxerr_log_standardized = log_standardization(
+            df[fluxerr_features].values)
+        # Store normalization parameters
+        gnorm.create_dataset(f"FLUXCALERR/min", data=fluxerr_log_standardized.arr_min)
+        gnorm.create_dataset(f"FLUXCALERR/mean", data=fluxerr_log_standardized.arr_mean)
+        gnorm.create_dataset(f"FLUXCALERR/std", data=fluxerr_log_standardized.arr_std)
+
 
         ####################################
         # Save the rest of the data to hdf5

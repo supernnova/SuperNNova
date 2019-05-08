@@ -129,6 +129,9 @@ if __name__ == "__main__":
             visualize.visualize(settings)
 
         if settings.plot_lcs:
+            if settings.model_files:
+                for model_file in settings.model_files:
+                    settings = conf.get_norm_from_model(model_file,settings)
             early_prediction.make_early_prediction(settings,nb_lcs =20)
 
         if settings.plot_prediction_distribution:

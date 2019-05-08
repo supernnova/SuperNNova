@@ -1,6 +1,5 @@
 import os
 import math
-import json
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -85,7 +84,7 @@ def get_batch_predictions_MFE(rnn, X, target):
     return arr_preds, arr_target
 
 
-def get_predictions(settings, model_file = None):
+def get_predictions(settings, model_file=None):
     """Obtain predictions for a given RNN model specified by the
     ``settings`` argument or alternatively, by a model_file
 
@@ -100,33 +99,6 @@ def get_predictions(settings, model_file = None):
         settings (ExperimentSettings): custom class to hold hyperparameters
         model_file (str): Path to saved model weights. Default: ``None``
     """
-    # load normalization from model
-    # (which is not in model settings but dumped in json)
-    if model_file:
-        fname = f"{Path(model_file).parent}/data_norm.json"
-        with open(fname, "r") as f:
-            dic_norm = json.load(f)
-
-        list_norm = []
-        for f in settings.training_features_to_normalize:
-            if settings.norm == "perfilter":
-                for f in self.training_features_to_normalize:
-                    minv = dic_norm[f]['min']
-                    meanv = dic_norm[f]['mean']
-                    stdv = dic_norm[f]['std']
-                    list_norm.append([minv, meanv, stdv])
-            else:
-                if "FLUX" in f:
-                    minv = dic_norm['FLUXCAL_g']['min']
-                    meanv = dic_norm['FLUXCAL_g']['mean']
-                    stdv = dic_norm['FLUXCAL_g']['std']
-                    list_norm.append([minv, meanv, stdv])
-                else:
-                    minv = dic_norm['FLUXCALERR_g']['min']
-                    meanv = dic_norm['FLUXCALERR_g']['mean']
-                    stdv = dic_norm['FLUXCALERR_g']['std']
-                    list_norm.append([minv, meanv, stdv])
-        settings.arr_norm = np.array(list_norm)
 
     settings.random_length = False
     settings.random_redshift = False

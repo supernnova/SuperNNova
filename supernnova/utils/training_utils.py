@@ -42,12 +42,10 @@ def normalize_arr(arr, settings):
     arr_std = settings.arr_norm[:, 2]
 
     arr_to_norm = arr[:, settings.idx_features_to_normalize]
+    # clipping
+    arr_to_norm = np.clip(arr_to_norm, arr_min, np.inf)
 
-    subtracted_min = arr_to_norm - arr_min
-    # setting to min values below normalization
-    # necessary if using an already trained model
-    subtracted_min[subtracted_min<0] = 0
-    arr_normed = np.log(subtracted_min + 1e-5)
+    arr_normed = np.log(arr_to_norm - arr_min + 1e-5)
     arr_normed = (arr_normed - arr_mean) / arr_std
 
     arr[:, settings.idx_features_to_normalize] = arr_normed
@@ -120,11 +118,18 @@ def fill_data_list(
         # Keep an unnormalized copy of the data (for test and display)
         X_ori = X_all.copy()[:, settings.idx_features]
 
+        # check if normalization converges
+        # using clipping in case of min<model_min
+        X_tmp = unnormalize_arr(normalize_arr(X_all.copy(),settings), settings)
+        X_clip = X_all.copy()
+        X_clip = np.clip(X_clip[:,settings.idx_features_to_normalize], settings.arr_norm[:, 0], np.inf)
+        X_all[:,settings.idx_features_to_normalize] = X_clip
+        assert np.all(np.all(np.isclose(np.ravel(X_all), np.ravel(X_tmp), atol=1e-2)))
         # Normalize features that need to be normalized
         X_normed = X_all.copy()
-        X_normed = normalize_arr(X_normed, settings)
+        X_normed_tmp = normalize_arr(X_normed, settings)
         # Select features as specified by the settings
-        X_normed = X_normed[:, settings.idx_features]
+        X_normed = X_normed_tmp[:, settings.idx_features]
 
         if test is True:
             list_data.append((X_normed, target, lc, X_all, X_ori))
