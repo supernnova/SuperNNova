@@ -1,3 +1,9 @@
+import torch.nn as nn
+import torch
+from . import logging_utils as lu
+from ..training import bayesian_rnn
+from ..training import variational_rnn
+from ..training import vanilla_rnn
 import os
 import h5py
 import json
@@ -9,15 +15,6 @@ from sklearn import metrics
 import matplotlib.pyplot as plt
 
 plt.switch_backend("agg")
-
-from ..training import vanilla_rnn
-from ..training import variational_rnn
-from ..training import bayesian_rnn
-
-from . import logging_utils as lu
-
-import torch
-import torch.nn as nn
 
 
 def normalize_arr(arr, settings):
@@ -70,7 +67,6 @@ def unnormalize_arr(arr, settings):
     arr_min = settings.arr_norm[:, 0]
     arr_mean = settings.arr_norm[:, 1]
     arr_std = settings.arr_norm[:, 2]
-
     arr_to_unnorm = arr[:, settings.idx_features_to_normalize]
     arr_to_unnorm = arr_to_unnorm * arr_std + arr_mean
     arr_unnormed = np.exp(arr_to_unnorm) + arr_min - 1E-5
@@ -120,11 +116,14 @@ def fill_data_list(
 
         # check if normalization converges
         # using clipping in case of min<model_min
-        X_tmp = unnormalize_arr(normalize_arr(X_all.copy(),settings), settings)
+        X_tmp = unnormalize_arr(normalize_arr(
+            X_all.copy(), settings), settings)
         X_clip = X_all.copy()
-        X_clip = np.clip(X_clip[:,settings.idx_features_to_normalize], settings.arr_norm[:, 0], np.inf)
-        X_all[:,settings.idx_features_to_normalize] = X_clip
-        assert np.all(np.all(np.isclose(np.ravel(X_all), np.ravel(X_tmp), atol=1e-2)))
+        X_clip = np.clip(
+            X_clip[:, settings.idx_features_to_normalize], settings.arr_norm[:, 0], np.inf)
+        X_all[:, settings.idx_features_to_normalize] = X_clip
+        assert np.all(
+            np.all(np.isclose(np.ravel(X_all), np.ravel(X_tmp), atol=1e-2)))
         # Normalize features that need to be normalized
         X_normed = X_all.copy()
         X_normed_tmp = normalize_arr(X_normed, settings)
@@ -172,16 +171,26 @@ def load_HDF5(settings, test=False):
             target_key = "target"
             dataset_split_key = "dataset"
 
-        idxs_train = np.where(hf[dataset_split_key][:] == 0)[0]
-        idxs_val = np.where(hf[dataset_split_key][:] == 1)[0]
-        idxs_test = np.where(hf[dataset_split_key][:] == 2)[0]
+        if test:
+            # ridiculous failsafe in case we have different classes in dataset/model
+            # we will always have 2 classes
+            try:
+                idxs_test = np.where(hf[dataset_split_key][:] == 2)[0]
+            except Exception:
+                idxs_test = np.where(
+                    hf['dataset_photometry_2classes'][:] != 100)[0]
+        else:
+            idxs_train = np.where(hf[dataset_split_key][:] == 0)[0]
+            idxs_val = np.where(hf[dataset_split_key][:] == 1)[0]
+            idxs_test = np.where(hf[dataset_split_key][:] == 2)[0]
 
-        # Shuffle for good measure
-        np.random.shuffle(idxs_train)
-        np.random.shuffle(idxs_val)
-        np.random.shuffle(idxs_test)
+            # Shuffle for good measure
+            np.random.shuffle(idxs_train)
+            np.random.shuffle(idxs_val)
+            np.random.shuffle(idxs_test)
 
-        idxs_train = idxs_train[: int(settings.data_fraction * len(idxs_train))]
+            idxs_train = idxs_train[: int(
+                settings.data_fraction * len(idxs_train))]
 
         n_features = hf["data"].attrs["n_features"]
 
@@ -189,7 +198,15 @@ def load_HDF5(settings, test=False):
         lu.print_green("Features used", training_features)
 
         arr_data = hf["data"][:]
-        arr_target = hf[target_key][:]
+        if test:
+            # ridiculous failsafe in case we have different classes in dataset/model
+            # we will always have 2 classes
+            try:
+                arr_target = hf[target_key][:]
+            except Exception:
+                arr_target = hf['target_2classes'][:]
+        else:
+            arr_target = hf[target_key][:]
         arr_SNID = hf["SNID"][:]
 
         if test is True:
@@ -362,7 +379,8 @@ def get_data_batch(list_data, idxs, settings, max_lengths=None, OOD=None):
         try:
             X_tensor[: X.shape[0], i, :] = torch.FloatTensor(X)
         except Exception:
-            X_tensor[: X.shape[0], i, :] = torch.FloatTensor(torch.from_numpy(np.flip(X,axis=0).copy()))
+            X_tensor[: X.shape[0], i, :] = torch.FloatTensor(
+                torch.from_numpy(np.flip(X, axis=0).copy()))
         list_target.append(target)
         lengths.append(list_len[idx])
 
@@ -462,7 +480,8 @@ def plot_loss(d_train, d_val, epoch, settings):
     for key in d_train.keys():
 
         plt.figure()
-        plt.plot(d_train["epoch"], d_train[key], label="Train %s" % key.title())
+        plt.plot(d_train["epoch"], d_train[key],
+                 label="Train %s" % key.title())
         plt.plot(d_val["epoch"], d_val[key], label="Val %s" % key.title())
         plt.legend(loc="best", fontsize=18)
         plt.xlabel("Step", fontsize=22)
@@ -675,7 +694,8 @@ def train_and_evaluate_randomforest_model(clf, X_train, y_train, X_val, y_val):
     # Compute AUC and precision
     fpr, tpr, thresholds = metrics.roc_curve(y_val, probas_[:, 1])
     roc_auc = metrics.auc(fpr, tpr)
-    pscore = metrics.precision_score(y_val, clf.predict(X_val), average="binary")
+    pscore = metrics.precision_score(
+        y_val, clf.predict(X_val), average="binary")
     lu.print_green("Validation AUC", roc_auc)
     lu.print_green("Validation precision score", pscore)
 
@@ -684,7 +704,8 @@ def train_and_evaluate_randomforest_model(clf, X_train, y_train, X_val, y_val):
         100 * (sum(clf.predict(X_train) == y_train)) / X_train.shape[0],
     )
     lu.print_green(
-        "Val data accuracy", 100 * (sum(clf.predict(X_val) == y_val)) / X_val.shape[0]
+        "Val data accuracy", 100 *
+        (sum(clf.predict(X_val) == y_val)) / X_val.shape[0]
     )
 
     return clf
