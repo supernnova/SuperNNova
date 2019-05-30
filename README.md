@@ -8,11 +8,11 @@ For the main branch:
 The paper branch differs slightly from the master. Take a look to "changelog_paper_to_new_branch" or [Build the docs for this branch](#docs).
 
 ### Installation
-Clone this repository
+Clone this repository (preferred)
 ```bash
-git clone https://gitlab.com/tdeboissiere/supernnova.git
+git clone https://github.com/supernnova/supernnova.git
 ```
-or install pip module
+or install pip module (check versioning)
 ```bash
 pip install supernnova
 ```

@@ -75,11 +75,22 @@ Creating a database for testing a trained model
 Models are dependent on their training sets. When generating a new dataset to be classified by an existing model, the same normalization as in the training must be used. This is how to create that linked database.
 
 .. code::
-python run.py --dump_dir <path/to/save/database/> --data --data_testing  --raw_dir <path/to/raw/data/>  --model_files <path/to/model/to/be/used/modelname.pt> 
+
+    python run.py --dump_dir <path/to/save/database/> --data --data_testing  --raw_dir <path/to/raw/data/>  --model_files <path/to/model/to/be/used/modelname.pt> 
 
 Note that:
 - there is no need to specify salt2fits file to make the dataset. It can be used if available but it is not needed ``--fits_dir <empty/path/>``.
 - using ``--data_testing`` option will generate a 100% testing set (see below for more details).
+
+
+Creating a database with photometry limited to a time window
+------------------------------
+Photometric measurements may span over a larger time range than the one desired for classification. For example, a year of photometry is much larger than the usual SN timespan. Therefore, it may be desirable to just use a subset of this photometry (observed epochs cuts). To do so:
+
+.. code::
+
+    python run.py --dump_dir <path/to/save/database/> --data --raw_dir <path/to/raw/data/>  --photo_window_files <path/to/csv/with/peakMJD> --photo_window_var <name/of/variable/in/csv/to/cut/on> --photo_window_min <negative/int/indicating/days/before/var> --photo_window_max <positive/int/indicating/days/after/var> 
+
 
 Under the hood
 -------------------------------

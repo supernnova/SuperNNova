@@ -85,8 +85,8 @@ def get_args():
     )
     parser.add_argument("--metric_files", nargs="+",
                         help="Path to metric files")
-    parser.add_argument("--done_file", default=None, type=str,help="Done or failure file name")
-
+    parser.add_argument("--done_file", default=None,
+                        type=str, help="Done or failure file name")
 
     #######################
     # PLASTICC parameters
@@ -178,6 +178,28 @@ def get_args():
         action="store_true",
         help="Create database with only validation set",
     )
+    # Photometry window
+    parser.add_argument(
+        "--photo_window_files", nargs="+", help="Path to fits with PEAKMJD estimation"
+    )
+    parser.add_argument(
+        "--photo_window_var",
+        type=str,
+        default='PKMJDINI',
+        help="Variable representing PEAKMJD for photo window (in photo_window_files)"
+    )
+    parser.add_argument(
+        "--photo_window_min",
+        type=int,
+        default=-30,
+        help="Window size before peak"
+    )
+    parser.add_argument(
+        "--photo_window_max",
+        type=int,
+        default=100,
+        help="Window size after peak"
+    )
 
     ######################
     # RNN  parameters
@@ -233,7 +255,7 @@ def get_args():
         "--nb_classes", default=2, type=int, help="Number of classification targets"
     )
     parser.add_argument(
-        "--sntypes", default = OrderedDict({"101": "Ia", "120": "IIP", "121": "IIn", "122": "IIL1", "123": "IIL2", "132": "Ib", "133": "Ic"}), type=json.loads, help="SN classes in sims (put Ia always first)"
+        "--sntypes", default=OrderedDict({"101": "Ia", "120": "IIP", "121": "IIn", "122": "IIL1", "123": "IIL2", "132": "Ib", "133": "Ic"}), type=json.loads, help="SN classes in sims (put Ia always first)"
     )
     parser.add_argument(
         "--nb_epoch", default=90, type=int, help="Number of batches per epoch"
@@ -321,11 +343,12 @@ def get_args():
 
     return args
 
+
 def get_settings(args=None):
-    
+
     if not args:
         args = get_args()
-    
+
     # Initialize a settings instance
     if any(
         [
@@ -385,11 +408,12 @@ def get_settings_from_dump(
         settings.override_source_data = override_source_data
 
     # load normalization from json dump
-    settings = get_norm_from_model(model_or_pred_or_metrics_file,settings)
-    
+    settings = get_norm_from_model(model_or_pred_or_metrics_file, settings)
+
     return settings
 
-def get_norm_from_model(model_file,settings):
+
+def get_norm_from_model(model_file, settings):
 
     import json
     import numpy as np
@@ -398,10 +422,10 @@ def get_norm_from_model(model_file,settings):
         norm_args = json.load(f)
         list_norm = []
         for f in settings.training_features_to_normalize:
-                minv = norm_args[f]['min']
-                meanv = norm_args[f]['mean']
-                stdv = norm_args[f]['std']
-                list_norm.append([minv, meanv, stdv])
+            minv = norm_args[f]['min']
+            meanv = norm_args[f]['mean']
+            stdv = norm_args[f]['std']
+            list_norm.append([minv, meanv, stdv])
     settings.arr_norm = np.array(list_norm)
 
     return settings

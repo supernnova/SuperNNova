@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 import multiprocessing
+from pathlib import Path
 from natsort import natsorted
 from functools import partial
 from astropy.table import Table
@@ -306,6 +307,27 @@ def process_single_FITS(file_path, settings):
     keep_col_header = [k for k in keep_col_header if k in df_header.keys()]
     df_header = df_header[keep_col_header].copy()
     df_header["SNID"] = df_header["SNID"].astype(np.int32)
+
+    #############################################
+    # Photometry window init
+    #############################################
+    if settings.photo_window_files:
+        if Path(settings.photo_window_files[0]).exists():
+            # load fits file
+            df_peak = pd.read_csv(settings.photo_window_files[0], comment="#",
+                          delimiter=" ", skipinitialspace=True)
+            df_peak["SNID"] = df_peak["CID"].astype(int)
+            try:
+                df_peak = df_peak[['SNID',settings.photo_window_var]]
+            except Exception:
+                logging_utils.print_red('Provide a correct photo_window variable')
+                raise Exception
+            # merge with header
+            df_header = pd.merge(df_header, df_peak, on='SNID')
+        else:
+            logging_utils.print_red('Provide a valid photo_window_file')
+    
+
     #############################################
     # Compute SNID for df and join with df_header
     #############################################
@@ -325,6 +347,18 @@ def process_single_FITS(file_path, settings):
     df = df.join(df_header).reset_index()
 
     #############################################
+    # Photometry window selection
+    #############################################
+    if settings.photo_window_files:
+        df['window_time_cut'] = True
+        mask = (df['MJD'] != -777.00)
+        df['window_delta_time'] = df['MJD'] - df[settings.photo_window_var]
+        df.loc[mask, 'window_time_cut'] = df["window_delta_time"].apply(
+        lambda x: True if (x > 0 and x < settings.photo_window_max) else (True if (x <= 0 and x > settings.photo_window_min) else False)
+        )
+        df = df[df['window_time_cut'] == True]
+
+    #############################################
     # Miscellaneous data processing
     #############################################
     df = df[keep_col + keep_col_header].copy()
@@ -337,7 +371,7 @@ def process_single_FITS(file_path, settings):
     # Add delta time
     df = data_utils.compute_delta_time(df)
     # Remove rows post large delta time in the same light curve(delta_time > 150)
-    df = data_utils.remove_data_post_large_delta_time(df)
+    # df = data_utils.remove_data_post_large_delta_time(df)
 
     #############################################
     # Add class and dataset information
@@ -423,7 +457,7 @@ def process_single_csv(file_path, settings):
     # Add delta time
     df = data_utils.compute_delta_time(df)
     # Remove rows post large delta time in the same light curve(delta_time > 150)
-    df = data_utils.remove_data_post_large_delta_time(df)
+    # df = data_utils.remove_data_post_large_delta_time(df)
 
     #############################################
     # Add class and dataset information
@@ -480,13 +514,13 @@ def preprocess_data(settings):
     logging_utils.print_green("List to preprocess ", list_files)
     max_workers = multiprocessing.cpu_count()
 
+    host_spe_tmp = []
     # Split list files in chunks of size 10 or less
     # to get a progress bar and alleviate memory constraints
     num_elem = len(list_files)
     num_chunks = num_elem // 10 + 1
     list_chunks = np.array_split(np.arange(num_elem), num_chunks)
     # Loop over chunks of files
-    host_spe_tmp = []
     for chunk_idx in tqdm(list_chunks, desc="Preprocess", ncols=100):
         # Process each file in the chunk in parallel
         with ProcessPoolExecutor(max_workers=max_workers) as executor:
@@ -494,7 +528,8 @@ def preprocess_data(settings):
             # Need to cast to list because executor returns an iterator
             host_spe_tmp += list(executor.map(parallel_fn,
                                               list_files[start:end]))
-    # process_single_FITS(list_files[0], settings)
+    # for debugging
+    # host_spe_tmp.append(process_single_FITS(list_files[0], settings))
     # Save host spe for plotting and performance tests
     host_spe = [item for sublist in host_spe_tmp for item in sublist]
     pd.DataFrame(host_spe, columns=["SNID"]).to_pickle(
