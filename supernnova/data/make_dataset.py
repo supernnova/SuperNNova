@@ -35,8 +35,7 @@ def build_traintestval_splits(settings):
     max_workers = multiprocessing.cpu_count()
     photo_columns = ["SNID"] + [
         f"target_{nb_classes}classes"
-        # for nb_classes in [2,3, len(settings.sntypes.keys())]
-        for nb_classes in list(set([2, len(settings.sntypes.keys())]))
+        for nb_classes in list([2, len(settings.sntypes.keys())])
     ]
 
     # Load photometry
@@ -66,6 +65,7 @@ def build_traintestval_splits(settings):
         )
         with ProcessPoolExecutor(max_workers=max_workers) as executor:
             list_df = executor.map(process_fn, list_files)
+    # only used for debugging (if above commented)
     # list_df = data_utils.process_header_FITS(list_files[0],settings,columns=photo_columns + ["SNTYPE"])
     # Load df_photo
     df_photo = pd.concat(list_df)
