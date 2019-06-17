@@ -91,6 +91,15 @@ Photometric measurements may span over a larger time range than the one desired 
 
     python run.py --dump_dir <path/to/save/database/> --data --raw_dir <path/to/raw/data/>  --photo_window_files <path/to/csv/with/peakMJD> --photo_window_var <name/of/variable/in/csv/to/cut/on> --photo_window_min <negative/int/indicating/days/before/var> --photo_window_max <positive/int/indicating/days/after/var> 
 
+Creating a database with different survey
+------------------------------
+The default filter set is the one from the Dark Energy Survey Supernova ``g,r,i,z``. If you want to use your own survey, you'll need to specify your filters and the possible combination of them in observations.
+
+.. code::
+
+    python run.py --dump_dir <path/to/save/database/> --data --raw_dir <path/to/raw/data/>  --list_filters <your/filters> --list_filters_combination <your/filter/combination>
+
+e.g. ``--list_filters g r --list_filters_combination g r gr``. Also, beware that the ``--sntypes`` are coherent with your data! 
 
 Under the hood
 -------------------------------

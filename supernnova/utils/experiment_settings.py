@@ -4,7 +4,7 @@ import h5py
 import numpy as np
 from pathlib import Path
 from collections import OrderedDict
-from .data_utils import FILTERS, PLASTICC_FILTERS
+from .data_utils import PLASTICC_FILTERS
 
 
 class ExperimentSettings:
@@ -46,9 +46,6 @@ class ExperimentSettings:
         self.set_randomforest_model_name()
 
         self.randomforest_features = self.get_randomforest_features()
-
-        # Set the filters used in the study
-        self.list_filters = FILTERS
 
         # Set the database file names
         self.set_database_file_names()

@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 
 plt.switch_backend("agg")
 import matplotlib.gridspec as gridspec
-from ..utils.data_utils import FILTERS
 
 
 def plot_lightcurves(df, SNIDs, settings):
@@ -31,7 +30,7 @@ def plot_lightcurves(df, SNIDs, settings):
         df_temp = df.loc[SNID]
 
         # Prepare plotting data in a dict
-        d = {flt: {"FLUXCAL": [], "FLUXCALERR": [], "MJD": []} for flt in FILTERS}
+        d = {flt: {"FLUXCAL": [], "FLUXCALERR": [], "MJD": []} for flt in settings.list_filters}
 
         current_time = 0
         for idx in range(len(df_temp)):
@@ -129,7 +128,7 @@ def plot_lightcurves_from_hdf5(settings, SNID_idxs):
             max_y = -float("Inf")
             min_y = float("Inf")
 
-            for FLT in FILTERS:
+            for FLT in settings.list_filters:
                 idxs = np.array(
                     [i for i in range(len(df)) if FLT in list_present_filters[i]]
                 )

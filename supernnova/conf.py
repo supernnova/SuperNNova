@@ -3,6 +3,7 @@ import json
 import pickle
 import argparse
 from pathlib import Path
+from natsort import natsorted
 from collections import OrderedDict
 from distutils.util import strtobool
 from .utils import experiment_settings
@@ -199,6 +200,23 @@ def get_args():
         type=int,
         default=100,
         help="Window size after peak"
+    )
+    # Survey configuration
+    parser.add_argument(
+        "--list_filters",
+        nargs='+',
+        default=natsorted(["g", "i", "r", "z"]),
+        help="Survey filters"
+    )
+    parser.add_argument(
+        "--list_filters_combination",
+        nargs='+',
+        default=natsorted(['g', 'r', 'i', 'z',
+                                 'gr', 'gi', 'gz',
+                                 'ir', 'iz',
+                                 'rz',
+                                 'gir', 'giz', 'grz', 'irz', 'girz']),
+        help="Possible combination of filters"
     )
 
     ######################

@@ -15,13 +15,7 @@ from . import logging_utils
 OFFSETS = [-2, -1, 0, 1, 2]
 OOD_TYPES = ["random", "reverse", "shuffle", "sin"]
 OFFSETS_STR = ["-2", "-1", "", "+1", "+2"]
-FILTERS = natsorted(["g", "i", "r", "z"])
-# non data dependent onehot encoding
-FILTERS_COMBINATION = natsorted(['g', 'r', 'i', 'z',
-                                 'gr', 'gi', 'gz',
-                                 'ir', 'iz',
-                                 'rz',
-                                 'gir', 'giz', 'grz', 'irz', 'girz'])
+
 PLASTICC_FILTERS = natsorted(["u", "g", "r", "i", "z", "y"])
 DICT_PLASTICC_FILTERS = {0: "u", 1: "g", 2: "r", 3: "i", 4: "z", 5: "y"}
 DICT_PLASTICC_CLASS = OrderedDict(
@@ -56,7 +50,6 @@ def load_pandas_from_fit(fit_file_path):
     Returns:
         (pandas.DataFrame) load dataframe from FIT file
     """
-
     dat = Table.read(fit_file_path, format="fits")
     df = dat.to_pandas()
 
@@ -181,7 +174,9 @@ def process_header_FITS(file_path, settings, columns=None):
 
     # Data
     df = load_pandas_from_fit(file_path)
+
     df = tag_type(df, settings, type_column="SNTYPE")
+
 
     if columns is not None:
         df = df[columns]
@@ -208,7 +203,6 @@ def process_header_csv(file_path, settings, columns=None):
 
     if columns is not None:
         df = df[columns]
-
     return df
 
 
@@ -378,8 +372,8 @@ def save_to_HDF5(settings, df):
 
     """
     # One hot encode filter information and Normalize features
-    list_training_features = [f"FLUXCAL_{f}" for f in FILTERS]
-    list_training_features += [f"FLUXCALERR_{f}" for f in FILTERS]
+    list_training_features = [f"FLUXCAL_{f}" for f in settings.list_filters]
+    list_training_features += [f"FLUXCALERR_{f}" for f in settings.list_filters]
     list_training_features += [
         "delta_time",
         "HOSTGAL_PHOTOZ",
@@ -482,7 +476,7 @@ def save_to_HDF5(settings, df):
 
         logging_utils.print_green("Saving filter occurences")
         # Compute how many occurences of a specific filter around PEAKMJD
-        for flt in FILTERS:
+        for flt in settings.list_filters:
             # Check presence / absence of the filter at all time steps
             df[f"has_{flt}"] = df.FLT.str.contains(flt).astype(np.uint8)
             for offset, suffix in zip(OFFSETS, OFFSETS_STR):
@@ -538,7 +532,7 @@ def save_to_HDF5(settings, df):
         ################
         # FLUX features
         #################
-        flux_features = [f"FLUXCAL_{f}" for f in FILTERS]
+        flux_features = [f"FLUXCAL_{f}" for f in settings.list_filters]
         flux_log_standardized = log_standardization(
             df[flux_features].values)
         # Store normalization parameters
@@ -549,7 +543,7 @@ def save_to_HDF5(settings, df):
         ###################
         # FLUXERR features
         ###################
-        fluxerr_features = [f"FLUXCALERR_{f}" for f in FILTERS]
+        fluxerr_features = [f"FLUXCALERR_{f}" for f in settings.list_filters]
         fluxerr_log_standardized = log_standardization(
             df[fluxerr_features].values)
         # Store normalization parameters
@@ -575,11 +569,11 @@ def save_to_HDF5(settings, df):
         assert sorted(df.columns.values.tolist()) == sorted(
             list_training_features + ["FLT"]
         )
-        # cheating to have the same onehot for all datasets
-        tmp = pd.Series(FILTERS_COMBINATION).append(df["FLT"])
+        # to have the same onehot for all datasets
+        tmp = pd.Series(settings.list_filters_combination).append(df["FLT"])
         tmp_onehot = pd.get_dummies(tmp)
         # this is ok since it goes by length not by index (which I never reset)
-        FLT_onehot = tmp_onehot[len(FILTERS_COMBINATION):]
+        FLT_onehot = tmp_onehot[len(settings.list_filters_combination):]
         df = pd.concat([df[list_training_features],
                         FLT_onehot], axis=1)
         # store feature names

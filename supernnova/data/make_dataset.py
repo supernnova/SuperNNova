@@ -40,33 +40,40 @@ def build_traintestval_splits(settings):
 
     # Load photometry
     # either in HEAD.FITS or csv format
-    list_files = natsorted(
+    list_files_tmp = natsorted(
         glob.glob(os.path.join(settings.raw_dir, "*HEAD.FITS*"))
     )
+    if len(list_files_tmp) > 0:
+        list_files = list_files_tmp
+        fmat = 'FITS'
+    else:
+        list_files = natsorted(
+            glob.glob(os.path.join(settings.raw_dir, "*HEAD.csv*"))
+        )
+        fmat = 'csv'
     list_files = list_files[:]
-    if len(list_files) > 0:
-        print("List files", list_files)
+    print("List files", list_files)
+    # use parallelization to speed up processing
+    if fmat == 'FITS':
         process_fn = partial(
             data_utils.process_header_FITS,
             settings=settings,
             columns=photo_columns + ["SNTYPE"],
         )
-        with ProcessPoolExecutor(max_workers=max_workers) as executor:
-            list_df = executor.map(process_fn, list_files)
     else:
-        list_files = natsorted(
-            glob.glob(os.path.join(settings.raw_dir, "*HEAD.csv*"))
-        )
-        print("List files", list_files)
         process_fn = partial(
             data_utils.process_header_csv,
             settings=settings,
             columns=photo_columns + ["SNTYPE"],
         )
-        with ProcessPoolExecutor(max_workers=max_workers) as executor:
-            list_df = executor.map(process_fn, list_files)
-    # only used for debugging (if above commented)
-    # list_df = data_utils.process_header_FITS(list_files[0],settings,columns=photo_columns + ["SNTYPE"])
+    with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        list_df = executor.map(process_fn, list_files)
+    # only used for debugging (if parallelization above commented)
+    # if fmat == 'FITS':
+    #     list_df = data_utils.process_header_FITS(list_files[0],settings,columns=photo_columns + ["SNTYPE"])
+    # else:
+    #     list_df = data_utils.process_header_csv(list_files[0],settings,columns=photo_columns + ["SNTYPE"])
+
     # Load df_photo
     df_photo = pd.concat(list_df)
     df_photo["SNID"] = df_photo["SNID"].astype(int)
@@ -515,6 +522,7 @@ def preprocess_data(settings):
     max_workers = multiprocessing.cpu_count()
 
     host_spe_tmp = []
+    # use parallelization to speed up processing
     # Split list files in chunks of size 10 or less
     # to get a progress bar and alleviate memory constraints
     num_elem = len(list_files)
@@ -528,7 +536,7 @@ def preprocess_data(settings):
             # Need to cast to list because executor returns an iterator
             host_spe_tmp += list(executor.map(parallel_fn,
                                               list_files[start:end]))
-    # for debugging only (if lines 520-531 are commented)
+    # for debugging only (parallelization needs to be commented)
     # host_spe_tmp.append(process_single_FITS(list_files[0], settings))
     # host_spe_tmp.append(process_single_csv(list_files[0], settings))
     # Save host spe for plotting and performance tests
@@ -553,7 +561,7 @@ def pivot_dataframe_single(filename, settings):
         settings (ExperimentSettings): controls experiment hyperparameters
 
     """
-    list_filters = data_utils.FILTERS
+    list_filters = settings.list_filters
 
     assert len(list_filters) > 0
 
@@ -692,6 +700,7 @@ def pivot_dataframe_batch(list_files, settings):
 
     # Parameters of multiprocessing below
     max_workers = multiprocessing.cpu_count()
+    # use parallelization to speed up processing
     # Loop over chunks of files
     for chunk_idx in tqdm(list_chunks, desc="Pivoting dataframes", ncols=100):
         parallel_fn = partial(pivot_dataframe_single, settings=settings)
@@ -699,6 +708,7 @@ def pivot_dataframe_batch(list_files, settings):
         with ProcessPoolExecutor(max_workers=max_workers) as executor:
             start, end = chunk_idx[0], chunk_idx[-1] + 1
             executor.map(parallel_fn, list_files[start:end])
+    # for debugging only (if above is commented)
     # pivot_dataframe_single(list_files[0], settings)
 
     logging_utils.print_green("Finished pivot")
@@ -744,6 +754,7 @@ def make_dataset(settings):
         )
     )
     logging_utils.print_green("Concatenating pivot")
+
     df = pd.concat([pd.read_pickle(f) for f in list_files], axis=0)
 
     # Save to HDF5

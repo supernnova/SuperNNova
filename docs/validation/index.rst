@@ -59,7 +59,7 @@ In this case it will run the model provided in ``model_files`` with the normaliz
 
 Predictions format
 ~~~~~~~~~~~~~~~~~~~~~
-For a binary classification task, predictions files contain the follwing columns:
+For a binary classification task, predictions files contain the following columns:
 
 .. code::
 
@@ -86,7 +86,7 @@ For a binary classification task, predictions files contain the follwing columns
     target                  int64  - Type of the supernova, simulated class.
     SNID                    int64  - ID number of the light-curve
 
-these columns rely on maximum light information and target (original type) from simulations. Out-of-distribution classifications are done on the fly.
+these columns rely on maximum light information and target (original type) from simulations. Out-of-distribution classifications are done on the fly. Bayesian Networks (variational and Bayes by Backprop) have an entry for each probability distribution sampling, to get the mean and std of the classification read the ``_aggregated.pickle`` file.
 
 
 RNN speed
