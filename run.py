@@ -132,7 +132,7 @@ if __name__ == "__main__":
             if settings.model_files:
                 for model_file in settings.model_files:
                     settings = conf.get_norm_from_model(model_file,settings)
-            early_prediction.make_early_prediction(settings,nb_lcs =20)
+            early_prediction.make_early_prediction(settings,nb_lcs =20,do_gifs=False)
 
         if settings.plot_prediction_distribution:
             prediction_distribution.plot_prediction_distribution(settings)

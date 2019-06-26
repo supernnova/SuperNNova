@@ -397,15 +397,13 @@ def plot_gif(settings, df_plot, SNID, redshift, peak_MJD, target, arr_time, d_pr
         image = np.frombuffer(fig.canvas.tostring_rgb(), dtype='uint8')
         image = image.reshape(fig.canvas.get_width_height()[::-1] + (3,))
 
-        # make background transparent
         from PIL import Image
         import PIL.ImageOps as pops
         im = Image.fromarray(image)
-        im = im.convert('RGB')
-        tmp =pops.invert(im)
-        tmp = tmp.convert('P', palette=Image.ADAPTIVE, colors=255)
-        tmp.info['transparency'] = 255
-        image = tmp
+        # make background transparent
+        # im = im.convert('RGB')
+        # im =pops.invert(im)
+        image = im
 
         return image
 
@@ -421,9 +419,5 @@ def plot_gif(settings, df_plot, SNID, redshift, peak_MJD, target, arr_time, d_pr
         f"{settings.pytorch_model_name}_class_pred_with_lc_{SNID}.gif"
     )
     Path(fig_path).mkdir(parents=True, exist_ok=True)
-    # not transparent
-    # imageio.mimsave(str(Path(fig_path) / fig_name),
-    #                 [plot_image_for_gif(fig, gs,df_plot,d_pred,time,SNtype) for time in arr_time], fps=1)
-    # transparent
     arr_images = [plot_image_for_gif(fig, gs,df_plot,d_pred,time,SNtype) for time in arr_time]
     arr_images[0].save(str(Path(fig_path) / fig_name), save_all=True, append_images=arr_images, loop=5, duration=200)
