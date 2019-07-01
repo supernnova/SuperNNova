@@ -106,7 +106,8 @@ def plot_predictions(
     else:
         ax.set_title(SNtype + f" (ID: {SNID}, redshift: {redshift:.3g})")
         # Add PEAKMJD
-        ax.plot([peak_MJD, peak_MJD], ylim, "k--", label="Peak MJD")
+        if OOD is None and not settings.data_testing and arr_time.min()<peak_MJD and peak_MJD>arr_time.max():
+            ax.plot([peak_MJD, peak_MJD], ylim, "k--", label="Peak MJD")
 
     # Plot the classifications
     ax = plt.subplot(gs[1])
@@ -147,7 +148,7 @@ def plot_predictions(
     ax.set_xlabel("Time (MJD)")
     ax.set_ylabel("classification probability")
     # Add PEAKMJD
-    if OOD is None and not settings.data_testing:
+    if OOD is None and not settings.data_testing and arr_time.min()<peak_MJD and peak_MJD>arr_time.max():
         ax.plot([peak_MJD, peak_MJD], [0, 1], "k--", label="Peak MJD")
     ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.0)
 
