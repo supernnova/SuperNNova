@@ -559,7 +559,7 @@ def save_to_HDF5(settings, df):
         df = pd.concat([df[list_training_features],
                         FLT_onehot], axis=1)
         # store feature names
-        list_training_features = df.columns.values.tolist()
+        list_training_features = [k for k in df.columns.values.tolist() if 'index' not in k and 'level_0' not in k]
         hf.create_dataset(
             "features",
             (len(list_training_features),),
