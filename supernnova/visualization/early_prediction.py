@@ -256,7 +256,7 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
     list_entries = np.random.randint(0,high=len(list_data_test),size=nb_lcs)
     subset_to_plot = [list_data_test[i] for i in list_entries]
     for X, target, SNID, _, X_ori in tqdm(subset_to_plot, ncols=100):
-
+        
         try:
             redshift = SNinfo_df[SNinfo_df["SNID"] == SNID]["SIM_REDSHIFT_CMB"].values[0]
             peak_MJD = SNinfo_df[SNinfo_df["SNID"] == SNID]["PEAKMJDNORM"].values[0]
@@ -283,7 +283,7 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
                 X_clip = X_ori.copy()
                 X_clip = np.clip(X_clip[:,settings.idx_features_to_normalize], settings.arr_norm[:, 0], np.inf)
                 X_ori[:,settings.idx_features_to_normalize] = X_clip
-                assert np.all(np.all(np.isclose(np.ravel(X_ori), np.ravel(X_unnormed), atol=1e-2)))
+                assert np.all(np.all(np.isclose(np.ravel(X_ori), np.ravel(X_unnormed), atol=1e-1)))
 
             # TODO: IMPROVE
             df_temp = pd.DataFrame(data=X_unnormed, columns=features)

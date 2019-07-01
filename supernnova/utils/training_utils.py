@@ -46,7 +46,6 @@ def normalize_arr(arr, settings):
     arr_normed = (arr_normed - arr_mean) / arr_std
 
     arr[:, settings.idx_features_to_normalize] = arr_normed
-
     return arr
 
 
@@ -68,6 +67,7 @@ def unnormalize_arr(arr, settings):
     arr_mean = settings.arr_norm[:, 1]
     arr_std = settings.arr_norm[:, 2]
     arr_to_unnorm = arr[:, settings.idx_features_to_normalize]
+
     arr_to_unnorm = arr_to_unnorm * arr_std + arr_mean
     arr_unnormed = np.exp(arr_to_unnorm) + arr_min - 1E-5
 
@@ -116,14 +116,15 @@ def fill_data_list(
 
         # check if normalization converges
         # using clipping in case of min<model_min
-        X_tmp = unnormalize_arr(normalize_arr(
-            X_all.copy(), settings), settings)
         X_clip = X_all.copy()
         X_clip = np.clip(
             X_clip[:, settings.idx_features_to_normalize], settings.arr_norm[:, 0], np.inf)
         X_all[:, settings.idx_features_to_normalize] = X_clip
+
+        X_tmp = unnormalize_arr(normalize_arr(
+            X_all.copy(), settings), settings)
         assert np.all(
-            np.all(np.isclose(np.ravel(X_all), np.ravel(X_tmp), atol=1e-2)))
+            np.all(np.isclose(np.ravel(X_all), np.ravel(X_tmp), atol=1e-1)))
         # Normalize features that need to be normalized
         X_normed = X_all.copy()
         X_normed_tmp = normalize_arr(X_normed, settings)
@@ -369,7 +370,6 @@ def get_data_batch(list_data, idxs, settings, max_lengths=None, OOD=None):
     idx_sort = np.argsort(list_len)[::-1]
     idxs_rev_sort = np.argsort(idx_sort)  # these indices revert the sort
     max_len = list_len[idx_sort[0]]
-
     X_tensor = torch.zeros((max_len, len(idxs), input_dim))
     list_target = []
     lengths = []

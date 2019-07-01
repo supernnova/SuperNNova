@@ -232,30 +232,31 @@ def get_predictions(settings, model_file=None):
                 oob_idxs = np.where(np.array(slice_idxs) < 1)[0]
                 inb_idxs = np.where(np.array(slice_idxs) >= 1)[0]
 
-                # We only carry out prediction for samples in ``inb_idxs``
-                offset_batch_idxs = [batch_idxs[b] for b in inb_idxs]
-                max_lengths = [slice_idxs[b] for b in inb_idxs]
-
-                packed, _, target_tensor, idxs_rev_sort = tu.get_data_batch(
-                    list_data_test, offset_batch_idxs, settings, max_lengths=max_lengths
-                )
-
-                for iter_ in tqdm(range(settings.num_inference_samples), ncols=100):
-
-                    arr_preds, arr_target = get_batch_predictions(
-                        rnn, packed, target_tensor
+                if len(inb_idxs)>0:
+                    # We only carry out prediction for samples in ``inb_idxs``
+                    offset_batch_idxs = [batch_idxs[b] for b in inb_idxs]
+                    max_lengths = [slice_idxs[b] for b in inb_idxs]
+                    lu.print_red('val',len(offset_batch_idxs),max_lengths)
+                    packed, _, target_tensor, idxs_rev_sort = tu.get_data_batch(
+                        list_data_test, offset_batch_idxs, settings, max_lengths=max_lengths
                     )
 
-                    # Rever sorting that occurs in get_batch_predictions
-                    arr_preds = arr_preds[idxs_rev_sort]
+                    for iter_ in tqdm(range(settings.num_inference_samples), ncols=100):
 
-                    suffix = str(offset) if offset != 0 else ""
-                    suffix = f"+{suffix}" if offset > 0 else suffix
-                    col = f"PEAKMJD{suffix}"
+                        arr_preds, arr_target = get_batch_predictions(
+                            rnn, packed, target_tensor
+                        )
 
-                    d_pred[col][start_idx + inb_idxs, iter_] = arr_preds
-                    # For oob_idxs, no prediction can be made, fill with nan
-                    d_pred[col][start_idx + oob_idxs, iter_] = np.nan
+                        # Rever sorting that occurs in get_batch_predictions
+                        arr_preds = arr_preds[idxs_rev_sort]
+
+                        suffix = str(offset) if offset != 0 else ""
+                        suffix = f"+{suffix}" if offset > 0 else suffix
+                        col = f"PEAKMJD{suffix}"
+
+                        d_pred[col][start_idx + inb_idxs, iter_] = arr_preds
+                        # For oob_idxs, no prediction can be made, fill with nan
+                        d_pred[col][start_idx + oob_idxs, iter_] = np.nan
 
             #############################
             # OOD predictions
