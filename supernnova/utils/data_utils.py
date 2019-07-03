@@ -456,6 +456,24 @@ def save_to_HDF5(settings, df):
                 dtype=np.dtype("uint8"),
             )
 
+            new_column = f"PEAKMJD{suffix}_unique_nights_lcstart"
+            df_nights = (
+                df[(df["time"] < df["PEAKMJDNORM"] +
+                    offset) & (df["time"] - df["PEAKMJDNORM"] >-14)][["PEAKMJDNORM", "SNID"]]
+                .groupby("SNID")
+                .count()
+                .astype(np.uint8)
+                .rename(columns={f"PEAKMJDNORM": new_column})
+                .reset_index()
+            )
+
+            hf.create_dataset(
+                new_column,
+                data=df_SNID.merge(df_nights, on="SNID", how="left")[
+                    new_column].values,
+                dtype=np.dtype("uint8"),
+            )
+
         logging_utils.print_green("Saving filter occurences")
         # Compute how many occurences of a specific filter around PEAKMJD
         for flt in FILTERS:
@@ -465,6 +483,23 @@ def save_to_HDF5(settings, df):
                 new_column = f"PEAKMJD{suffix}_num_{flt}"
                 df_flt = (
                     df[df["time"] < df["PEAKMJDNORM"] + offset][[f"has_{flt}", "SNID"]]
+                    .groupby("SNID")
+                    .sum()
+                    .astype(np.uint8)
+                    .rename(columns={f"has_{flt}": new_column})
+                    .reset_index()
+                )
+                hf.create_dataset(
+                    new_column,
+                    data=df_SNID.merge(df_flt, on="SNID", how="left")[
+                        new_column
+                    ].values,
+                    dtype=np.dtype("uint8"),
+                )
+
+                new_column = f"PEAKMJD{suffix}_num_{flt}_lcstart"
+                df_flt = (
+                    df[(df["time"] < df["PEAKMJDNORM"] + offset) & (df["time"] - df["PEAKMJDNORM"] >-14)][[f"has_{flt}", "SNID"]]
                     .groupby("SNID")
                     .sum()
                     .astype(np.uint8)
