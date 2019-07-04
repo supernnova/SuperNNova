@@ -71,6 +71,13 @@ def sntype_decoded(target, settings):
 
     if settings.nb_classes > 3:
         SNtype = list(settings.sntypes.values())[target]
+    elif settings.nb_classes == 3:
+        if target ==0:
+            SNtype = f"SN {list(settings.sntypes.values())[0]}"
+        elif target ==1:
+            SNtype = f"SN CC Ix"
+        else:
+            SNtype = "SN CC IIx"
     else:
         if target == 0:
             SNtype = f"SN {list(settings.sntypes.values())[0]}"

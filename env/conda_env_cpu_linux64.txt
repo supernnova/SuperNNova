@@ -20,7 +20,7 @@ https://conda.anaconda.org/conda-forge/linux-64/hdf5-1.10.2-hc401514_2.tar.bz2
 https://conda.anaconda.org/conda-forge/linux-64/icu-58.2-hfc679d8_0.tar.bz2
 https://conda.anaconda.org/conda-forge/linux-64/libiconv-1.15-h470a237_3.tar.bz2
 https://repo.anaconda.com/pkgs/main/linux-64/libpng-1.6.35-hbc83047_0.tar.bz2
-https://conda.anaconda.org/conda-forge/linux-64/libuuid-2.32.1-h470a237_2.tar.bz2
+https://anaconda.org/conda-forge/libuuid/2.32.1/download/linux-64/libuuid-2.32.1-h470a237_2.tar.bz2
 https://repo.anaconda.com/pkgs/main/linux-64/mkl-2019.1-144.tar.bz2
 https://repo.anaconda.com/pkgs/main/linux-64/ncurses-6.1-hf484d3e_0.tar.bz2
 https://repo.anaconda.com/pkgs/main/linux-64/openssl-1.0.2r-h7b6447c_0.tar.bz2
