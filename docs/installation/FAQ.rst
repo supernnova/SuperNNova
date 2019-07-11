@@ -11,11 +11,11 @@ SuperNNova is a framework for lightcurve classification which uses supervised le
 
 - **Do you have a paper describing SuperNNova? How can I cite you?**
 
-We just submitted the paper to the journal. But a copy of the paper can be found here `ArXiv`_.
+We just submitted the paper to the journal. But a copy of the paper can be found here `ArXiv`_. 
 
 - **How can I install it?**
 
-You can either ``clone`` our `GitHub`_ or use ``pip`` for modular installation.
+You can either ``clone`` our `GitHub`_ or use ``pip`` for modular installation. Beware, the supported version of GitHub repository is this `GitHub`_!!!! (previous version was hosted in a different webpage).
 
 - **What data do I need?**
 
@@ -78,4 +78,4 @@ Yes, you need to call ``python run.py --performance``. It will be created in ``{
 .. _Gal et Ghahramani 2015: https://arxiv.org/abs/1506.02142
 .. _SALT2: https://arxiv.org/pdf/astro-ph/0701828.pdf
 .. _SNANA: https://arxiv.org/abs/0908.4280
-.. _GitHub: https://github.com/tdeboissiere/SuperNNova
+.. _GitHub: https://github.com/supernnova/SuperNNova
