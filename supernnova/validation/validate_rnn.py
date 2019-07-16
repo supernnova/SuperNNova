@@ -236,7 +236,6 @@ def get_predictions(settings, model_file=None):
                     # We only carry out prediction for samples in ``inb_idxs``
                     offset_batch_idxs = [batch_idxs[b] for b in inb_idxs]
                     max_lengths = [slice_idxs[b] for b in inb_idxs]
-                    lu.print_red('val',len(offset_batch_idxs),max_lengths)
                     packed, _, target_tensor, idxs_rev_sort = tu.get_data_batch(
                         list_data_test, offset_batch_idxs, settings, max_lengths=max_lengths
                     )

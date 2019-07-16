@@ -18,7 +18,7 @@ def performance_metrics(df, sample_target=0):
     n_targets = len(np.unique(df["target"]))
 
     # Accuracy & AUC
-    accuracy = metrics.accuracy_score(df["target"], df["predicted_target"])
+    accuracy = metrics.balanced_accuracy_score(df["target"].astype(int), df["predicted_target"])
     accuracy = round(accuracy * 100, 2)
     if n_targets == 2:  # valid for biclass only
         auc = round(metrics.roc_auc_score(df["target"], df["class1"]), 4)
