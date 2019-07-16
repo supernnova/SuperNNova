@@ -18,7 +18,7 @@ Clone the GitHub repository
 
 .. code::
 
-	git clone https://gitlab.com/tdeboissiere/supernnova.git
+	git clone https://gitlab.com/supernnova/supernnova.git
 
 Setup your environment. 3 options
 -----------------------------------
