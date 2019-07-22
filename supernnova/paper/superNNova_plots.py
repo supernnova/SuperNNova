@@ -17,6 +17,7 @@ from ..utils import performance_utils as pu
 from ..utils import visualization_utils as vu
 
 plt.switch_backend("agg")
+plt.style.use(f'file://{os.getcwd()}/supernnova/visualization/pltstyle_supernnova.mplstyle')
 
 # Plotting styles
 from ..utils.visualization_utils import (
@@ -272,7 +273,7 @@ def plot_calibration(settings):
     ax1.set_ylabel("fraction of positives (fP)", fontsize=18)
     ax1.set_ylim([-0.05, 1.05])
     ax11.set_xlabel(f"mean predicted probability", fontsize=18)
-    ax1.legend()
+    ax1.legend(loc = 'best', prop={"size": 16})
     plt.setp(ax1.get_xticklabels(), visible=False)
 
     ax11.set_ylabel("residual fP", fontsize=18)
@@ -280,8 +281,7 @@ def plot_calibration(settings):
     ax11.plot([0, 1], np.zeros(len([0, 1])), "k:")
     ax11.plot([0, 1], 0.1 * np.ones(len([0, 1])), ":", color="grey")
     ax11.plot([0, 1], -0.1 * np.ones(len([0, 1])), ":", color="grey")
-    plt.setp(ax11.get_xticklabels(), visible=False)
-
+    plt.setp(ax11.get_xticklabels(), visible=True)
     if len(metric_files) == 1:
         nameout = f"{plot_path}/calib_{model_name}.png"
     else:
@@ -670,11 +670,12 @@ def plot_HDres_histos_vs_z(
 
         ax_left.set_ylim(-2, 2)
         ax_left.set_xlim(0, 1.2)
-        ax_left.set_ylabel(f"{ylabel} residual", fontsize=18)
+        ax_left.set_ylabel(f"{ylabel} residual", fontsize=20)
         ax_left.tick_params(labelsize=14)
         plt.setp(ax_left.get_xticklabels(), visible=visible)
         if visible is True:
-            ax_left.set_xlabel("simulated redshift", fontsize=18)
+            ax_left.set_xlabel("simulated redshift", fontsize=20)
+            ax_left.tick_params(labelsize=18)
         for t in threshold_list:
             sel = sel_dic[t]
             n_SNe = len(sel)
@@ -688,7 +689,7 @@ def plot_HDres_histos_vs_z(
                 label=f"{n_SNe} {sntyp} {threshold_sign} {t}",
                 lw=2,
             )
-        ax_right.legend(loc="lower center", prop={"size": 13})
+        ax_right.legend(loc="lower center", prop={"size": 16})
         plt.setp(ax_right.get_yticklabels(), visible=False)
         plt.setp(ax_right.get_xticklabels(), visible=False)
         ax_right.plot(
@@ -719,8 +720,8 @@ def plot_HDres_histos_vs_z(
             bins=bins_to_use,
         )
     ax20.set_xlim(0, 1.2)
-    ax20.tick_params(labelsize=14)
-    ax20.set_xlabel("simulated redshift", fontsize=18)
+    ax20.tick_params(labelsize=18)
+    ax20.set_xlabel("simulated redshift", fontsize=20)
 
     # hist stretch
     n, bins_to_use, tmp = ax21.hist(Ias["x1"], color="black", histtype="step", lw=3)
@@ -734,10 +735,10 @@ def plot_HDres_histos_vs_z(
             bins=bins_to_use,
             lw=2,
         )
-    ax21.set_xlabel("x1", fontsize=18)
+    ax21.set_xlabel("x1", fontsize=20)
     ax21.yaxis.set_label_position("right")
     ax21.set_xlim(-3, 3)
-    ax21.tick_params(labelsize=14)
+    ax21.tick_params(labelsize=18)
     # color histo
     n, bins_to_use, tmp = ax31.hist(Ias["c"], color="black", histtype="step", lw=3)
     for t in threshold_list:
@@ -750,9 +751,9 @@ def plot_HDres_histos_vs_z(
             bins=bins_to_use,
             lw=2,
         )
-    ax31.set_xlabel("c", fontsize=18)
+    ax31.set_xlabel("c", fontsize=20)
     ax31.set_xlim(-1, 1)
-    ax31.tick_params(labelsize=14)
+    ax31.tick_params(labelsize=18)
     ax31.yaxis.set_label_position("right")
 
     gs.tight_layout(fig)

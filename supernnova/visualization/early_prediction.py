@@ -16,7 +16,7 @@ from ..utils import training_utils as tu
 from ..utils.visualization_utils import FILTER_COLORS, ALL_COLORS, LINE_STYLE
 
 plt.switch_backend("agg")
-
+plt.style.use(f'file://{os.getcwd()}/supernnova/visualization/pltstyle_supernnova.mplstyle')
 
 def get_predictions(settings, dict_rnn, X, target, OOD=None):
 
