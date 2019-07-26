@@ -78,7 +78,7 @@ With the ``--debug`` flag on, this should take between 15 and 30 minutes on the 
 Naming conventions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- **vanilla/variational/bayesian**: The type of RNN to be trained. ``variational`` and ``bayesian`` are bayesian recurrent networks
+- **vanilla/variational/bayesian**: The type of RNN to be trained. ``variational`` and ``bayesian`` are bayesian recurrent networks. Vanilla=RNN, Variational=MCDropout, Bayesian=Bayes by Backprop (BBB).
 
 - **S_0**: seed used for training. Default is 0.
 

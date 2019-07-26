@@ -921,7 +921,7 @@ def performance_plots(settings):
     list_files = [
         f
         for f in list_files
-        if ("randomforest" in f or "vanilla" in f)
+        if ("randomforest" in f or "vanilla" in f or 'CNN' in f)
         and "saltfit" in f
         and "global" in f
         and "_CLF_2" in f

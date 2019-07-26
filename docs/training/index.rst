@@ -52,3 +52,16 @@ This will:
 - Compute metrics on the test: ``METRICS_DES_vanilla_S_0_CLF_2_R_None_saltfit_DF_1.0_N_global_lstm_32x2_0.05_128_True_mean.pt.pickle``
 - Save loss curves: ``train_and_val_loss_vanilla_S_0_CLF_2_R_None_saltfit_DF_1.0_N_global_lstm_32x2_0.05_128_True_mean.png``
 - Save training statistics: ``training_log.json``
+
+Models available
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+3 RNN and 1 CNN models are available:
+
+- vanilla = LSTM or GRU usual Recurrent Neural Network
+- variational = MCdropout based on  `Gal et Ghahramani 2015`_
+- bayesian = Bayes by Backprop (BBB) based on `Fortunato et al 2017`_
+- CNN = Convolutional Neural Network
+
+.. _Fortunato et al 2017: https://arxiv.org/abs/1704.02798
+.. _Gal et Ghahramani 2015: https://arxiv.org/abs/1506.02142
