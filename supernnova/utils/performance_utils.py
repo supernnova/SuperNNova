@@ -85,7 +85,7 @@ def get_quantity_vs_variable(
     intervals=False,
     mean_bins=False,
 ):
-    """Get contamination/purity vs redshift
+    """Get contamination/purity vs variable (e.g. redshift)
 
     Args:
         quantity (str): quantity to compute

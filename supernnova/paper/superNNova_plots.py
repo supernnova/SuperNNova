@@ -270,13 +270,15 @@ def plot_calibration(settings):
             marker=MARKER_LIST[i],
         )
 
-    ax1.set_ylabel("fraction of positives (fP)", fontsize=18)
+    ax1.tick_params(labelsize=16)
+    ax1.set_ylabel("fraction of positives (fP)", fontsize=20)
     ax1.set_ylim([-0.05, 1.05])
-    ax11.set_xlabel(f"mean predicted probability", fontsize=18)
-    ax1.legend(loc = 'best', prop={"size": 16})
+    ax11.set_xlabel(f"mean predicted probability", fontsize=20)
+    ax1.legend(loc = 'best', prop={"size": 20})
     plt.setp(ax1.get_xticklabels(), visible=False)
 
-    ax11.set_ylabel("residual fP", fontsize=18)
+    ax11.tick_params(labelsize=16)
+    ax11.set_ylabel("residual fP", fontsize=20)
     ax11.set_ylim([-0.2, 0.2])
     ax11.plot([0, 1], np.zeros(len([0, 1])), "k:")
     ax11.plot([0, 1], 0.1 * np.ones(len([0, 1])), ":", color="grey")
@@ -1022,16 +1024,21 @@ def cadence_acc_matrix(df, model_name, settings):
     """Matrix with accuracy w.r. number of measurements in a band
     
     Correlation between accuracy and a certain number of observations required per filter
+    1. n measurements
+    2. unique nights
     
     Args:
         df (DataFrame):
         modelname (str): name of model to be used
         settings (ExperimentSettings): custom class to hold hyperparameters
     """
+
+    # by n measurements
     if "bayesian" or "variational" in model_name:
         measurements_df = make_measurements_df(df, settings, group_bayesian=True)
     else:
         measurements_df = make_measurements_df(df, settings)
+
     n_measurements_dic = {}
     accuracy_dic = {}
     for band in settings.list_filters:
@@ -1047,6 +1054,129 @@ def cadence_acc_matrix(df, model_name, settings):
     os.makedirs(plot_path, exist_ok=True)
     nameout = f"{plot_path}/{model_name}.png"
     plot_acc_matrix(accuracy_dic, n_measurements_dic, settings, nameout)
+
+    # accuracy with unique nights measurments
+
+    # get stats
+    dic_acc = {}
+    dic_n = {}
+    for k in ['unique nights','unique nights (realistic)'] + settings.list_filters + [f"{b} (realistic)" for b in settings.list_filters]:
+        dic_n[k] = []
+        dic_acc[k] = []
+    
+    # matrices
+    for k in ['-2','-1','','+1','+2']:
+        f_k = k if k=='all' else f'PEAKMJD{k}'
+        sel = pu.reformat_df(df, k, keep=[k for k in df.keys() if 'unique' in k])
+        accuracy, auc, purity, efficiency, truepositivefraction = pu.performance_metrics(sel)
+        dic_n['unique nights'].append(f"{round(df[f'{f_k}_unique_nights'].mean(),1)}"+r'$\pm$'+f"{round(df[f'{f_k}_unique_nights'].std(),1)}")
+        dic_n['unique nights (realistic)'].append(f"{round(df[f'{f_k}_unique_nights_lcstart'].mean(),1)}"+r'$\pm$'+f"{round(df[f'{f_k}_unique_nights_lcstart'].std(),1)}")
+        dic_acc['unique nights'].append(accuracy)
+        for b in settings.list_filters:
+            dic_n[b].append(f"{round(df[f'{f_k}_num_{b}'].mean(),1)}"+r'$\pm$'+f"{round(df[f'{f_k}_num_{b}'].std(),1)}")
+            dic_n[f"{b} (realistic)"].append(f"{round(df[f'{f_k}_num_{b}_lcstart'].mean(),1)}"+r'$\pm$'+f"{round(df[f'{f_k}_num_{b}_lcstart'].std(),1)}")
+            dic_acc[b].append(accuracy)
+
+    # Unique nights
+    plt.clf()
+    fig = plt.figure(figsize=(8, 4))
+    gs = gridspec.GridSpec(5,1)
+    gs.update(left=0.1, right=0.95, hspace=1.3,bottom=0.18, top=0.9)
+    ax0 = plt.subplot(gs[1:,0])
+    x_labels = ['-2','-1','peak','+1','+2']
+    y_labels = ['unique \n nights', 'unique \n nights \n (realistic)']
+    text_mat = np.vstack([dic_n['unique nights'],dic_n['unique nights (realistic)']])
+    acc_mat = np.vstack([dic_acc['unique nights'],dic_acc['unique nights']])
+    cax = ax0.imshow(acc_mat, cmap=CMAP)
+    for i, j in itertools.product(range(acc_mat.shape[0]), range(acc_mat.shape[1])):
+        plt.text(
+            j,
+            i,
+            text_mat[i, j],
+            horizontalalignment="center",
+            color="black",
+            fontsize=14,
+        )
+    ax0.tick_params(axis="both", labelsize=16)
+    ax0.set_xticks(np.arange(0, len(x_labels), 1))
+    ax0.set_xticklabels(x_labels)
+    ax0.set_yticks(np.arange(0, len(y_labels), 1))
+    ax0.set_yticklabels(y_labels)
+    ax0.set_xlabel('time with respect of lightcurve peak brightness',fontsize=16)
+
+    ccax = plt.subplot(gs[:1,0])
+    clb = fig.colorbar(cax, cax = ccax,orientation='horizontal')
+    ccax.set_title('accuracy',fontsize=16)
+    plt.tight_layout()
+    plt.savefig(f"{plot_path}/{model_name}_n_nights.png")
+
+    # Bands
+    plt.clf()
+    fig = plt.figure(figsize=(8, 4))
+    gs = gridspec.GridSpec(5,1)
+    gs.update(left=0.1, right=0.95, hspace=1.3,bottom=0.18, top=0.9)
+    ax0 = plt.subplot(gs[1:,0])
+    x_labels = ['-2','-1','peak','+1','+2']
+    y_labels = [b for b in settings.list_filters]
+    text_mat = np.vstack([dic_n[b] for b in settings.list_filters])
+    acc_mat = np.vstack([dic_acc[b] for b in settings.list_filters])
+    cax = ax0.imshow(acc_mat, cmap=CMAP,aspect='auto')
+    for i, j in itertools.product(range(acc_mat.shape[0]), range(acc_mat.shape[1])):
+        plt.text(
+            j,
+            i,
+            text_mat[i, j],
+            horizontalalignment="center",
+            color="black",
+            fontsize=14,
+        )
+    ax0.tick_params(axis="both", labelsize=16)
+    ax0.set_xticks(np.arange(0, len(x_labels), 1))
+    ax0.set_xticklabels(x_labels)
+    ax0.set_yticks(np.arange(0, len(y_labels), 1))
+    ax0.set_yticklabels(y_labels)
+    ax0.set_xlabel('time with respect of lightcurve peak brightness',fontsize=16)
+
+    ccax = plt.subplot(gs[:1,0])
+    clb = fig.colorbar(cax, cax = ccax,orientation='horizontal')
+    ccax.set_title('accuracy',fontsize=16)
+    plt.tight_layout()
+    plt.savefig(f"{plot_path}/{model_name}_n_filters.png")
+
+
+    # Realistic Bands
+    plt.clf()
+    fig = plt.figure(figsize=(8, 4))
+    gs = gridspec.GridSpec(1,1)
+    gs.update(left=0.1, right=0.95, hspace=1.3,bottom=0.18, top=0.9)
+    ax0 = plt.subplot(gs[0])
+    x_labels = ['-2','-1','peak','+1','+2']
+    y_labels = [b for b in settings.list_filters]
+    text_mat = np.vstack([dic_n[f"{b} (realistic)"] for b in settings.list_filters])
+    acc_mat = np.vstack([dic_acc[b] for b in settings.list_filters])
+    cax = ax0.imshow(acc_mat, cmap=CMAP,aspect='auto')
+    for i, j in itertools.product(range(acc_mat.shape[0]), range(acc_mat.shape[1])):
+        plt.text(
+            j,
+            i,
+            text_mat[i, j],
+            horizontalalignment="center",
+            color="black",
+            fontsize=14,
+        )
+    ax0.tick_params(axis="both", labelsize=16)
+    ax0.set_xticks(np.arange(0, len(x_labels), 1))
+    ax0.set_xticklabels(x_labels)
+    ax0.set_yticks(np.arange(0, len(y_labels), 1))
+    ax0.set_yticklabels(y_labels)
+    ax0.set_xlabel('time with respect of lightcurve peak brightness',fontsize=16)
+
+    # ccax = plt.subplot(gs[:1,0])
+    # clb = fig.colorbar(cax, cax = ccax,orientation='horizontal')
+    # ccax.set_title('accuracy',fontsize=16)
+    plt.tight_layout()
+    plt.savefig(f"{plot_path}/{model_name}_n_filters_realistic.png")
+
 
 
 def hubble_residuals(df, model_name, fits, settings):
@@ -1298,10 +1428,10 @@ def create_OOD_classification_plots(df, list_models, settings):
             ax.text(
                 rect.get_x() + rect.get_width() / 2.0,
                 (factor_text * height),
-                f"{height}",
+                f"{round(height,1)}",
                 ha="center",
                 va="bottom",
-                fontsize=32,
+                fontsize=40,
             )
 
     def barplot_single(ax, labels, percentage, color):
@@ -1312,8 +1442,8 @@ def create_OOD_classification_plots(df, list_models, settings):
             edgecolor="black",
             tick_label=labels,
         )
-        ax.yaxis.set_tick_params(labelsize=40)
-        ax.xaxis.set_tick_params(labelsize=40)
+        ax.yaxis.set_tick_params(labelsize=45)
+        ax.xaxis.set_tick_params(labelsize=45)
         ax.set_ylim(0.01, 99.9)
         autolabel(ax, rects)
 
@@ -1357,10 +1487,11 @@ def create_OOD_classification_plots(df, list_models, settings):
             ):
                 barplot_single(ax[f"{i}{j}"], labels, percentages[to_classify], colors)
                 if i == 0:
-                    ax[f"{i}{j}"].set_title(class_target_decode(target), fontsize=50)
+                    ax[f"{i}{j}"].set_title(class_target_decode(target), fontsize=60)
                 if i < 4:
                     plt.setp(ax[f"{i}{j}"].get_xticklabels(), visible=False)
-                ax[f"{i}0"].set_ylabel(to_classify, fontsize=50)
+                ax[f"{i}0"].set_ylabel(to_classify, fontsize=60)
+                ax[f"{i}0"].tick_params(labelsize=45)
                 # dont show axis
                 if i < 4:
                     plt.setp(ax[f"{i}{j}"].get_xticklabels(), visible=False)
@@ -1424,6 +1555,7 @@ def science_plots(settings, onlycnf=False):
         else:
             # Science plots
             purity_vs_z(df, model_name, settings)
-            # cadence_acc_matrix(df, model_name, settings)
+            cadence_acc_matrix(df, model_name, settings)
             hubble_residuals(df, model_name, fits, settings)
             cnf_matrix(df, model_name, settings)
+

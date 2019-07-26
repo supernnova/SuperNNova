@@ -175,7 +175,7 @@ def build_traintestval_splits(settings):
         ],
     )
     df_stats.to_csv(
-        os.path.join(settings.stats_dir, f"{settings.data_prefix}_data_stats.csv"),
+        os.path.join(settings.stats_dir, f"{settings.data_prefix}_S{settings.seed}_data_stats.csv"),
         index=False,
     )
     paper_df = pd.DataFrame()
@@ -196,7 +196,7 @@ def build_traintestval_splits(settings):
     paper_df = paper_df.sort_index()
     # save to
     with open(
-        os.path.join(settings.latex_dir, f"{settings.data_prefix}_data_stats.tex"), "w"
+        os.path.join(settings.latex_dir, f"{settings.data_prefix}_S{settings.seed}_data_stats.tex"), "w"
     ) as tf:
         tf.write(paper_df.to_latex())
 
