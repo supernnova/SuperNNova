@@ -14,8 +14,8 @@ ALL_COLORS = [
     "indigo",
 ]
 BI_COLORS = ["darkorange", "royalblue"]
-CONTRAST_COLORS = ["darkorange", "indigo"]
-MARKER_DIC = {"randomforest": "o", "vanilla": "s"}
+CONTRAST_COLORS = ["darkorange", "indigo", "maroon"]
+MARKER_DIC = {"randomforest": "o", "vanilla": "s","CNN":"<"}
 FILL_DIC = {"None": "none", "zpho": "bottom", "zspe": "full"}
 MARKER_LIST = ["o", "o", "v", "v", "^", "^", ">", ">", "<", "<", "s", "s", "D", "D"]
 CMAP = plt.cm.YlOrBr

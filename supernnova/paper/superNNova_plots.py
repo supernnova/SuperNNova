@@ -107,10 +107,10 @@ def plot_acc_vs_nsn(df, settings):
     ax1.grid(True)
     ax1.set_axisbelow(True)
 
-    models_list = ["randomforest", "vanilla"]
+    models_list = ["randomforest", "vanilla", "CNN"]
     redshift_list = df["redshift"].unique()
 
-    label_dic = {"randomforest": "Random Forest", "vanilla": "Baseline RNN"}
+    label_dic = {"randomforest": "Random Forest", "vanilla": "Baseline RNN", "CNN": "CNN"}
 
     group_cols = ["model_name_noseed", "model_type", "redshift", "data_fraction"]
     keep_cols = group_cols + ["all_accuracy"]
@@ -165,7 +165,7 @@ def plot_acc_vs_nsn(df, settings):
             [0],
             marker="s",
             lw=0,
-            color="indigo",
+            color=CONTRAST_COLORS[0],
             label="Baseline RNN",
             markerfacecolor="w",
             markersize=12,
@@ -175,8 +175,18 @@ def plot_acc_vs_nsn(df, settings):
             [0],
             marker="o",
             lw=0,
-            color="darkorange",
+            color=CONTRAST_COLORS[1],
             label="Random Forest",
+            markerfacecolor="w",
+            markersize=12,
+        ),
+        Line2D(
+            [0],
+            [0],
+            marker="<",
+            lw=0,
+            color=CONTRAST_COLORS[2],
+            label="CNN",
             markerfacecolor="w",
             markersize=12,
         ),
@@ -932,6 +942,7 @@ def performance_plots(settings):
         l for l in list_files if "N_global_lstm_32x2_0.05_128_True_mean_C" in l
     ]
     tmp_list_files += [l for l in list_files if "randomforest" in l]
+    tmp_list_files += [l for l in list_files if "CNN" in l]
     list_files = tmp_list_files
 
     if len(list_files) == 0:
