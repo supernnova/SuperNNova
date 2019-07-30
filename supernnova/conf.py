@@ -187,7 +187,7 @@ def get_settings():
         "--model",
         default="vanilla",
         type=str,
-        choices=["vanilla", "variational", "bayesian"],
+        choices=["vanilla", "variational", "bayesian","CNN"],
         help="recurrent model type",
     )
     parser.add_argument(

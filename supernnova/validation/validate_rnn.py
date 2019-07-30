@@ -103,7 +103,7 @@ def get_predictions(settings, model_file=None):
     settings.random_length = False
     settings.random_redshift = False
 
-    if "vanilla" in settings.pytorch_model_name:
+    if "vanilla" in settings.pytorch_model_name or "CNN" in settings.pytorch_model_name:
         settings.num_inference_samples = 1
 
     # Load RNN model

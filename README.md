@@ -2,12 +2,14 @@
 ![Logo](docs/SuperNNova.png)
 
 ### Read the documentation
+For this paper branch you need to [Build the docs for this branch](#docs).
 
+There is an updated, with more functionalities branch which has online documentation:
 [https://supernnova.readthedocs.io](https://supernnova.readthedocs.io/en/latest/)
 
 
 ### Read the paper preprint
-
+The paper was produced using this branch "paper".
 [Paper](https://arxiv.org/abs/1901.06384)
 
 

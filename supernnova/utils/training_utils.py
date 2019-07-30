@@ -13,6 +13,7 @@ plt.switch_backend("agg")
 from ..training import vanilla_rnn
 from ..training import variational_rnn
 from ..training import bayesian_rnn
+from ..training import vanilla_cnn
 
 from . import logging_utils as lu
 
@@ -235,6 +236,8 @@ def get_model(settings, input_size):
         rnn = variational_rnn.VariationalRNN
     elif settings.model == "bayesian":
         rnn = bayesian_rnn.BayesianRNN
+    elif settings.model == "CNN":
+        rnn = vanilla_cnn.CNN
 
     rnn = rnn(input_size, settings)
 
