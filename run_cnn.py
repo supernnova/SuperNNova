@@ -27,8 +27,14 @@ def run_cmd(cmd, debug, seed):
 
     subprocess.check_call(shlex.split(cmd))
 
+def run_data(dump_dir, debug, seed):
+    """Create database
+    """
 
-def run_baseline_best(dump_dir, debug, seed):
+    cmd = "python -W ignore run.py --data " f"--dump_dir {dump_dir} "
+    run_cmd(cmd, debug, seed)
+
+def run_baseline_CNN_best(dump_dir, debug, seed):
     """CNN best
     """
 
@@ -38,7 +44,6 @@ def run_baseline_best(dump_dir, debug, seed):
     # Train baseline models on SALT #
     #################################
     list_redshift = [None, "zpho", "zspe"]
-    #list_source_data = ["photometry", "saltfit"]
     list_source_data = ["saltfit"]
 
     # Train RNN models
@@ -58,7 +63,7 @@ def run_baseline_best(dump_dir, debug, seed):
             cmd += f" --redshift {redshift} "
         run_cmd(cmd, debug, seed)
 
-def run_baseline_hp(dump_dir, debug, seed):
+def run_baseline_CNN_hp(dump_dir, debug, seed):
 
     lu.print_green(f"SEED {seed}: BASELINE HP")
 
@@ -150,7 +155,11 @@ if __name__ == "__main__":
     list_seeds = args.seeds[:2] if args.debug else args.seeds
 
     for seed in list_seeds:
-        # run_baseline_hp(args.dump_dir, args.debug, seed)
-        run_baseline_best(args.dump_dir, args.debug, seed)
+        
+        if seed == list_seeds[0]:
+            run_data(args.dump_dir, args.debug, seed)
+            run_baseline_CNN_hp(args.dump_dir, args.debug, seed)
+
+        run_baseline_CNN_best(args.dump_dir, args.debug, seed)
     # seed is really not needed
     run_performance(args.dump_dir, args.debug, seed)
