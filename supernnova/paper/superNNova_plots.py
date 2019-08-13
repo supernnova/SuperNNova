@@ -942,7 +942,7 @@ def performance_plots(settings):
         l for l in list_files if "N_global_lstm_32x2_0.05_128_True_mean_C" in l and "CNN" not in l
     ]
     tmp_list_files += [l for l in list_files if "randomforest" in l]
-    tmp_list_files += [l for l in list_files if "CNN" in l and "N_global_lstm_32x2_0.001" in l]
+    tmp_list_files += [l for l in list_files if "CNN" in l and "N_global_lstm_16x2_0.05_128_True_mean" in l]
     list_files = tmp_list_files
 
     if len(list_files) == 0:
