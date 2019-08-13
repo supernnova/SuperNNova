@@ -939,10 +939,10 @@ def performance_plots(settings):
     ]
     # select only best hp (issue for df 0.2) and only cyclic vanilla
     tmp_list_files = [
-        l for l in list_files if "N_global_lstm_32x2_0.05_128_True_mean_C" in l
+        l for l in list_files if "N_global_lstm_32x2_0.05_128_True_mean_C" in l and "CNN" not in l
     ]
     tmp_list_files += [l for l in list_files if "randomforest" in l]
-    tmp_list_files += [l for l in list_files if "CNN" in l]
+    tmp_list_files += [l for l in list_files if "CNN" in l and "N_global_lstm_32x2_0.001" in l]
     list_files = tmp_list_files
 
     if len(list_files) == 0:

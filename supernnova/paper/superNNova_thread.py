@@ -43,7 +43,7 @@ def SuperNNova_stats_and_plots(settings):
     df_stats = pd.read_csv(Path(settings.stats_dir) / "summary_stats.csv")
 
     # Create latex tables
-    # sm.create_accuracy_latex_tables(df_stats, settings)
+    sm.create_accuracy_latex_tables(df_stats, settings)
 
     # Rest of stats and plots in paper
     # can be ran in debug mode: only printing model names
