@@ -29,8 +29,10 @@ def get_model_visualization_name(model_name):
     if "bayesian" in model_name or "BBB" in model_name:
         return "BBB RNN"
     if "variational" in model_name:
-        return "Variational RNN"
+        return "MC dropout RNN"
     if "vanilla" in model_name or "baseline" in model_name:
         return "Baseline RNN"
     if "forest" in model_name:
         return "Random Forest"
+    if "CNN" in model_name:
+        return "CNN"

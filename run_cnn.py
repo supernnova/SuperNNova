@@ -47,6 +47,25 @@ def run_baseline_CNN_best(dump_dir, debug, seed):
     list_source_data = ["saltfit"]
 
     # Train RNN models
+    # 0.2 dataset
+    for (source_data,redshift) in product(list_source_data,list_redshift):
+        cmd = (
+            f"python -W ignore run.py --train_rnn "
+            f"--source_data {source_data} "
+            f"--dump_dir {dump_dir} "
+            f"--model CNN "
+            f"--batch_size 128 "
+            f"--bidirectional True "
+            f"--random_length True "
+            f"--hidden_dim 32 "
+            f"--learning_rate 0.001 "
+            f"--data_fraction 0.2 "
+        )
+        if redshift is not None:
+            cmd += f" --redshift {redshift} "
+        run_cmd(cmd, debug, seed)
+
+    # complete dataset
     for (source_data,redshift) in product(list_source_data,list_redshift):
         cmd = (
             f"python -W ignore run.py --train_rnn "
