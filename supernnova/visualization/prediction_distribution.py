@@ -160,12 +160,12 @@ def plot_distributions(settings, list_d_plot):
     if len([settings.model_files]) == 1:
         parent_dir = Path(settings.model_files[0]).parent.name
         fig_path = f"{settings.lightcurves_dir}/{parent_dir}/prediction_distribution"
-        fig_name = f"{parent_dir}.png"
+        fig_name = f"{parent_dir}_{SNID}.png"
     else:
         fig_path = (
             f"{settings.lightcurves_dir}/{settings.pytorch_model_name}/prediction_distribution"
         )
-        fig_name = f"{settings.pytorch_model_name}.png"
+        fig_name = f"{settings.pytorch_model_name}_{SNID}.png"
     Path(fig_path).mkdir(parents=True, exist_ok=True)
     # plt.tight_layout()
     plt.savefig(Path(fig_path) / fig_name)
@@ -239,7 +239,7 @@ def plot_prediction_distribution(settings):
         )
         dict_rnn[name] = rnn
 
-    # lOad SN info
+    # load SN info
     SNinfo_df = du.load_HDF5_SNinfo(settings)
 
     targets = np.array([o[1] for o in list_data_test])
@@ -252,10 +252,11 @@ def plot_prediction_distribution(settings):
         )
     elif settings.nb_classes == 7:
         # Ia, Ib, Ic, IIp
-        idxs_keep = [
-            np.where(targets == list(settings.sntypes.values()).index(i))[0][0]
-            for i in ["Ia", "Ib", "Ic", "IIP"]
-        ]
+        idxs_keep = []
+        for clas in ["Ia", "Ib", "Ic", "IIP"]:
+            idx_class = np.where(targets == list(settings.sntypes.values()).index(clas))[0]
+            np.random.shuffle(idx_class)
+            idxs_keep.append(idx_class[0])
 
     # Carry out 8 plots: 4 real light curves + 4 OOD
     list_OOD_types = ["random", "sin", "reverse", "shuffle"]
