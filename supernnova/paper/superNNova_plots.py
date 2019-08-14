@@ -250,6 +250,7 @@ def plot_calibration(settings):
         if len(tmp_not_found) > 0:
             print(lu.str_to_redstr(f"Files not found {tmp_not_found}"))
 
+    # 
     plt.figure(figsize=(10, 10))
     ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
     ax11 = plt.subplot2grid((3, 1), (2, 0), sharex=ax1)
@@ -260,6 +261,7 @@ def plot_calibration(settings):
     Path(plot_path).mkdir(parents=True, exist_ok=True)
 
     for i, f in enumerate(metric_files):
+
         df = pd.read_pickle(f)
         mean_bins, TPF = df["calibration_mean_bins"][0], df["calibration_TPF"][0]
         model_name = df["model_name"][0]
@@ -1098,7 +1100,7 @@ def cadence_acc_matrix(df, model_name, settings):
     y_labels = ['unique \n nights', 'unique \n nights \n (realistic)']
     text_mat = np.vstack([dic_n['unique nights'],dic_n['unique nights (realistic)']])
     acc_mat = np.vstack([dic_acc['unique nights'],dic_acc['unique nights']])
-    cax = ax0.imshow(acc_mat, cmap=CMAP)
+    cax = ax0.imshow(acc_mat, cmap=CMAP, vmin=min(dic_acc['unique nights']), vmax = max(dic_acc['unique nights']))
     for i, j in itertools.product(range(acc_mat.shape[0]), range(acc_mat.shape[1])):
         plt.text(
             j,
