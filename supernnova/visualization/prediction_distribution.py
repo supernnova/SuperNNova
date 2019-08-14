@@ -244,66 +244,68 @@ def plot_prediction_distribution(settings):
 
     targets = np.array([o[1] for o in list_data_test])
 
-    if settings.nb_classes == 2:
-        # 2 lightcurves of each type
-        idxs_keep = (
-            np.where(targets == 0)[0][:2].tolist()
-            + np.where(targets == 1)[0][:2].tolist()
-        )
-    elif settings.nb_classes == 7:
-        # Ia, Ib, Ic, IIp
-        idxs_keep = []
-        for clas in ["Ia", "Ib", "Ic", "IIP"]:
-            idx_class = np.where(targets == list(settings.sntypes.values()).index(clas))[0]
-            np.random.shuffle(idx_class)
-            idxs_keep.append(idx_class[0])
+    for dummy in range(10):
 
-    # Carry out 8 plots: 4 real light curves + 4 OOD
-    list_OOD_types = ["random", "sin", "reverse", "shuffle"]
-    list_data_test = [(list_data_test[i], None) for i in idxs_keep]
-    list_data_test += [(o[0], ood) for (o, ood) in zip(list_data_test, list_OOD_types)]
+        if settings.nb_classes == 2:
+            # 2 lightcurves of each type
+            idxs_keep = (
+                np.where(targets == 0)[0][:2].tolist()
+                + np.where(targets == 1)[0][:2].tolist()
+            )
+        elif settings.nb_classes == 7:
+            # Ia, Ib, Ic, IIp
+            idxs_keep = []
+            for clas in ["Ia", "Ib", "Ic", "IIP"]:
+                idx_class = np.where(targets == list(settings.sntypes.values()).index(clas))[0]
+                np.random.shuffle(idx_class)
+                idxs_keep.append(idx_class[0])
 
-    list_d_plot = []
+        # Carry out 8 plots: 4 real light curves + 4 OOD
+        list_OOD_types = ["random", "sin", "reverse", "shuffle"]
+        list_data_test_tmp = [(list_data_test[i], None) for i in idxs_keep]
+        list_data_test_tmp += [(o[0], ood) for (o, ood) in zip(list_data_test_tmp, list_OOD_types)]
 
-    # Loop over data to plot prediction
-    for ((X, target, SNID, _, X_ori), OOD) in tqdm(list_data_test, ncols=100):
+        list_d_plot = []
 
-        redshift = SNinfo_df[SNinfo_df["SNID"] == SNID]["SIM_REDSHIFT_CMB"].values[0]
-        peak_MJD = SNinfo_df[SNinfo_df["SNID"] == SNID]["PEAKMJDNORM"].values[0]
+        # Loop over data to plot prediction
+        for ((X, target, SNID, _, X_ori), OOD) in tqdm(list_data_test_tmp, ncols=100):
 
-        # Prepare plotting data in a dict
-        d_plot = {
-            flt: {"FLUXCAL": [], "FLUXCALERR": [], "MJD": []}
-            for flt in settings.list_filters
-        }
+            redshift = SNinfo_df[SNinfo_df["SNID"] == SNID]["SIM_REDSHIFT_CMB"].values[0]
+            peak_MJD = SNinfo_df[SNinfo_df["SNID"] == SNID]["PEAKMJDNORM"].values[0]
 
-        with torch.no_grad():
-            d_pred, X_normed = get_predictions(settings, dict_rnn, X, target, OOD=OOD)
-        # X here has been normalized. We unnormalize X
-        X_unnormed = tu.unnormalize_arr(X_normed, settings)
-        # Check we do recover X_ori when OOD is None
-        if OOD is None:
-            assert np.all(np.isclose(np.ravel(X_ori), np.ravel(X_unnormed), atol=1e-2))
+            # Prepare plotting data in a dict
+            d_plot = {
+                flt: {"FLUXCAL": [], "FLUXCALERR": [], "MJD": []}
+                for flt in settings.list_filters
+            }
 
-        # TODO: IMPROVE
-        df_temp = pd.DataFrame(data=X_unnormed, columns=features)
-        arr_time = np.cumsum(df_temp.delta_time.values)
-        for flt in settings.list_filters:
-            non_zero = np.where(
-                ~np.isclose(df_temp[f"FLUXCAL_{flt}"].values, 0, atol=1E-2)
-            )[0]
-            d_plot[flt]["FLUXCAL"] = df_temp[f"FLUXCAL_{flt}"].values[non_zero]
-            d_plot[flt]["FLUXCALERR"] = df_temp[f"FLUXCALERR_{flt}"].values[non_zero]
-            d_plot[flt]["MJD"] = arr_time[non_zero]
+            with torch.no_grad():
+                d_pred, X_normed = get_predictions(settings, dict_rnn, X, target, OOD=OOD)
+            # X here has been normalized. We unnormalize X
+            X_unnormed = tu.unnormalize_arr(X_normed, settings)
+            # Check we do recover X_ori when OOD is None
+            if OOD is None:
+                assert np.all(np.isclose(np.ravel(X_ori), np.ravel(X_unnormed), atol=1e-2))
 
-        d_plot["redshift"] = redshift
-        d_plot["peak_MJD"] = peak_MJD
-        d_plot["SNID"] = SNID
-        d_plot["OOD"] = OOD
-        d_plot["target"] = target
-        d_plot["d_pred"] = d_pred
+            # TODO: IMPROVE
+            df_temp = pd.DataFrame(data=X_unnormed, columns=features)
+            arr_time = np.cumsum(df_temp.delta_time.values)
+            for flt in settings.list_filters:
+                non_zero = np.where(
+                    ~np.isclose(df_temp[f"FLUXCAL_{flt}"].values, 0, atol=1E-2)
+                )[0]
+                d_plot[flt]["FLUXCAL"] = df_temp[f"FLUXCAL_{flt}"].values[non_zero]
+                d_plot[flt]["FLUXCALERR"] = df_temp[f"FLUXCALERR_{flt}"].values[non_zero]
+                d_plot[flt]["MJD"] = arr_time[non_zero]
 
-        list_d_plot.append(d_plot)
+            d_plot["redshift"] = redshift
+            d_plot["peak_MJD"] = peak_MJD
+            d_plot["SNID"] = SNID
+            d_plot["OOD"] = OOD
+            d_plot["target"] = target
+            d_plot["d_pred"] = d_pred
 
-    plot_distributions(settings, list_d_plot)
+            list_d_plot.append(d_plot)
+
+        plot_distributions(settings, list_d_plot)
     lu.print_green("Finished plotting lightcurves and predictions ")

@@ -374,7 +374,7 @@ def run_variational_best(dump_dir, debug, seed):
 
         run_cmd(cmd, debug, seed)
 
-    # plot porob dist
+    # plot prob dist
     cmd = (
             f"python -W ignore run.py --plot_prediction_distribution "
             f"--model variational "
@@ -384,7 +384,8 @@ def run_variational_best(dump_dir, debug, seed):
             f"--dropout 0.01 "
             f"--weight_decay 1e-7 "
             f"--nb_classes 7 "
-        )         
+        )    
+    run_cmd(cmd, debug, seed)     
 
 
 def run_bayesian_hp(dump_dir, debug, seed):
