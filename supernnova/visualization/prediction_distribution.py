@@ -265,7 +265,7 @@ def plot_prediction_distribution(settings):
     list_d_plot = []
 
     # Loop over data to plot prediction
-    for ((X, target, SNID, _, X_ori), OOD) in tqdm(list_data_test[:20], ncols=100):
+    for ((X, target, SNID, _, X_ori), OOD) in tqdm(list_data_test, ncols=100):
 
         redshift = SNinfo_df[SNinfo_df["SNID"] == SNID]["SIM_REDSHIFT_CMB"].values[0]
         peak_MJD = SNinfo_df[SNinfo_df["SNID"] == SNID]["PEAKMJDNORM"].values[0]
