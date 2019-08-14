@@ -374,6 +374,18 @@ def run_variational_best(dump_dir, debug, seed):
 
         run_cmd(cmd, debug, seed)
 
+    # plot porob dist
+    cmd = (
+            f"python -W ignore run.py --plot_prediction_distribution "
+            f"--model variational "
+            f"--source_data photometry "
+            f"--dump_dir {dump_dir} "
+            f"--cyclic "
+            f"--dropout 0.01 "
+            f"--weight_decay 1e-7 "
+            f"--nb_classes 7 "
+        )         
+
 
 def run_bayesian_hp(dump_dir, debug, seed):
     """Bayesian scale tests
@@ -478,6 +490,27 @@ def run_bayesian_best(dump_dir, debug, seed):
             cmd += f" --redshift {redshift} "
 
         run_cmd(cmd, debug, seed)
+
+    # OOD prediction distribution
+    cmd = (
+            f"python -W ignore run.py --plot_prediction_distribution "
+            f"--model bayesian "
+            f"--source_data saltfit "
+            f"--dump_dir {dump_dir} "
+            f"--data_fraction 1.0 "
+            f"--log_sigma1 -1 "
+            f"--log_sigma2 -7 "
+            f"--rho_scale_lower 4 "
+            f"--rho_scale_upper 3 "
+            f"--log_sigma1_output -0.5 "
+            f"--log_sigma2_output -0.1 "
+            f"--rho_scale_lower_output 3 "
+            f"--rho_scale_upper_output 2 "
+            f"--nb_classes 7 "
+            f"--nb_classes photometry "
+        )
+
+    run_cmd(cmd, debug, seed)
 
 
 def run_representative(dump_dir, debug, seed):

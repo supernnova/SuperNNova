@@ -92,12 +92,12 @@ def plot_distributions(settings, list_d_plot):
                     color=FILTER_COLORS[flt],
                 )
 
-        ax.set_ylabel("FLUXCAL", fontsize=24)
+        ax.set_ylabel("FLUXCAL", fontsize=30)
         if i == 7:
-            ax.set_xlabel("days", fontsize=24)
+            ax.set_xlabel("days", fontsize=30)
         ylim = ax.get_ylim()
-        plt.yticks(fontsize=14)
-        plt.xticks(fontsize=14)
+        plt.yticks(fontsize=22)
+        plt.xticks(fontsize=22)
 
         SNtype = du.sntype_decoded(target, settings)
         if OOD is not None:
@@ -132,12 +132,12 @@ def plot_distributions(settings, list_d_plot):
                     color=color,
                     histtype="step",
                     linestyle=linestyle,
-                    linewidth=2,
+                    linewidth=5,
                     label=label,
                     bins=bin_edges,
                 )
-        plt.yticks(fontsize=14)
-        plt.xticks(fontsize=14)
+        plt.yticks(fontsize=22)
+        plt.xticks(fontsize=22)
 
         ax.set_yscale("log")
 
@@ -151,7 +151,7 @@ def plot_distributions(settings, list_d_plot):
                 framealpha=0,
             )
         if 2 * i + 1 == 15:
-            ax.set_xlabel("classification probability", fontsize=24)
+            ax.set_xlabel("classification probability", fontsize=30)
 
     plt.subplots_adjust(
         left=0.08, right=0.99, bottom=0.03, top=0.98, wspace=0.0, hspace=0.02
@@ -265,7 +265,7 @@ def plot_prediction_distribution(settings):
     list_d_plot = []
 
     # Loop over data to plot prediction
-    for ((X, target, SNID, _, X_ori), OOD) in tqdm(list_data_test, ncols=100):
+    for ((X, target, SNID, _, X_ori), OOD) in tqdm(list_data_test[:20], ncols=100):
 
         redshift = SNinfo_df[SNinfo_df["SNID"] == SNID]["SIM_REDSHIFT_CMB"].values[0]
         peak_MJD = SNinfo_df[SNinfo_df["SNID"] == SNID]["PEAKMJDNORM"].values[0]
