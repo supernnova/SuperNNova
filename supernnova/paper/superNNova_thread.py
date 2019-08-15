@@ -496,6 +496,17 @@ def towards_cosmo(df, df_delta, df_delta_ood, settings, plots, debug):
             + ".pickle"
             for model in [Base, Var, BBB]
         ]
+        +
+        [
+            settings.models_dir
+            + "/"
+            + model.strip("DES_").replace("CLF_2", "S_0_CLF_2")
+            + "/"
+            + model.replace("DES_", "PRED_DES_").replace("CLF_2", "S_0_CLF_2")
+            + model.replace("R_None", "R_zpho")
+            + ".pickle"
+            for model in [Var, BBB]
+        ]
         if debug:
             print(settings.prediction_files)
         else:
