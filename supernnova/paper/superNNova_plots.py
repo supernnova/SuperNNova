@@ -107,7 +107,7 @@ def plot_acc_vs_nsn(df, settings):
     ax1.grid(True)
     ax1.set_axisbelow(True)
 
-    models_list = ["randomforest", "CNN","vanilla"]
+    models_list = ["randomforest","CNN","vanilla"]
     redshift_list = df["redshift"].unique()
 
     label_dic = {"randomforest": "Random Forest", "CNN": "CNN", "vanilla": "Baseline RNN"}
@@ -165,7 +165,7 @@ def plot_acc_vs_nsn(df, settings):
             [0],
             marker="s",
             lw=0,
-            color=CONTRAST_COLORS[1],
+            color=CONTRAST_COLORS[2],
             label="Baseline RNN",
             markerfacecolor="w",
             markersize=12,
@@ -185,7 +185,7 @@ def plot_acc_vs_nsn(df, settings):
             [0],
             marker="D",
             lw=0,
-            color=CONTRAST_COLORS[2],
+            color=CONTRAST_COLORS[1],
             label="CNN",
             markerfacecolor="w",
             markersize=12,
