@@ -165,7 +165,7 @@ def plot_acc_vs_nsn(df, settings):
             [0],
             marker="s",
             lw=0,
-            color=CONTRAST_COLORS[0],
+            color=CONTRAST_COLORS[1],
             label="Baseline RNN",
             markerfacecolor="w",
             markersize=12,
@@ -175,7 +175,7 @@ def plot_acc_vs_nsn(df, settings):
             [0],
             marker="o",
             lw=0,
-            color=CONTRAST_COLORS[1],
+            color=CONTRAST_COLORS[0],
             label="Random Forest",
             markerfacecolor="w",
             markersize=12,
@@ -183,7 +183,7 @@ def plot_acc_vs_nsn(df, settings):
         Line2D(
             [0],
             [0],
-            marker="<",
+            marker="D",
             lw=0,
             color=CONTRAST_COLORS[2],
             label="CNN",
@@ -194,7 +194,7 @@ def plot_acc_vs_nsn(df, settings):
 
     ax1.legend(handles=legend_elements, loc=4)
     ax1.set_ylabel("accuracy", fontsize=18)
-    ax1.set_ylim(91, 100)
+    ax1.set_ylim(92, 100)
     ax1.set_xlim(0.025)
     ax1.set_xlabel("# SNe for training", fontsize=18)
 
@@ -947,7 +947,7 @@ def performance_plots(settings):
         l for l in list_files if "N_global_lstm_32x2_0.05_128_True_mean_C" in l and "CNN" not in l
     ]
     tmp_list_files += [l for l in list_files if "randomforest" in l]
-    tmp_list_files += [l for l in list_files if "CNN" in l and "N_global_lstm_16x2_0.05_128_True_mean" in l]
+    tmp_list_files += [l for l in list_files if "CNN" in l and "N_global_lstm_32x2_0.05_128_True_mean" in l]
     list_files = tmp_list_files
 
     if len(list_files) == 0:
