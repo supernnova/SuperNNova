@@ -110,7 +110,7 @@ def plot_acc_vs_nsn(df, settings):
     models_list = ["randomforest", "vanilla", "CNN"]
     redshift_list = df["redshift"].unique()
 
-    label_dic = {"randomforest": "Random Forest", "vanilla": "Baseline RNN", "CNN": "CNN"}
+    label_dic = {"randomforest": "Random Forest", "CNN": "CNN", "vanilla": "Baseline RNN"}
 
     group_cols = ["model_name_noseed", "model_type", "redshift", "data_fraction"]
     keep_cols = group_cols + ["all_accuracy"]
