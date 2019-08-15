@@ -48,7 +48,8 @@ def SuperNNova_stats_and_plots(settings):
     # Rest of stats and plots in paper
     # can be ran in debug mode: only printing model names
     # or in no plot mode: only printing stats
-    SuperNNova_stats_and_plots_thread(df_stats, settings, plots=True, debug=False)
+    SuperNNova_stats_and_plots_thread(
+        df_stats, settings, plots=True, debug=False)
 
 
 def SuperNNova_stats_and_plots_thread(df, settings, plots=True, debug=False):
@@ -87,7 +88,8 @@ def baseline(df, settings, plots, debug):
     # 0. Figure example
     if plots:
         print(
-            lu.str_to_yellowstr("Plotting candidates for Baseline binary (Figure 2.)")
+            lu.str_to_yellowstr(
+                "Plotting candidates for Baseline binary (Figure 2.)")
         )
         model_file = f"{settings.models_dir}/{Base.replace('DES_vanilla_','vanilla_S_0_')}/{Base.replace('DES_vanilla_','vanilla_S_0_')}.pt"
         if os.path.exists(model_file):
@@ -150,7 +152,8 @@ def baseline(df, settings, plots, debug):
         sm.print_contamination(df, sel_criteria, settings, data="saltfit")
     print("photometry")
     if not debug:
-        sm.print_contamination(df, Base.split("None"), settings, data="photometry")
+        sm.print_contamination(df, Base.split(
+            "None"), settings, data="photometry")
 
     # Multiclass
     # Plotting Confusion Matrix for just one seed
@@ -192,13 +195,15 @@ def bayesian(df, df_delta, df_delta_ood, settings, plots, debug):
     """
 
     # 2. Variational hyper-parameters
-    sel_criteria = ["DES_variational_CLF_2_R_None_saltfit_DF_0.2_N_global_lstm_32x2_"]
+    sel_criteria = [
+        "DES_variational_CLF_2_R_None_saltfit_DF_0.2_N_global_lstm_32x2_"]
     print(lu.str_to_bluestr(f"Hyperparameters {sel_criteria}"))
     if not debug:
         sm.get_metric_ranges(df, sel_criteria)
 
     # 3. BBB hyper-parameters
-    sel_criteria = ["DES_bayesian_CLF_2_R_None_saltfit_DF_0.2_N_global_lstm_32x2_"]
+    sel_criteria = [
+        "DES_bayesian_CLF_2_R_None_saltfit_DF_0.2_N_global_lstm_32x2_"]
     print(lu.str_to_bluestr(f"Hyperparameters {sel_criteria}"))
     if not debug:
         sm.get_metric_ranges(df, sel_criteria)
@@ -236,14 +241,16 @@ def bayesian(df, df_delta, df_delta_ood, settings, plots, debug):
             print("contamination")
             print(sel_criteria)
         else:
-            sm.print_contamination(df, sel_criteria, settings, data="photometry")
+            sm.print_contamination(
+                df, sel_criteria, settings, data="photometry")
 
     # 4. Uncertainties
     print(lu.str_to_bluestr("Best performing Bayesian uncertainties"))
     print("Epistemic behaviour")
     for model in [Var, BBB]:
         m_right = model.replace("photometry", "saltfit")
-        m_left = model.replace("photometry", "saltfit").replace("DF_1.0", "DF_0.5")
+        m_left = model.replace(
+            "photometry", "saltfit").replace("DF_1.0", "DF_0.5")
         print("salt", m_left, m_right)
         df_sel = df_delta[
             (df_delta["model_name_left"] == m_left)
@@ -280,7 +287,8 @@ def bayesian(df, df_delta, df_delta_ood, settings, plots, debug):
     df_sel = df_sel.round(4)
     if not debug:
         sm.nice_df_print(
-            df_sel, keys=["mean_all_class0_std_dev_mean", "mean_all_class0_std_dev_std"]
+            df_sel, keys=["mean_all_class0_std_dev_mean",
+                          "mean_all_class0_std_dev_std"]
         )
 
     if plots:
@@ -437,22 +445,26 @@ def towards_cosmo(df, df_delta, df_delta_ood, settings, plots, debug):
     print(lu.str_to_bluestr("Out-of-distribution light-curves"))
     # OOD type assignement figure
     if plots:
-        print(lu.str_to_yellowstr("Plotting OOD classification percentages (Figure 8)"))
+        print(lu.str_to_yellowstr(
+            "Plotting OOD classification percentages (Figure 8)"))
         if not debug:
             sp.create_OOD_classification_plots(df, list_models_rnn, settings)
     # Get entropy
     print("binary")
-    df_sel = df_delta_ood[df_delta_ood["model_name_noseed"].isin(list_models_rnn)]
+    df_sel = df_delta_ood[df_delta_ood["model_name_noseed"].isin(
+        list_models_rnn)]
     if not debug:
         sm.nice_df_print(df_sel)
     print("ternary")
     list_models_sel = [l.replace("CLF_2", "CLF_3") for l in list_models_rnn]
-    df_sel = df_delta_ood[df_delta_ood["model_name_noseed"].isin(list_models_sel)]
+    df_sel = df_delta_ood[df_delta_ood["model_name_noseed"].isin(
+        list_models_sel)]
     if not debug:
         sm.nice_df_print(df_sel)
     print("seven-way")
     list_models_sel = [l.replace("CLF_2", "CLF_7") for l in list_models_rnn]
-    df_sel = df_delta_ood[df_delta_ood["model_name_noseed"].isin(list_models_sel)]
+    df_sel = df_delta_ood[df_delta_ood["model_name_noseed"].isin(
+        list_models_sel)]
     if not debug:
         sm.nice_df_print(df_sel)
     if plots:
@@ -477,7 +489,8 @@ def towards_cosmo(df, df_delta, df_delta_ood, settings, plots, debug):
                 print(model_file)
             else:
                 model_settings = conf.get_settings_from_dump(model_file)
-                early_prediction.make_early_prediction(model_settings, nb_lcs=20)
+                early_prediction.make_early_prediction(
+                    model_settings, nb_lcs=20)
         else:
             print(lu.str_to_redstr(f"File not found {model_file}"))
 
@@ -487,7 +500,8 @@ def towards_cosmo(df, df_delta, df_delta_ood, settings, plots, debug):
     if plots:
         print(lu.str_to_yellowstr("Plotting Hubble residuals (Figures 10 and 11)"))
         tmp_pred_files = settings.prediction_files
-        settings.prediction_files = [
+
+        my_models_0 = [
             settings.models_dir
             + "/"
             + model.strip("DES_").replace("CLF_2", "S_0_CLF_2")
@@ -496,8 +510,7 @@ def towards_cosmo(df, df_delta, df_delta_ood, settings, plots, debug):
             + ".pickle"
             for model in [Base, Var, BBB]
         ]
-        +
-        [
+        my_models_1 = [
             settings.models_dir
             + "/"
             + model.strip("DES_").replace("CLF_2", "S_0_CLF_2")
@@ -507,6 +520,7 @@ def towards_cosmo(df, df_delta, df_delta_ood, settings, plots, debug):
             + ".pickle"
             for model in [Var, BBB]
         ]
+        settings.prediction_files = my_models_0 + my_models_1
         if debug:
             print(settings.prediction_files)
         else:
