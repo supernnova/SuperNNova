@@ -107,7 +107,7 @@ def plot_acc_vs_nsn(df, settings):
     ax1.grid(True)
     ax1.set_axisbelow(True)
 
-    models_list = ["randomforest", "vanilla", "CNN"]
+    models_list = ["randomforest", "CNN","vanilla"]
     redshift_list = df["redshift"].unique()
 
     label_dic = {"randomforest": "Random Forest", "CNN": "CNN", "vanilla": "Baseline RNN"}
