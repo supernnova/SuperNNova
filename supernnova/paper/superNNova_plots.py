@@ -684,12 +684,12 @@ def plot_HDres_histos_vs_z(
 
         ax_left.set_ylim(-2, 2)
         ax_left.set_xlim(0, 1.2)
-        ax_left.set_ylabel(f"{ylabel} residual", fontsize=20)
-        ax_left.tick_params(labelsize=14)
+        ax_left.set_ylabel(f"{ylabel} residual", fontsize=26)
+        ax_left.tick_params(labelsize=22)
         plt.setp(ax_left.get_xticklabels(), visible=visible)
         if visible is True:
-            ax_left.set_xlabel("simulated redshift", fontsize=20)
-            ax_left.tick_params(labelsize=18)
+            ax_left.set_xlabel("simulated redshift", fontsize=26)
+            ax_left.tick_params(labelsize=22)
         for t in threshold_list:
             sel = sel_dic[t]
             n_SNe = len(sel)
@@ -703,7 +703,7 @@ def plot_HDres_histos_vs_z(
                 label=f"{n_SNe} {sntyp} {threshold_sign} {t}",
                 lw=2,
             )
-        ax_right.legend(loc="lower center", prop={"size": 16})
+        ax_right.legend(loc="lower center", prop={"size": 22})
         plt.setp(ax_right.get_yticklabels(), visible=False)
         plt.setp(ax_right.get_xticklabels(), visible=False)
         ax_right.plot(
@@ -734,8 +734,8 @@ def plot_HDres_histos_vs_z(
             bins=bins_to_use,
         )
     ax20.set_xlim(0, 1.2)
-    ax20.tick_params(labelsize=18)
-    ax20.set_xlabel("simulated redshift", fontsize=20)
+    ax20.tick_params(labelsize=22)
+    ax20.set_xlabel("simulated redshift", fontsize=26)
     ax20.set_yscale('log')
 
     # hist stretch
@@ -750,11 +750,11 @@ def plot_HDres_histos_vs_z(
             bins=bins_to_use,
             lw=2,
         )
-    ax21.set_xlabel("x1", fontsize=20)
+    ax21.set_xlabel("x1", fontsize=26)
     ax21.yaxis.set_label_position("right")
     ax21.set_xlim(-3, 3)
     ax21.set_yscale('log')
-    ax21.tick_params(labelsize=18)
+    ax21.tick_params(labelsize=22)
     # color histo
     n, bins_to_use, tmp = ax31.hist(Ias["c"], color="black", histtype="step", lw=3)
     for t in threshold_list:
@@ -767,9 +767,9 @@ def plot_HDres_histos_vs_z(
             bins=bins_to_use,
             lw=2,
         )
-    ax31.set_xlabel("c", fontsize=20)
+    ax31.set_xlabel("c", fontsize=26)
     ax31.set_xlim(-1, 1)
-    ax31.tick_params(labelsize=18)
+    ax31.tick_params(labelsize=22)
     ax31.yaxis.set_label_position("right")
     ax31.set_yscale('log')
 
@@ -777,7 +777,6 @@ def plot_HDres_histos_vs_z(
     plt.savefig(nameout)
     plt.close()
     del fig
-
 
 #################
 # Formatting
