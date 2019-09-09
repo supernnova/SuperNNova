@@ -371,6 +371,8 @@ def process_single_FITS(file_path, settings):
     df = df[keep_col + keep_col_header].copy()
     # filters have a trailing white space which we remove
     df.FLT = df.FLT.apply(lambda x: x.rstrip()).values.astype(str)
+    # keep only filters we are going to use for classification
+    df = df[df['FLT'].isin(settings.list_filters)]
     # Drop the delimiter lines
     df = df[df.MJD != -777.000]
     # Reset the index (it is no longer continuous after dropping lines)
