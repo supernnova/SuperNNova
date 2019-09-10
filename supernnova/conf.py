@@ -156,7 +156,7 @@ def get_args():
     parser.add_argument(
         "--source_data",
         choices=["saltfit", "photometry"],
-        default="saltfit",
+        default="photometry",
         help="Data source used to select light-curves for supernnova",
     )
     parser.add_argument(
