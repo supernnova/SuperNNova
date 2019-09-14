@@ -1338,7 +1338,7 @@ def create_OOD_classification_plots(df, list_models, settings):
         ax["42"] = plt.subplot(gs[14], sharey=ax["40"])
 
         # Percentages for a predicted class
-        for j, target in enumerate([2, 3, 7]):
+        for j, target in enumerate([2, 3, len(settings.sntypes)]):
             percentages = OOD_classification_percentages(df, model, targets=target)
             labels = []
             for t in range(target):
@@ -1395,32 +1395,33 @@ def science_plots(settings, onlycnf=False):
 
     # Get extra info from fits (for distance modulus)
     fits = du.load_fitfile(settings)
-    fits = fits[["SNID", "cERR", "mBERR", "x1ERR"]]
+    if len(fits) !=0:
+        fits = fits[["SNID", "cERR", "mBERR", "x1ERR"]]
 
-    # check if files are there
-    tmp_not_found = [m for m in settings.prediction_files if not os.path.exists(m)]
-    if len(tmp_not_found) > 0:
-        print(lu.str_to_redstr(f"Files not found {tmp_not_found}"))
-        tmp_prediction_files = [
-            m for m in settings.prediction_files if os.path.exists(m)
-        ]
-        settings.prediction_files = tmp_prediction_files
+        # check if files are there
+        tmp_not_found = [m for m in settings.prediction_files if not os.path.exists(m)]
+        if len(tmp_not_found) > 0:
+            print(lu.str_to_redstr(f"Files not found {tmp_not_found}"))
+            tmp_prediction_files = [
+                m for m in settings.prediction_files if os.path.exists(m)
+            ]
+            settings.prediction_files = tmp_prediction_files
 
-    for f in settings.prediction_files:
-        df = pd.read_pickle(f)
-        model_name = Path(f).stem
+        for f in settings.prediction_files:
+            df = pd.read_pickle(f)
+            model_name = Path(f).stem
 
-        cols_to_merge = ["SNID", "SIM_REDSHIFT_CMB", "SNTYPE", "mB", "x1", "c"]
-        cols_to_merge += [c for c in df_SNinfo.columns if "unique_nights" in c]
-        cols_to_merge += [c for c in df_SNinfo.columns if "_num_" in c]
+            cols_to_merge = ["SNID", "SIM_REDSHIFT_CMB", "SNTYPE", "mB", "x1", "c"]
+            cols_to_merge += [c for c in df_SNinfo.columns if "unique_nights" in c]
+            cols_to_merge += [c for c in df_SNinfo.columns if "_num_" in c]
 
-        df = df.merge(df_SNinfo.reset_index()[cols_to_merge], how="left", on="SNID")
+            df = df.merge(df_SNinfo.reset_index()[cols_to_merge], how="left", on="SNID")
 
-        if onlycnf:
-            cnf_matrix(df, model_name, settings)
-        else:
-            # Science plots
-            purity_vs_z(df, model_name, settings)
-            # cadence_acc_matrix(df, model_name, settings)
-            hubble_residuals(df, model_name, fits, settings)
-            cnf_matrix(df, model_name, settings)
+            if onlycnf:
+                cnf_matrix(df, model_name, settings)
+            else:
+                # Science plots
+                purity_vs_z(df, model_name, settings)
+                # cadence_acc_matrix(df, model_name, settings)
+                hubble_residuals(df, model_name, fits, settings)
+                cnf_matrix(df, model_name, settings)

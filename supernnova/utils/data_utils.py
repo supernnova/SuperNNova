@@ -68,7 +68,6 @@ def sntype_decoded(target, settings):
         (str) the name of the class
 
     """
-
     if settings.nb_classes > 3:
         SNtype = list(settings.sntypes.values())[target]
     elif settings.nb_classes == 3:
@@ -79,10 +78,17 @@ def sntype_decoded(target, settings):
         else:
             SNtype = "SN CC IIx"
     else:
+        list_types = list(set([x for x in settings.sntypes.values()]))
         if target == 0:
-            SNtype = f"SN {list(settings.sntypes.values())[0]}"
+            if 'Ia' in list_types:
+                SNtype = 'SN Ia'
+            else:
+                SNtype = f"SN {list(settings.sntypes.values())[0]}"
         else:
-            SNtype = f"SN {'|'.join(list(settings.sntypes.values())[1:])}"
+            if 'Ia' in list_types:
+                SNtype = f"SN {'|'.join(set([k for k in settings.sntypes.values() if 'Ia' not in k]))}"
+            else:
+                SNtype = f"SN {'|'.join(list(settings.sntypes.values())[1:])}"
     return SNtype
 
 
@@ -103,8 +109,12 @@ def tag_type(df, settings, type_column="TYPE"):
 
     # 2 classes
     # taking the first type vs. others
-    arr_temp = df[type_column].values.copy()
-    df["target_2classes"] = (arr_temp != int(list(settings.sntypes.keys())[0])).astype(np.uint8)
+    list_types = list(set([x for x in settings.sntypes.values()]))
+    if 'Ia' in list_types:
+        df['target_2classes'] = df[type_column].apply(lambda x: 0 if settings.sntypes[str(x)] == 'Ia' else 1)
+    else:
+        arr_temp = df[type_column].values.copy()
+        df["target_2classes"] = (arr_temp != int(list(settings.sntypes.keys())[0])).astype(np.uint8)
 
     # All classes
     arr_temp = df[type_column].values.copy()
