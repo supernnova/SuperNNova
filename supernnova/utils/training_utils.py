@@ -555,7 +555,7 @@ def get_evaluation_metrics(settings, list_data, model, sample_size=None):
     assert len(targets.shape) == 1
     assert len(preds.shape) == 2
 
-    if settings.nb_classes == 2:
+    if settings.nb_classes == 2 and len(np.unique(targets)) == 2:
         auc = metrics.roc_auc_score(targets, preds[:, 1])
     else:
         # Can't compute AUC for more than 2 classes
