@@ -130,13 +130,13 @@ def get_predictions(settings, model_file=None):
 
     # Load the data
     list_data_test = tu.load_HDF5(settings, test=True)
-
+    
     # Batching stuff together
     num_elem = len(list_data_test)
     factor = (num_elem // 4) if settings.source_data == "photometry" else num_elem
-    num_batches = num_elem / min(num_elem, factor)  # to be changed for speed if needed
+    num_batches = num_elem / min(factor,100000)
     list_batches = np.array_split(np.arange(num_elem), num_batches)
-
+    
     # Prepare output arrays
     d_pred = {
         key: np.zeros(
