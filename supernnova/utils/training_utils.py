@@ -77,7 +77,7 @@ def unnormalize_arr(arr, settings):
 
 
 def fill_data_list(
-    idxs, arr_data, arr_target, arr_SNID, settings, n_features, desc, test=False
+    idxs, arr_data, arr_tuple_target, arr_SNID, settings, n_features, desc, test=False
 ):
     """Utility to create a list of data tuples used as inputs to RNN model
 
@@ -86,7 +86,7 @@ def fill_data_list(
     Args:
         idxs (np.array or list): idx of data point to select
         arr_data (np.array): features
-        arr_target (np.array): target
+        arr_tuple_target (np.array): target[0]=classification target[1]=peak regression
         arr_SNID (np.array): lightcurve unique ID
         settings (ExperimentSettings): controls experiment hyperparameters
         n_features (int): total number of features in arr_data
@@ -108,7 +108,13 @@ def fill_data_list(
     for i in iterator:
 
         X_all = arr_data[i].reshape(-1, n_features)
-        target = int(arr_target[i])
+
+        target_class = int(arr_tuple_target[0][i])
+        arr_time = np.cumsum(X_all[:, settings.idx_delta_time])
+        peak_mjd_normed = float(arr_tuple_target[1][i])
+        target_peak = peak_mjd_normed - arr_time
+        target_tuple =  target_class, target_peak
+        
         lc = int(arr_SNID[i])
 
         # Keep an unnormalized copy of the data (for test and display)
@@ -132,9 +138,9 @@ def fill_data_list(
         X_normed = X_normed_tmp[:, settings.idx_features]
 
         if test is True:
-            list_data.append((X_normed, target, lc, X_all, X_ori))
+            list_data.append((X_normed, target_tuple, lc, X_all, X_ori))
         else:
-            list_data.append((X_normed, target, lc))
+            list_data.append((X_normed, target_tuple, lc))
 
     return list_data
 
@@ -203,18 +209,18 @@ def load_HDF5(settings, test=False):
             # ridiculous failsafe in case we have different classes in dataset/model
             # we will always have 2 classes
             try:
-                arr_target = hf[target_key][:]
+                arr_tuple_target = hf[target_key][:], hf["PEAKMJDNORM"][:]
             except Exception:
-                arr_target = hf['target_2classes'][:]
+                arr_tuple_target = hf['target_2classes'][:], hf["PEAKMJDNORM"][:]
         else:
-            arr_target = hf[target_key][:]
+            arr_tuple_target = hf[target_key][:], hf["PEAKMJDNORM"][:]
         arr_SNID = hf["SNID"][:]
 
         if test is True:
             return fill_data_list(
                 idxs_test,
                 arr_data,
-                arr_target,
+                arr_tuple_target,
                 arr_SNID,
                 settings,
                 n_features,
@@ -226,7 +232,7 @@ def load_HDF5(settings, test=False):
             list_data_train = fill_data_list(
                 idxs_train,
                 arr_data,
-                arr_target,
+                arr_tuple_target,
                 arr_SNID,
                 settings,
                 n_features,
@@ -235,7 +241,7 @@ def load_HDF5(settings, test=False):
             list_data_val = fill_data_list(
                 idxs_val,
                 arr_data,
-                arr_target,
+                arr_tuple_target,
                 arr_SNID,
                 settings,
                 n_features,
@@ -304,14 +310,14 @@ def get_data_batch(list_data, idxs, settings, max_lengths=None, OOD=None):
         Tuple containing
             - packed_tensor (torch PackedSequence): the packed features
             - X_tensor (torch Tensor): the features
-            - target_tensor (torch Tensor): the target
+            - target_tensor_tuple (torch Tensor): the target tuple (class,peak)
     """
 
     list_len = []
     list_batch = []
 
     for pos, i in enumerate(idxs):
-        X, target, *_ = list_data[i]
+        X, target_tuple, *_ = list_data[i]
         # X is (L, D)
         if OOD is not None:
             # Make a copy to be sure we do not alter the original data
@@ -351,6 +357,9 @@ def get_data_batch(list_data, idxs, settings, max_lengths=None, OOD=None):
                 arr_fluxerr.min(), arr_fluxerr.max(), size=arr_fluxerr.shape
             )
 
+        target_class, target_peak = target_tuple
+
+        # selection of random length time steps
         if max_lengths is not None:
             assert settings.random_length is False
             assert settings.random_redshift is False
@@ -358,9 +367,12 @@ def get_data_batch(list_data, idxs, settings, max_lengths=None, OOD=None):
         if settings.random_length:
             random_length = np.random.randint(1, X.shape[0] + 1)
             X = X[:random_length]
+            target_peak = target_peak[:random_length]
         if settings.redshift == "zspe" and settings.random_redshift:
             if np.random.binomial(1, 0.5) == 0:
                 X[:, settings.idx_specz] = -1
+
+        target = target_class, target_peak
         input_dim = X.shape[1]
         list_len.append(X.shape[0])
         list_batch.append((X, target))
@@ -371,32 +383,38 @@ def get_data_batch(list_data, idxs, settings, max_lengths=None, OOD=None):
     idxs_rev_sort = np.argsort(idx_sort)  # these indices revert the sort
     max_len = list_len[idx_sort[0]]
     X_tensor = torch.zeros((max_len, len(idxs), input_dim))
-    list_target = []
+    target_peak_tensor = torch.zeros((max_len, len(idxs), 1))
+    list_target_class = []
     lengths = []
     # Assign values for the tensor
     for i, idx in enumerate(idx_sort):
-        X, target = list_batch[idx]
+        X, target_tuple = list_batch[idx]
         try:
             X_tensor[: X.shape[0], i, :] = torch.FloatTensor(X)
         except Exception:
             X_tensor[: X.shape[0], i, :] = torch.FloatTensor(
                 torch.from_numpy(np.flip(X, axis=0).copy()))
-        list_target.append(target)
+        # target is now a tuple of tensors
+        target_peak_tensor[: target_tuple[1].shape[0], i, 0] = torch.FloatTensor(target_tuple[1])
+        list_target_class.append(target_tuple[0])
         lengths.append(list_len[idx])
 
     # Move data to GPU if required
     if settings.use_cuda:
         X_tensor = X_tensor.cuda()
-        target_tensor = torch.LongTensor(list_target).cuda()
-
+        target_peak_tensor = target_peak_tensor.cuda()
+        target_class_tensor = torch.LongTensor(list_target_class).cuda()
     else:
         X_tensor = X_tensor
-        target_tensor = torch.LongTensor(list_target)
+        target_peak_tensor = target_peak_tensor
+        target_class_tensor = torch.LongTensor(list_target_class)
+
+    target_tensor_tuple = target_class_tensor,target_peak_tensor
 
     # Create a packed sequence
     packed_tensor = nn.utils.rnn.pack_padded_sequence(X_tensor, lengths)
 
-    return packed_tensor, X_tensor, target_tensor, idxs_rev_sort
+    return packed_tensor, X_tensor, target_tensor_tuple, idxs_rev_sort
 
 
 def train_step(
@@ -415,7 +433,7 @@ def train_step(
         settings (ExperimentSettings): controls experiment hyperparameters
         rnn (torch.nn Model): pytorch model to train
         packed_tensor (torch PackedSequence): input tensor in packed form
-        target_tensor (torch Tensor): target tensor
+        target_tensor (torch Tensor): target tensor class
         criterion (torch loss function): loss function to optimize
         optimizer (torch optim): the gradient descent optimizer
         batch_size (int): batch size
@@ -526,10 +544,12 @@ def get_evaluation_metrics(settings, list_data, model, sample_size=None):
     for batch_idxs in list_batches:
         random_length = settings.random_length
         settings.random_length = False
-        packed_tensor, X_tensor, target_tensor, idxs_rev_sort = get_data_batch(
+        packed_tensor, X_tensor, target_tensor_tuple, idxs_rev_sort = get_data_batch(
             list_data, batch_idxs, settings
         )
         settings.random_length = random_length
+
+        # import ipdb; ipdb.set_trace()
         output = eval_step(model, packed_tensor, X_tensor.size(1))
 
         if "bayesian" in settings.pytorch_model_name:
@@ -540,7 +560,7 @@ def get_evaluation_metrics(settings, list_data, model, sample_size=None):
 
         # Convert to numpy array
         pred_proba = pred_proba.data.cpu().numpy()
-        target_numpy = target_tensor.data.cpu().numpy()
+        target_numpy = target_tensor_tuple[0].data.cpu().numpy()
 
         # Revert sort
         pred_proba = pred_proba[idxs_rev_sort]

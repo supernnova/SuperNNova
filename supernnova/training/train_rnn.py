@@ -52,7 +52,7 @@ def get_lr(settings):
         batch_num += 1
 
         # Sample a batch in packed sequence form
-        packed, _, target_tensor, idxs_rev_sort = tu.get_data_batch(
+        packed, _, target_tensor_tuple, idxs_rev_sort = tu.get_data_batch(
             list_data_train, batch_idxs, settings
         )
         # Train step : forward backward pass
@@ -60,10 +60,10 @@ def get_lr(settings):
             settings,
             rnn,
             packed,
-            target_tensor,
+            target_tensor_tuple[0],
             criterion,
             optimizer,
-            target_tensor.size(0),
+            target_tensor_tuple[0].size(0),
             len(list_batches),
         )
         loss = loss.detach().cpu().numpy().item()
@@ -165,7 +165,7 @@ def train_cyclic(settings):
         ):
 
             # Sample a batch in packed sequence form
-            packed, _, target_tensor, idxs_rev_sort = tu.get_data_batch(
+            packed, _, target_tensor_tuple, idxs_rev_sort = tu.get_data_batch(
                 list_data_train, batch_idxs, settings
             )
             # Train step : forward backward pass
@@ -173,10 +173,10 @@ def train_cyclic(settings):
                 settings,
                 rnn,
                 packed,
-                target_tensor,
+                target_tensor_tuple[0],
                 criterion,
                 optimizer,
-                target_tensor.size(0),
+                target_tensor_tuple[0].size(0),
                 len(list_batches),
             )
 
@@ -303,18 +303,19 @@ def train(settings):
         ):
 
             # Sample a batch in packed sequence form
-            packed, _, target_tensor, idxs_rev_sort = tu.get_data_batch(
+            packed, _, target_tensor_tuple, idxs_rev_sort = tu.get_data_batch(
                 list_data_train, batch_idxs, settings
             )
+
             # Train step : forward backward pass
             tu.train_step(
                 settings,
                 rnn,
                 packed,
-                target_tensor,
+                target_tensor_tuple[0],
                 criterion,
                 optimizer,
-                target_tensor.size(0),
+                target_tensor_tuple[0].size(0),
                 len(list_batches),
             )
 

@@ -31,8 +31,9 @@ class VanillaRNN(torch.nn.Module):
             dropout=self.dropout,
             bidirectional=self.bidirectional,
         )
-        self.output_dropout_layer = torch.nn.Dropout(self.dropout)
-        self.output_layer = torch.nn.Linear(last_input_size, self.output_size)
+        self.output_class_dropout_layer = torch.nn.Dropout(self.dropout)
+        self.output_class_layer = torch.nn.Linear(last_input_size, self.output_size)
+        self.output_peak_layer = torch.nn.Linear(last_input_size, 1)
 
     def forward(self, x, mean_field_inference=False):
         # Reminder
@@ -69,23 +70,23 @@ class VanillaRNN(torch.nn.Module):
             # hn is (num_layers * num_directions, batch, hidden_size)
             batch_size = hn.shape[0]
             # hn now is (batch, hidden size, num_layers * num_directions)
-            x = hn.view(batch_size, -1)
-            # x is (batch, hidden size * num_layers * num_directions)
+            x_class = hn.view(batch_size, -1)
+            # x_class is (batch, hidden size * num_layers * num_directions)
 
         if self.rnn_output_option == "mean":
             if isinstance(x, torch.nn.utils.rnn.PackedSequence):
-                x, lens = torch.nn.utils.rnn.pad_packed_sequence(x)
-                # x is (seq_len, batch, hidden size)
+                x_class, lens = torch.nn.utils.rnn.pad_packed_sequence(x)
+                # x_class is (seq_len, batch, hidden size)
 
                 # take mean over seq_len
-                x = x.sum(0) / lens.unsqueeze(-1).float().to(x.device)
-                # x is (batch, hidden_size)
+                x_class = x_class.sum(0) / lens.unsqueeze(-1).float().to(x_class.device)
+                # x_class is (batch, hidden_size)
             else:
-                x = x.mean(0)
+                x_class = x.mean(0)
 
         # apply dropout
-        x = self.output_dropout_layer(x)
+        x_class = self.output_class_dropout_layer(x_class)
         # Final projection layer
-        output = self.output_layer(x)
+        output_class = self.output_class_layer(x_class)
 
-        return output
+        return output_class
