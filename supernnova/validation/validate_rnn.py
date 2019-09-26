@@ -38,13 +38,13 @@ def find_idx(array, value):
         return idx
 
 
-def get_batch_predictions(rnn, X, target):
+def get_batch_predictions(rnn, X, target_tuple):
     """Utility to obtain predictions for a given batch
 
     Args:
         rnn (torch.nn): The RNN model
         X (torch.Tensor): The batch on which to carry out predictions
-        target (torch.longTensor): The true class of each element in the batch
+        target_tuple (torch.longTensor): The true class and peak of each element in the batch
 
     Returns:
         Tuple containing
@@ -56,12 +56,12 @@ def get_batch_predictions(rnn, X, target):
 
     out = rnn.forward(X)
     arr_preds = nn.functional.softmax(out, dim=-1).data.cpu().numpy()
-    arr_target = target.detach().cpu().numpy()
+    arr_target_class = target_tuple[0].detach().cpu().numpy()
 
-    return arr_preds, arr_target
+    return arr_preds, arr_target_class
 
 
-def get_batch_predictions_MFE(rnn, X, target):
+def get_batch_predictions_MFE(rnn, X, target_tuple):
     """Utility to obtain predictions for a given batch
 
     Args:
@@ -79,9 +79,9 @@ def get_batch_predictions_MFE(rnn, X, target):
 
     out = rnn.forward(X, mean_field_inference=True)
     arr_preds = nn.functional.softmax(out, dim=-1).data.cpu().numpy()
-    arr_target = target.detach().cpu().numpy()
+    arr_target_class = target_tuple[0].detach().cpu().numpy()
 
-    return arr_preds, arr_target
+    return arr_preds, arr_target_class
 
 
 def get_predictions(settings, model_file=None):
@@ -188,14 +188,14 @@ def get_predictions(settings, model_file=None):
             # Full lightcurve prediction
             #############################
 
-            packed, _, target_tensor, idxs_rev_sort = tu.get_data_batch(
+            packed, _, target_tensor_tuple, idxs_rev_sort = tu.get_data_batch(
                 list_data_test, batch_idxs, settings
             )
 
             for iter_ in tqdm(range(settings.num_inference_samples), ncols=100):
 
                 arr_preds, arr_target = get_batch_predictions(
-                    rnn, packed, target_tensor
+                    rnn, packed, target_tensor_tuple
                 )
 
                 # Rever sorting that occurs in get_batch_predictions
@@ -208,7 +208,7 @@ def get_predictions(settings, model_file=None):
 
             # MFE
             arr_preds, arr_target = get_batch_predictions_MFE(
-                rnn, packed, target_tensor
+                rnn, packed, target_tensor_tuple
             )
 
             # Rever sorting that occurs in get_batch_predictions
@@ -236,14 +236,14 @@ def get_predictions(settings, model_file=None):
                     # We only carry out prediction for samples in ``inb_idxs``
                     offset_batch_idxs = [batch_idxs[b] for b in inb_idxs]
                     max_lengths = [slice_idxs[b] for b in inb_idxs]
-                    packed, _, target_tensor, idxs_rev_sort = tu.get_data_batch(
+                    packed, _, target_tensor_tuple, idxs_rev_sort = tu.get_data_batch(
                         list_data_test, offset_batch_idxs, settings, max_lengths=max_lengths
                     )
 
                     for iter_ in tqdm(range(settings.num_inference_samples), ncols=100):
 
                         arr_preds, arr_target = get_batch_predictions(
-                            rnn, packed, target_tensor
+                            rnn, packed, target_tensor_tuple
                         )
 
                         # Rever sorting that occurs in get_batch_predictions
@@ -262,14 +262,14 @@ def get_predictions(settings, model_file=None):
             #############################
 
             for OOD in ["random", "shuffle", "reverse", "sin"]:
-                packed, _, target_tensor, idxs_rev_sort = tu.get_data_batch(
+                packed, _, target_tensor_tuple, idxs_rev_sort = tu.get_data_batch(
                     list_data_test, batch_idxs, settings, OOD=OOD
                 )
 
                 for iter_ in tqdm(range(settings.num_inference_samples), ncols=100):
 
                     arr_preds, arr_target = get_batch_predictions(
-                        rnn, packed, target_tensor
+                        rnn, packed, target_tensor_tuple
                     )
 
                     # Revert sorting that occurs in get_batch_predictions
@@ -279,7 +279,7 @@ def get_predictions(settings, model_file=None):
                     d_pred[f"all_{OOD}"][start_idx:end_idx, iter_] = arr_preds
 
                 arr_preds, arr_target = get_batch_predictions_MFE(
-                    rnn, packed, target_tensor
+                    rnn, packed, target_tensor_tuple
                 )
 
                 # Revert sorting that occurs in get_batch_predictions
@@ -443,14 +443,14 @@ def get_predictions_for_speed_benchmark(settings):
             # Full lightcurve prediction
             #############################
 
-            packed, _, target_tensor, _ = tu.get_data_batch(
+            packed, _, target_tensor_tuple, _ = tu.get_data_batch(
                 list_data_test, batch_idxs, settings
             )
 
             for iter_ in tqdm(range(settings.num_inference_samples), ncols=100):
 
                 arr_preds, arr_target = get_batch_predictions(
-                    rnn, packed, target_tensor
+                    rnn, packed, target_tensor_tuple
                 )
 
     total_time = time() - start_time
