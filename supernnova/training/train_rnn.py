@@ -56,7 +56,7 @@ def get_lr(settings):
             list_data_train, batch_idxs, settings
         )
         # Train step : forward backward pass
-        loss = tu.train_step(
+        totalloss, lossclass, losspeak = tu.train_step(
             settings,
             rnn,
             packed,
@@ -66,15 +66,15 @@ def get_lr(settings):
             target_tensor_tuple[0].size(0),
             len(list_batches),
         )
-        loss = loss.detach().cpu().numpy().item()
+        totalloss = totalloss.detach().cpu().numpy().item()
 
         # Compute the smoothed loss
-        avg_loss = beta * avg_loss + (1 - beta) * loss
+        avg_loss = beta * avg_loss + (1 - beta) * totalloss
         smoothed_loss = avg_loss / (1 - beta ** batch_num)
-        # Stop if the loss is exploding
+        # Stop if the totalloss is exploding
         if batch_num > 1 and smoothed_loss > 4 * best_loss:
             break
-        # Record the best loss
+        # Record the best totalloss
         if smoothed_loss < best_loss or batch_num == 1:
             best_loss = smoothed_loss
         # Store the values
@@ -89,7 +89,7 @@ def get_lr(settings):
             param_group["lr"] = lr
 
     idx_min = np.argmin(list_losses)
-    print("Min loss", list_losses[idx_min], "LR", list_lr[idx_min])
+    print("Min totalloss", list_losses[idx_min], "LR", list_lr[idx_min])
 
     return list_lr[idx_min]
 
@@ -169,7 +169,7 @@ def train_cyclic(settings):
                 list_data_train, batch_idxs, settings
             )
             # Train step : forward backward pass
-            tu.train_step(
+            totalloss, lossclass, losspeak = tu.train_step(
                 settings,
                 rnn,
                 packed,
@@ -308,7 +308,7 @@ def train(settings):
             )
 
             # Train step : forward backward pass
-            tu.train_step(
+            totalloss, lossclass, losspeak = tu.train_step(
                 settings,
                 rnn,
                 packed,

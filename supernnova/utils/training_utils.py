@@ -480,7 +480,7 @@ def train_step(
     loss.backward()
     optimizer.step()
 
-    return loss
+    return loss, lossclass, losspeak
 
 
 def eval_step(rnn, packed_tensor, batch_size):
