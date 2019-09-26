@@ -69,7 +69,7 @@ def unnormalize_arr(arr, settings):
     arr_to_unnorm = arr[:, settings.idx_features_to_normalize]
 
     arr_to_unnorm = arr_to_unnorm * arr_std + arr_mean
-    arr_unnormed = np.exp(arr_to_unnorm) + arr_min - 1E-5
+    arr_unnormed = np.exp(arr_to_unnorm) + arr_min - 1e-5
 
     arr[:, settings.idx_features_to_normalize] = arr_unnormed
 
@@ -113,8 +113,8 @@ def fill_data_list(
         arr_time = np.cumsum(X_all[:, settings.idx_delta_time])
         peak_mjd_normed = float(arr_tuple_target[1][i])
         target_peak = peak_mjd_normed - arr_time
-        target_tuple =  target_class, target_peak
-        
+        target_tuple = target_class, target_peak
+
         lc = int(arr_SNID[i])
 
         # Keep an unnormalized copy of the data (for test and display)
@@ -124,13 +124,14 @@ def fill_data_list(
         # using clipping in case of min<model_min
         X_clip = X_all.copy()
         X_clip = np.clip(
-            X_clip[:, settings.idx_features_to_normalize], settings.arr_norm[:, 0], np.inf)
+            X_clip[:, settings.idx_features_to_normalize],
+            settings.arr_norm[:, 0],
+            np.inf,
+        )
         X_all[:, settings.idx_features_to_normalize] = X_clip
 
-        X_tmp = unnormalize_arr(normalize_arr(
-            X_all.copy(), settings), settings)
-        assert np.all(
-            np.all(np.isclose(np.ravel(X_all), np.ravel(X_tmp), atol=1e-1)))
+        X_tmp = unnormalize_arr(normalize_arr(X_all.copy(), settings), settings)
+        assert np.all(np.all(np.isclose(np.ravel(X_all), np.ravel(X_tmp), atol=1e-1)))
         # Normalize features that need to be normalized
         X_normed = X_all.copy()
         X_normed_tmp = normalize_arr(X_normed, settings)
@@ -184,8 +185,7 @@ def load_HDF5(settings, test=False):
             try:
                 idxs_test = np.where(hf[dataset_split_key][:] == 2)[0]
             except Exception:
-                idxs_test = np.where(
-                    hf['dataset_photometry_2classes'][:] != 100)[0]
+                idxs_test = np.where(hf["dataset_photometry_2classes"][:] != 100)[0]
         else:
             idxs_train = np.where(hf[dataset_split_key][:] == 0)[0]
             idxs_val = np.where(hf[dataset_split_key][:] == 1)[0]
@@ -196,8 +196,7 @@ def load_HDF5(settings, test=False):
             np.random.shuffle(idxs_val)
             np.random.shuffle(idxs_test)
 
-            idxs_train = idxs_train[: int(
-                settings.data_fraction * len(idxs_train))]
+            idxs_train = idxs_train[: int(settings.data_fraction * len(idxs_train))]
 
         n_features = hf["data"].attrs["n_features"]
 
@@ -211,7 +210,7 @@ def load_HDF5(settings, test=False):
             try:
                 arr_tuple_target = hf[target_key][:], hf["PEAKMJDNORM"][:]
             except Exception:
-                arr_tuple_target = hf['target_2classes'][:], hf["PEAKMJDNORM"][:]
+                arr_tuple_target = hf["target_2classes"][:], hf["PEAKMJDNORM"][:]
         else:
             arr_tuple_target = hf[target_key][:], hf["PEAKMJDNORM"][:]
         arr_SNID = hf["SNID"][:]
@@ -364,7 +363,7 @@ def get_data_batch(list_data, idxs, settings, max_lengths=None, OOD=None):
             assert settings.random_length is False
             assert settings.random_redshift is False
             X = X[: max_lengths[pos]]
-            target_peak = target_peak[:max_lengths[pos]]
+            target_peak = target_peak[: max_lengths[pos]]
         if settings.random_length:
             random_length = np.random.randint(1, X.shape[0] + 1)
             X = X[:random_length]
@@ -394,9 +393,12 @@ def get_data_batch(list_data, idxs, settings, max_lengths=None, OOD=None):
             X_tensor[: X.shape[0], i, :] = torch.FloatTensor(X)
         except Exception:
             X_tensor[: X.shape[0], i, :] = torch.FloatTensor(
-                torch.from_numpy(np.flip(X, axis=0).copy()))
+                torch.from_numpy(np.flip(X, axis=0).copy())
+            )
         # target is now a tuple of tensors
-        target_peak_tensor[: target_tuple[1].shape[0], i, 0] = torch.FloatTensor(target_tuple[1])
+        target_peak_tensor[: target_tuple[1].shape[0], i, 0] = torch.FloatTensor(
+            target_tuple[1]
+        )
         list_target_class.append(target_tuple[0])
         lengths.append(list_len[idx])
 
@@ -410,7 +412,7 @@ def get_data_batch(list_data, idxs, settings, max_lengths=None, OOD=None):
         target_peak_tensor = target_peak_tensor
         target_class_tensor = torch.LongTensor(list_target_class)
 
-    target_tensor_tuple = target_class_tensor,target_peak_tensor
+    target_tensor_tuple = target_class_tensor, target_peak_tensor
 
     # Create a packed sequence
     packed_tensor = nn.utils.rnn.pack_padded_sequence(X_tensor, lengths)
@@ -422,7 +424,7 @@ def train_step(
     settings,
     rnn,
     packed_tensor,
-    target_tensor,
+    target_tensor_tuple,
     criterion,
     optimizer,
     batch_size,
@@ -449,12 +451,30 @@ def train_step(
 
     # Forward pass
     outclass, outpeak, maskpeak = rnn(packed_tensor)
-    loss = criterion(outclass.squeeze(), target_tensor)
-    # Special case for BayesianRNN, need to use KL loss
+    if settings.use_cuda:
+        outclass = outclass.cuda()
+        outpeak = outpeak.cuda()
+        maskpeak = maskpeak.cuda()
+
+    # classification loss
+    lossclass = criterion(outclass.squeeze(), target_tensor_tuple[0])
+    # Special case for BayesianRNN, need to use KL lossclass
     if isinstance(rnn, bayesian_rnn.BayesianRNN):
-        loss = loss + rnn.kl / (num_batches * batch_size)
+        lossclass = lossclass + rnn.kl / (num_batches * batch_size)
     else:
-        loss = criterion(outclass.squeeze(), target_tensor)
+        lossclass = criterion(outclass.squeeze(), target_tensor_tuple[0])
+
+    # peak regression loss
+    losspeak = ((outpeak - target_tensor_tuple[1].squeeze(-1)) * maskpeak).pow(
+        2
+    ).sum() / maskpeak.sum()
+
+    # to be checked!!!!
+    # losspeak will always be >> lossclass
+    # loss class will be <1
+    # losspeak can start ~1000, ideally reducing to <10
+    # a normalization may be needed to balance the losses
+    loss = lossclass + losspeak
 
     # Backward pass
     loss.backward()
@@ -499,8 +519,7 @@ def plot_loss(d_train, d_val, epoch, settings):
     for key in d_train.keys():
 
         plt.figure()
-        plt.plot(d_train["epoch"], d_train[key],
-                 label="Train %s" % key.title())
+        plt.plot(d_train["epoch"], d_train[key], label="Train %s" % key.title())
         plt.plot(d_val["epoch"], d_val[key], label="Val %s" % key.title())
         plt.legend(loc="best", fontsize=18)
         plt.xlabel("Step", fontsize=22)
@@ -715,8 +734,7 @@ def train_and_evaluate_randomforest_model(clf, X_train, y_train, X_val, y_val):
     # Compute AUC and precision
     fpr, tpr, thresholds = metrics.roc_curve(y_val, probas_[:, 1])
     roc_auc = metrics.auc(fpr, tpr)
-    pscore = metrics.precision_score(
-        y_val, clf.predict(X_val), average="binary")
+    pscore = metrics.precision_score(y_val, clf.predict(X_val), average="binary")
     lu.print_green("Validation AUC", roc_auc)
     lu.print_green("Validation precision score", pscore)
 
@@ -725,8 +743,7 @@ def train_and_evaluate_randomforest_model(clf, X_train, y_train, X_val, y_val):
         100 * (sum(clf.predict(X_train) == y_train)) / X_train.shape[0],
     )
     lu.print_green(
-        "Val data accuracy", 100 *
-        (sum(clf.predict(X_val) == y_val)) / X_val.shape[0]
+        "Val data accuracy", 100 * (sum(clf.predict(X_val) == y_val)) / X_val.shape[0]
     )
 
     return clf
