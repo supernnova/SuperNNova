@@ -52,9 +52,9 @@ def get_predictions(settings, dict_rnn, X, target, OOD=None):
                 # Apply softmax to obtain a proba
                 pred_proba = nn.functional.softmax(out, dim=-1).data.cpu().numpy()
             else:
-                out = rnn(X_slice.expand(new_size))
+                outclass,outpeak,maskpeak = rnn(X_slice.expand(new_size))
                 # Apply softmax to obtain a proba
-                pred_proba = nn.functional.softmax(out, dim=-1).data.cpu().numpy()
+                pred_proba = nn.functional.softmax(outclass, dim=-1).data.cpu().numpy()
 
             # Add to buffer list
             d_pred[model_type]["prob"].append(pred_proba)

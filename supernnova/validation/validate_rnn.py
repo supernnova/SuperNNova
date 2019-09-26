@@ -54,8 +54,8 @@ def get_batch_predictions(rnn, X, target_tuple):
 
     """
 
-    out = rnn.forward(X)
-    arr_preds = nn.functional.softmax(out, dim=-1).data.cpu().numpy()
+    outclass, outpeak, maskpeak = rnn.forward(X)
+    arr_preds = nn.functional.softmax(outclass, dim=-1).data.cpu().numpy()
     arr_target_class = target_tuple[0].detach().cpu().numpy()
 
     return arr_preds, arr_target_class
@@ -77,8 +77,8 @@ def get_batch_predictions_MFE(rnn, X, target_tuple):
 
     """
 
-    out = rnn.forward(X, mean_field_inference=True)
-    arr_preds = nn.functional.softmax(out, dim=-1).data.cpu().numpy()
+    outclass, outpeak, maskpeak = rnn.forward(X, mean_field_inference=True)
+    arr_preds = nn.functional.softmax(outclass, dim=-1).data.cpu().numpy()
     arr_target_class = target_tuple[0].detach().cpu().numpy()
 
     return arr_preds, arr_target_class

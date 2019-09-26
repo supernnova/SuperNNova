@@ -31,9 +31,9 @@ class VanillaRNN(torch.nn.Module):
             dropout=self.dropout,
             bidirectional=self.bidirectional,
         )
-        self.output_class_dropout_layer = torch.nn.Dropout(self.dropout)
-        self.output_class_layer = torch.nn.Linear(last_input_size, self.output_size)
-        self.output_peak_layer = torch.nn.Linear(last_input_size, 1)
+        self.outclass_dropout_layer = torch.nn.Dropout(self.dropout)
+        self.outclass_layer = torch.nn.Linear(last_input_size, self.output_size)
+        self.outpeak_layer = torch.nn.Linear(last_input_size, 1)
 
     def forward(self, x, mean_field_inference=False):
         # Reminder
@@ -59,6 +59,9 @@ class VanillaRNN(torch.nn.Module):
         #    - take a mean for the whole sequence (time_steps)
         #    - use h2o to obtain output (beware! it is only one layer deep since it is the last one only)
 
+        #
+        # Classification
+        #
         if self.rnn_output_option == "standard":
             # Special case for lstm where hidden = (h, c)
             if self.layer_type == "lstm":
@@ -75,18 +78,38 @@ class VanillaRNN(torch.nn.Module):
 
         if self.rnn_output_option == "mean":
             if isinstance(x, torch.nn.utils.rnn.PackedSequence):
-                x_class, lens = torch.nn.utils.rnn.pad_packed_sequence(x)
-                # x_class is (seq_len, batch, hidden size)
+                x_padded, lens = torch.nn.utils.rnn.pad_packed_sequence(x)
+                # x_padded is (seq_len, batch, hidden size)
 
                 # take mean over seq_len
-                x_class = x_class.sum(0) / lens.unsqueeze(-1).float().to(x_class.device)
+                x_class = x_padded.sum(0) / lens.unsqueeze(-1).float().to(x_padded.device)
                 # x_class is (batch, hidden_size)
             else:
                 x_class = x.mean(0)
 
         # apply dropout
-        x_class = self.output_class_dropout_layer(x_class)
+        x_class = self.outclass_dropout_layer(x_class)
         # Final projection layer
-        output_class = self.output_class_layer(x_class)
+        outclass = self.outclass_layer(x_class)
 
-        return output_class
+        #
+        # Regression peak
+        #
+        # for each time step, we predict a peak light distance
+        # it doesnt make sense to do in this case mean pooling or just taking the last hidden state
+        if isinstance(x, torch.nn.utils.rnn.PackedSequence):
+            x_padded, lens = torch.nn.utils.rnn.pad_packed_sequence(x)
+            # x_padded is (L, B, D), D= bidir*hidden
+            outpeak = self.outpeak_layer(x_padded)
+            outpeak = outpeak.squeeze(-1)
+            # outpeak is L,B
+            mask = (torch.arange(lens.max().item()).view(1, -1))
+            lens_reshaped = lens.view(-1, 1).float()
+            maskpeak = (mask.float() < lens_reshaped).float()
+            maskpeak = maskpeak.transpose(1,0)
+            # maskpeak is now L,B
+        else:
+            outpeak = self.outpeak_layer(x)
+            maskpeak = None
+
+        return outclass, outpeak, maskpeak

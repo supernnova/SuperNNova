@@ -448,13 +448,13 @@ def train_step(
     optimizer.zero_grad()
 
     # Forward pass
-    output = rnn(packed_tensor)
-    loss = criterion(output.squeeze(), target_tensor)
+    outclass, outpeak, maskpeak = rnn(packed_tensor)
+    loss = criterion(outclass.squeeze(), target_tensor)
     # Special case for BayesianRNN, need to use KL loss
     if isinstance(rnn, bayesian_rnn.BayesianRNN):
         loss = loss + rnn.kl / (num_batches * batch_size)
     else:
-        loss = criterion(output.squeeze(), target_tensor)
+        loss = criterion(outclass.squeeze(), target_tensor)
 
     # Backward pass
     loss.backward()
@@ -479,9 +479,9 @@ def eval_step(rnn, packed_tensor, batch_size):
     rnn.eval()
 
     # Forward pass
-    output = rnn(packed_tensor)
+    outclass, outpeak, maskpeak = rnn(packed_tensor)
 
-    return output
+    return outclass
 
 
 def plot_loss(d_train, d_val, epoch, settings):
@@ -551,13 +551,13 @@ def get_evaluation_metrics(settings, list_data, model, sample_size=None):
         settings.random_length = random_length
 
         # import ipdb; ipdb.set_trace()
-        output = eval_step(model, packed_tensor, X_tensor.size(1))
+        outclass = eval_step(model, packed_tensor, X_tensor.size(1))
 
         if "bayesian" in settings.pytorch_model_name:
             list_kl.append(model.kl.detach().cpu().item())
 
         # Apply softmax
-        pred_proba = nn.functional.softmax(output, dim=1)
+        pred_proba = nn.functional.softmax(outclass, dim=1)
 
         # Convert to numpy array
         pred_proba = pred_proba.data.cpu().numpy()
