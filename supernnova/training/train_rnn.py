@@ -135,8 +135,8 @@ def train_cyclic(settings):
 
     # Keep track of losses for plotting
     loss_str = ""
-    d_monitor_train = {"loss": [], "AUC": [], "Acc": [], "epoch": []}
-    d_monitor_val = {"loss": [], "AUC": [], "Acc": [], "epoch": []}
+    d_monitor_train = {"class_loss": [],"peak_loss": [], "AUC": [], "Acc": [], "epoch": []}
+    d_monitor_val = {"class_loss": [],"peak_loss": [], "AUC": [], "Acc": [], "epoch": []}
     if "bayesian" in settings.pytorch_model_name:
         d_monitor_train["KL"] = []
         d_monitor_val["KL"] = []
@@ -149,6 +149,7 @@ def train_cyclic(settings):
 
     training_start_time = time()
 
+
     for epoch in tqdm(range(settings.cyclic_phases[-1]), desc="Training", ncols=100):
 
         desc = f"Epoch: {epoch} -- {loss_str}"
@@ -157,13 +158,13 @@ def train_cyclic(settings):
         num_batches = num_elem // min(num_elem // 2, settings.batch_size)
         list_batches = np.array_split(np.arange(num_elem), num_batches)
         np.random.shuffle(list_batches)
+
         for batch_idxs in tqdm(
             list_batches,
             desc=desc,
             ncols=100,
             bar_format="{desc} |{bar}| {n_fmt}/{total_fmt} {rate_fmt}{postfix}",
         ):
-
             # Sample a batch in packed sequence form
             packed, _, target_tensor_tuple, idxs_rev_sort = tu.get_data_batch(
                 list_data_train, batch_idxs, settings
@@ -196,6 +197,8 @@ def train_cyclic(settings):
                 settings, list_data_val, rnn, sample_size=None
             )
 
+            print()
+
             # Add current loss avg to list of losses
             for key in d_losses_train.keys():
                 d_monitor_train[key].append(d_losses_train[key])
@@ -207,8 +210,8 @@ def train_cyclic(settings):
             loss_str = tu.get_loss_string(d_losses_train, d_losses_val)
 
             tu.plot_loss(d_monitor_train, d_monitor_val, epoch, settings)
-            if d_monitor_val["loss"][-1] < best_loss:
-                best_loss = d_monitor_val["loss"][-1]
+            if d_monitor_val["class_loss"][-1] < best_loss:
+                best_loss = d_monitor_val["class_loss"][-1]
                 torch.save(
                     rnn.state_dict(),
                     f"{settings.rnn_dir}/{settings.pytorch_model_name}.pt",
@@ -273,8 +276,8 @@ def train(settings):
 
     # Keep track of losses for plotting
     loss_str = ""
-    d_monitor_train = {"loss": [], "AUC": [], "Acc": [], "epoch": []}
-    d_monitor_val = {"loss": [], "AUC": [], "Acc": [], "epoch": []}
+    d_monitor_train = {"class_loss": [],"peak_loss": [], "AUC": [], "Acc": [], "epoch": []}
+    d_monitor_val = {"class_loss": [],"peak_loss": [], "AUC": [], "Acc": [], "epoch": []}
     if "bayesian" in settings.pytorch_model_name:
         d_monitor_train["KL"] = []
         d_monitor_val["KL"] = []
@@ -295,6 +298,12 @@ def train(settings):
         num_batches = num_elem // min(num_elem // 2, settings.batch_size)
         list_batches = np.array_split(np.arange(num_elem), num_batches)
         np.random.shuffle(list_batches)
+
+        # debugging
+        # train_totalloss = []
+        # train_classloss = []
+        # train_peakloss = []
+
         for batch_idxs in tqdm(
             list_batches,
             desc=desc,
@@ -318,6 +327,10 @@ def train(settings):
                 target_tensor_tuple[0].size(0),
                 len(list_batches),
             )
+            # debugging
+            # train_totalloss.append(float(totalloss.data))
+            # train_classloss.append(float(lossclass.data))
+            # train_peakloss.append(float(losspeak.data))
 
         if (epoch + 1) % settings.monitor_interval == 0:
 
@@ -345,12 +358,18 @@ def train(settings):
             loss_str = tu.get_loss_string(d_losses_train, d_losses_val)
 
             tu.plot_loss(d_monitor_train, d_monitor_val, epoch, settings)
-            if d_monitor_val["loss"][-1] < best_loss:
-                best_loss = d_monitor_val["loss"][-1]
+            if d_monitor_val["class_loss"][-1] < best_loss:
+                best_loss = d_monitor_val["class_loss"][-1]
                 torch.save(
                     rnn.state_dict(),
                     f"{settings.rnn_dir}/{settings.pytorch_model_name}.pt",
                 )
+
+            # to compare peak_losses between train and d_monitor
+            # beware that:
+            # d_monitor training_loss (computed by evaluation metrics) has updated weights
+            # therefore it is better than the training one!
+            # better use d_monitor_val to see orders of mag....
 
     lu.print_green("Finished training")
 

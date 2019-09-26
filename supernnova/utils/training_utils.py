@@ -501,7 +501,7 @@ def eval_step(rnn, packed_tensor, batch_size):
     # Forward pass
     outclass, outpeak, maskpeak = rnn(packed_tensor)
 
-    return outclass
+    return outclass, outpeak, maskpeak
 
 
 def plot_loss(d_train, d_val, epoch, settings):
@@ -550,6 +550,8 @@ def get_evaluation_metrics(settings, list_data, model, sample_size=None):
     list_pred = []
     list_target = []
     list_kl = []
+    list_peak_loss = []
+    list_class_loss = []
     num_elem = len(list_data)
     num_batches = num_elem // min(num_elem // 2, settings.batch_size)
     list_batches = np.array_split(np.arange(num_elem), num_batches)
@@ -569,8 +571,7 @@ def get_evaluation_metrics(settings, list_data, model, sample_size=None):
         )
         settings.random_length = random_length
 
-        # import ipdb; ipdb.set_trace()
-        outclass = eval_step(model, packed_tensor, X_tensor.size(1))
+        outclass, outpeak, maskpeak = eval_step(model, packed_tensor, X_tensor.size(1))
 
         if "bayesian" in settings.pytorch_model_name:
             list_kl.append(model.kl.detach().cpu().item())
@@ -580,14 +581,22 @@ def get_evaluation_metrics(settings, list_data, model, sample_size=None):
 
         # Convert to numpy array
         pred_proba = pred_proba.data.cpu().numpy()
-        target_numpy = target_tensor_tuple[0].data.cpu().numpy()
+        target_class_numpy = target_tensor_tuple[0].data.cpu().numpy()
+
+        # compute loss before sorting for peak
+        losspeak = ((outpeak - target_tensor_tuple[1].squeeze(-1)) * maskpeak).pow(
+            2
+        ).sum() / maskpeak.sum()
 
         # Revert sort
         pred_proba = pred_proba[idxs_rev_sort]
-        target_numpy = target_numpy[idxs_rev_sort]
+        target_class_numpy = target_class_numpy[idxs_rev_sort]
 
         list_pred.append(pred_proba)
-        list_target.append(target_numpy)
+        list_target.append(target_class_numpy)
+        list_peak_loss.append(float(losspeak.data))
+        list_class_loss.append(metrics.log_loss(target_class_numpy, np.argmax(pred_proba, 1)))
+
     targets = np.concatenate(list_target, axis=0)
     preds = np.concatenate(list_pred, axis=0)
 
@@ -604,9 +613,12 @@ def get_evaluation_metrics(settings, list_data, model, sample_size=None):
     targets_2D = np.zeros((targets.shape[0], settings.nb_classes))
     for i in range(targets.shape[0]):
         targets_2D[i, targets[i]] = 1
-    log_loss = metrics.log_loss(targets_2D, preds)
+    lossclass = metrics.log_loss(targets_2D, preds)
 
-    d_losses = {"AUC": auc, "Acc": acc, "loss": log_loss}
+    # regression peak loss
+    losspeak = np.mean(list_peak_loss)
+
+    d_losses = {"AUC": auc, "Acc": acc, "class_loss": lossclass, "peak_loss": losspeak}
 
     if len(list_kl) != 0:
         d_losses["KL"] = np.mean(list_kl)
@@ -661,7 +673,8 @@ def save_training_results(settings, d_monitor, training_time):
             d_results[key] = -1
         else:
             d_results[key] = max(d_monitor[key])
-    d_results["loss"] = min(d_monitor["loss"])
+    d_results["class_loss"] = min(d_monitor["class_loss"])
+    d_results["peak_loss"] = min(d_monitor["peak_loss"])
 
     try:
         with open(Path(settings.rnn_dir) / "training_log.json", "r") as f:
