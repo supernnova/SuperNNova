@@ -28,7 +28,7 @@ def get_predictions(settings, dict_rnn, X, target, OOD=None):
         X_tensor.cuda()
 
     seq_len = X_tensor.shape[0]
-    d_pred = {key: {"prob": []} for key in dict_rnn}
+    d_pred = {key: {"prob": [], "peak": []} for key in dict_rnn}
 
     # Loop over light curve time steps to obtain prediction for each time step
     for i in range(1, seq_len + 1):
@@ -58,6 +58,8 @@ def get_predictions(settings, dict_rnn, X, target, OOD=None):
 
             # Add to buffer list
             d_pred[model_type]["prob"].append(pred_proba)
+            # only last peak
+            d_pred[model_type]["peak"].append(float(outpeak.data.cpu().numpy()[-1]))
 
     # Stack
     for key in dict_rnn.keys():
@@ -77,7 +79,7 @@ def plot_predictions(
 ):
 
     plt.figure()
-    gs = gridspec.GridSpec(2, 1)
+    gs = gridspec.GridSpec(3, 1)
     # Plot the lightcurve
     ax = plt.subplot(gs[0])
     for flt in d_plot.keys():
@@ -151,6 +153,25 @@ def plot_predictions(
     if OOD is None and not settings.data_testing and arr_time.min()<peak_MJD and peak_MJD>arr_time.max():
         ax.plot([peak_MJD, peak_MJD], [0, 1], "k--", label="Peak MJD")
     ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.0)
+
+    # plot peak MJD preds
+    ax = plt.subplot(gs[2])
+    #truth
+    ax.plot(
+                arr_time,
+                target[1],
+                color='grey',
+                linestyle='dotted',
+            )
+    # predicted
+    ax.plot(
+                arr_time,
+                d_pred[key]["peak"],
+                color=color,
+                linestyle=linestyle,
+            )
+    ax.set_xlabel("Time (MJD)")
+    ax.set_ylabel("peak prediction")
 
     prefix = f"OOD_{OOD}_" if OOD is not None else ""
 
