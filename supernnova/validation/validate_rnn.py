@@ -48,17 +48,21 @@ def get_batch_predictions(rnn, X, target_tuple):
 
     Returns:
         Tuple containing
-
-        - arr_preds (np.array): predictions
-        - arr_target (np.array): actual targets
+        - arr_class_preds (np.array): class predictions
+        - arr_class_target (np.array): actual class targets
+        - arr_peak_preds (np.array): peak predictions
+        - arr_peak_target (np.array): actual peak targets
 
     """
 
     outclass, outpeak, maskpeak = rnn.forward(X)
-    arr_preds = nn.functional.softmax(outclass, dim=-1).data.cpu().numpy()
-    arr_target_class = target_tuple[0].detach().cpu().numpy()
+    arr_class_preds = nn.functional.softmax(outclass, dim=-1).data.cpu().numpy()
+    arr_class_target = target_tuple[0].detach().cpu().numpy()
 
-    return arr_preds, arr_target_class
+    arr_peak_preds = outpeak*maskpeak
+    arr_peak_target = (target_tuple[1].squeeze(-1)*maskpeak).detach().cpu().numpy()
+
+    return (arr_class_preds, arr_peak_preds), (arr_class_target, arr_peak_target)
 
 
 def get_batch_predictions_MFE(rnn, X, target_tuple):
@@ -72,17 +76,21 @@ def get_batch_predictions_MFE(rnn, X, target_tuple):
     Returns:
         Tuple containing
 
-        - arr_preds (np.array): predictions
-        - arr_target (np.array): actual targets
+        - arr_class_preds (np.array): class predictions
+        - arr_class_target (np.array): actual class targets
+        - arr_peak_preds (np.array): peak predictions
+        - arr_peak_target (np.array): actual peak targets
 
     """
 
     outclass, outpeak, maskpeak = rnn.forward(X, mean_field_inference=True)
-    arr_preds = nn.functional.softmax(outclass, dim=-1).data.cpu().numpy()
-    arr_target_class = target_tuple[0].detach().cpu().numpy()
+    arr_class_preds = nn.functional.softmax(outclass, dim=-1).data.cpu().numpy()
+    arr_class_target = target_tuple[0].detach().cpu().numpy()
 
-    return arr_preds, arr_target_class
+    arr_peak_preds = outpeak*maskpeak
+    arr_peak_target = (target_tuple[1].squeeze(-1)*maskpeak).detach().cpu().numpy()
 
+    return (arr_class_preds, arr_peak_preds), (arr_class_target, arr_peak_target)
 
 def get_predictions(settings, model_file=None):
     """Obtain predictions for a given RNN model specified by the
@@ -149,10 +157,15 @@ def get_predictions(settings, model_file=None):
             "PEAKMJD",
             "PEAKMJD+1",
             "PEAKMJD+2",
+            "PEAKMJD-2_peak",
+            "PEAKMJD-1_peak",
+            "PEAKMJD_peak",
+            "PEAKMJD+1_peak",
+            "PEAKMJD+2_peak",
         ]
         + [f"all_{OOD}" for OOD in du.OOD_TYPES]
     }
-    for key in ["target", "SNID"]:
+    for key in ["target", "SNID","all_peak","target_peak"]:
         d_pred[key] = np.zeros((num_elem, settings.num_inference_samples)).astype(
             np.int64
         )
@@ -161,7 +174,7 @@ def get_predictions(settings, model_file=None):
         key: np.zeros((num_elem, 1, settings.nb_classes)).astype(np.float32)
         for key in ["all"] + [f"all_{OOD}" for OOD in du.OOD_TYPES]
     }
-    for key in ["target", "SNID"]:
+    for key in ["target", "SNID","all_peak","target_peak"]:
         d_pred_MFE[key] = np.zeros((num_elem, 1)).astype(np.int64)
 
     # Fetch SN info
@@ -181,6 +194,7 @@ def get_predictions(settings, model_file=None):
             for data in list_data_test[start_idx:end_idx]
         ]
         times = [np.cumsum(t) for t in delta_times]
+        max_lengths = [len(times[i]) for i in range(len(times))]
 
         with torch.no_grad():
 
@@ -194,30 +208,59 @@ def get_predictions(settings, model_file=None):
 
             for iter_ in tqdm(range(settings.num_inference_samples), ncols=100):
 
-                arr_preds, arr_target = get_batch_predictions(
+                arr_preds_tuple, arr_target_tuple = get_batch_predictions(
                     rnn, packed, target_tensor_tuple
                 )
 
-                # Rever sorting that occurs in get_batch_predictions
-                arr_preds = arr_preds[idxs_rev_sort]
-                arr_target = arr_target[idxs_rev_sort]
+                # split tuples
+                arr_class_preds, arr_peak_preds = arr_preds_tuple
+                arr_class_target, arr_peak_target = arr_target_tuple
 
-                d_pred["all"][start_idx:end_idx, iter_] = arr_preds
-                d_pred["target"][start_idx:end_idx, iter_] = arr_target
+                # Rever sorting that occurs in get_batch_predictions
+                arr_class_preds = arr_class_preds[idxs_rev_sort]
+                arr_class_target = arr_class_target[idxs_rev_sort]
+                arr_peak_preds = arr_peak_preds[:,idxs_rev_sort]
+                arr_peak_target = arr_peak_target[:,idxs_rev_sort]
+
+                d_pred["all"][start_idx:end_idx, iter_] = arr_class_preds
+                d_pred["target"][start_idx:end_idx, iter_] = arr_class_target
                 d_pred["SNID"][start_idx:end_idx, iter_] = SNIDs
 
+                # taking last peak prediction
+                arr_last_time_step = np.array([times[i][-1] for i in range(len(times))])
+                # to be improved
+                for idx in range(len(max_lengths)):
+                    last_time_idx = max_lengths[idx]
+                    d_pred["all_peak"][idx, iter_] = arr_peak_preds[last_time_idx-1,idx].data.numpy()+ arr_last_time_step[idx]
+                    d_pred["target_peak"][idx, iter_] = arr_peak_target[last_time_idx-1,idx]
+
+
             # MFE
-            arr_preds, arr_target = get_batch_predictions_MFE(
+            arr_preds_tuple, arr_target_tuple = get_batch_predictions_MFE(
                 rnn, packed, target_tensor_tuple
             )
 
-            # Rever sorting that occurs in get_batch_predictions
-            arr_preds = arr_preds[idxs_rev_sort]
-            arr_target = arr_target[idxs_rev_sort]
+            # split tuples
+            arr_class_preds, arr_peak_preds = arr_preds_tuple
+            arr_class_target, arr_peak_target = arr_target_tuple
 
-            d_pred_MFE["all"][start_idx:end_idx, 0] = arr_preds
-            d_pred_MFE["target"][start_idx:end_idx, 0] = arr_target
+            # Rever sorting that occurs in get_batch_predictions
+            arr_class_preds = arr_class_preds[idxs_rev_sort]
+            arr_class_target = arr_class_target[idxs_rev_sort]
+            arr_peak_preds = arr_peak_preds[:,idxs_rev_sort]
+            arr_peak_target = arr_peak_target[:,idxs_rev_sort]
+
+            d_pred_MFE["all"][start_idx:end_idx, 0] = arr_class_preds
+            d_pred_MFE["target"][start_idx:end_idx, 0] = arr_class_target
             d_pred_MFE["SNID"][start_idx:end_idx, 0] = SNIDs
+
+            # taking last peak prediction
+            arr_last_time_step = np.array([times[i][-1] for i in range(len(times))])
+            # to be improved
+            for idx in range(len(max_lengths)):
+                last_time_idx = max_lengths[idx]
+                d_pred_MFE["all_peak"][idx, iter_] = arr_peak_preds[last_time_idx-1,idx].data.numpy()+ arr_last_time_step[idx]
+                d_pred_MFE["target_peak"][idx, iter_] = arr_peak_target[last_time_idx-1,idx]
 
             #############################
             # Predictions around PEAKMJD
@@ -242,20 +285,33 @@ def get_predictions(settings, model_file=None):
 
                     for iter_ in tqdm(range(settings.num_inference_samples), ncols=100):
 
-                        arr_preds, arr_target = get_batch_predictions(
+                        arr_preds_tuple, arr_target_tuple = get_batch_predictions(
                             rnn, packed, target_tensor_tuple
                         )
 
-                        # Rever sorting that occurs in get_batch_predictions
-                        arr_preds = arr_preds[idxs_rev_sort]
+                        # split tuples
+                        arr_class_preds, arr_peak_preds = arr_preds_tuple
+                        arr_class_target, arr_peak_target = arr_target_tuple
+
+                        # Reverse sorting that occurs in get_batch_predictions
+                        arr_class_preds = arr_class_preds[idxs_rev_sort]
+                        arr_peak_preds = arr_peak_preds[:,idxs_rev_sort]
 
                         suffix = str(offset) if offset != 0 else ""
                         suffix = f"+{suffix}" if offset > 0 else suffix
                         col = f"PEAKMJD{suffix}"
 
-                        d_pred[col][start_idx + inb_idxs, iter_] = arr_preds
+                        d_pred[col][start_idx + inb_idxs, iter_] = arr_class_preds
                         # For oob_idxs, no prediction can be made, fill with nan
                         d_pred[col][start_idx + oob_idxs, iter_] = np.nan
+
+                        # taking last peak prediction
+                        # easier here since the lengths have been cut already
+                        # to be improved
+                        for i, time_idx in enumerate(slice_idxs):
+                            last_time = times[i][time_idx]
+                            d_pred[f"{col}_peak"][start_idx+i, iter_] = arr_peak_preds[-1,i].data.numpy() + last_time
+                        d_pred[f"{col}_peak"][start_idx + oob_idxs, iter_] = np.nan
 
             #############################
             # OOD predictions
@@ -268,25 +324,32 @@ def get_predictions(settings, model_file=None):
 
                 for iter_ in tqdm(range(settings.num_inference_samples), ncols=100):
 
-                    arr_preds, arr_target = get_batch_predictions(
+                    arr_preds_tuple, arr_target_tuple = get_batch_predictions(
                         rnn, packed, target_tensor_tuple
                     )
 
+                    # split tuples
+                    arr_class_preds, arr_peak_preds = arr_preds_tuple
+                    arr_class_target, arr_peak_target = arr_target_tuple
+
                     # Revert sorting that occurs in get_batch_predictions
-                    arr_preds = arr_preds[idxs_rev_sort]
-                    arr_target = arr_target[idxs_rev_sort]
+                    arr_class_preds = arr_class_preds[idxs_rev_sort]
+                    arr_class_target = arr_class_target[idxs_rev_sort]
 
-                    d_pred[f"all_{OOD}"][start_idx:end_idx, iter_] = arr_preds
+                    d_pred[f"all_{OOD}"][start_idx:end_idx, iter_] = arr_class_preds
 
-                arr_preds, arr_target = get_batch_predictions_MFE(
+                arr_preds_tuple, arr_target_tuple = get_batch_predictions_MFE(
                     rnn, packed, target_tensor_tuple
                 )
 
-                # Revert sorting that occurs in get_batch_predictions
-                arr_preds = arr_preds[idxs_rev_sort]
-                arr_target = arr_target[idxs_rev_sort]
+                # split tuples
+                arr_class_preds, arr_peak_preds = arr_preds_tuple
+                arr_class_target, arr_peak_target = arr_target_tuple
 
-                d_pred_MFE[f"all_{OOD}"][start_idx:end_idx, 0] = arr_preds
+                # Revert sorting that occurs in get_batch_predictions
+                arr_class_preds = arr_class_preds[idxs_rev_sort]
+
+                d_pred_MFE[f"all_{OOD}"][start_idx:end_idx, 0] = arr_class_preds
 
     # Flatten all arrays and aggregate in dataframe
     d_series = {}
@@ -449,7 +512,7 @@ def get_predictions_for_speed_benchmark(settings):
 
             for iter_ in tqdm(range(settings.num_inference_samples), ncols=100):
 
-                arr_preds, arr_target = get_batch_predictions(
+                arr_preds_tuple, arr_target_tuple = get_batch_predictions(
                     rnn, packed, target_tensor_tuple
                 )
 
