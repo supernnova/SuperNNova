@@ -316,7 +316,7 @@ def get_predictions(settings, model_file=None):
                         # to be improved
                         for i, time_idx in enumerate(slice_idxs):
                             last_time = times[i][time_idx]
-                            d_pred[f"{col}_peak"][start_idx+i, iter_] = arr_peak_preds[-1,i].data.numpy() + last_time
+                            d_pred[f"{col}_peak"][start_idx+i, iter_] = arr_peak_preds[-1,i].data.cpu().numpy() + last_time
                         d_pred[f"{col}_peak"][start_idx + oob_idxs, iter_] = np.nan
 
             #############################
