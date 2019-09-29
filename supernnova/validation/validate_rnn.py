@@ -263,7 +263,7 @@ def get_predictions(settings, model_file=None):
             # to be improved
             for idx in range(len(max_lengths)):
                 last_time_idx = max_lengths[idx]
-                d_pred_MFE["all_peak"][idx, iter_] = arr_peak_preds[last_time_idx-1,idx].data.numpy()+ arr_last_time_step[idx]
+                d_pred_MFE["all_peak"][idx, iter_] = arr_peak_preds[last_time_idx-1,idx].data.cpu().numpy()+ arr_last_time_step[idx]
                 d_pred_MFE["target_peak"][idx, iter_] = arr_peak_target[last_time_idx-1,idx]
 
             #############################
