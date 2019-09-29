@@ -60,7 +60,6 @@ def get_batch_predictions(rnn, X, target_tuple):
     arr_class_target = target_tuple[0].detach().cpu().numpy()
 
     maskpeak = maskpeak.to(outpeak.device)
-
     arr_peak_preds = outpeak*maskpeak
 
     target_peak = target_tuple[1].squeeze(-1).to(maskpeak.device)
@@ -91,8 +90,11 @@ def get_batch_predictions_MFE(rnn, X, target_tuple):
     arr_class_preds = nn.functional.softmax(outclass, dim=-1).data.cpu().numpy()
     arr_class_target = target_tuple[0].detach().cpu().numpy()
 
+    maskpeak = maskpeak.to(outpeak.device)
     arr_peak_preds = outpeak*maskpeak
-    arr_peak_target = (target_tuple[1].squeeze(-1)*maskpeak).detach().cpu().numpy()
+
+    target_peak = target_tuple[1].squeeze(-1).to(maskpeak.device)
+    arr_peak_target = (target_peak*maskpeak).detach().cpu().numpy()
 
     return (arr_class_preds, arr_peak_preds), (arr_class_target, arr_peak_target)
 
