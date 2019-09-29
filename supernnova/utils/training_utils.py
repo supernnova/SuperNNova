@@ -584,7 +584,10 @@ def get_evaluation_metrics(settings, list_data, model, sample_size=None):
         target_class_numpy = target_tensor_tuple[0].data.cpu().numpy()
 
         # compute loss before sorting for peak
-        losspeak = ((outpeak - target_tensor_tuple[1].squeeze(-1)) * maskpeak).pow(
+        outpeak = outpeak.data.cpu()
+        target_peak = target_tensor_tuple[1].squeeze(-1).data.cpu()
+        maskpeak = maskpeak.data.cpu()
+        losspeak = ((outpeak - target_peak) * maskpeak).pow(
             2
         ).sum() / maskpeak.sum()
 
