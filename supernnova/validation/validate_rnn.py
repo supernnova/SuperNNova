@@ -314,8 +314,9 @@ def get_predictions(settings, model_file=None):
                         # taking last peak prediction
                         # easier here since the lengths have been cut already
                         # to be improved
-                        for i, time_idx in enumerate(slice_idxs):
-                            last_time = times[i][time_idx]
+                        for i, idx in enumerate(inb_idxs):
+                            time_idx = max_lengths[idx]
+                            last_time = times[idx][time_idx]
                             d_pred[f"{col}_peak"][start_idx+i, iter_] = arr_peak_preds[-1,i].data.cpu().numpy() + last_time
                         d_pred[f"{col}_peak"][start_idx + oob_idxs, iter_] = np.nan
 
