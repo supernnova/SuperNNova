@@ -352,7 +352,23 @@ def plot_gif(settings, df_plot, SNID, redshift, peak_MJD, target, arr_time, d_pr
     """
     import imageio
 
-    def plot_image_for_gif(fig,gs, df_plot,d_pred,time,SNtype):
+    kwargs_write = {'fps':1.0, 'quantizer':'nq'}
+    fig = plt.figure()
+    gs = gridspec.GridSpec(2, 1)
+    SNtype = du.sntype_decoded(target, settings)
+
+    fig_path = (
+        f"{settings.lightcurves_dir}/{settings.pytorch_model_name}/gif"
+    )
+    fig_name = (
+        f"{settings.pytorch_model_name}_class_pred_with_lc_{SNID}.gif"
+    )
+    Path(fig_path).mkdir(parents=True, exist_ok=True)
+
+    arr_images = [plot_image_for_gif(settings, fig, gs,df_plot,SNID,redshift,arr_time,d_pred,time,SNtype) for time in arr_time]
+    arr_images[0].save(str(Path(fig_path) / fig_name), save_all=True, append_images=arr_images, loop=5, duration=200)
+
+def plot_image_for_gif(settings, fig,gs, df_plot, SNID, redshift,arr_time, d_pred,time,SNtype):
 
         # Plot the lightcurve
         ax = plt.subplot(gs[0])
@@ -428,18 +444,3 @@ def plot_gif(settings, df_plot, SNID, redshift, peak_MJD, target, arr_time, d_pr
         image = im
 
         return image
-
-    kwargs_write = {'fps':1.0, 'quantizer':'nq'}
-    fig = plt.figure()
-    gs = gridspec.GridSpec(2, 1)
-    SNtype = du.sntype_decoded(target, settings)
-
-    fig_path = (
-        f"{settings.lightcurves_dir}/{settings.pytorch_model_name}/gif"
-    )
-    fig_name = (
-        f"{settings.pytorch_model_name}_class_pred_with_lc_{SNID}.gif"
-    )
-    Path(fig_path).mkdir(parents=True, exist_ok=True)
-    arr_images = [plot_image_for_gif(fig, gs,df_plot,d_pred,time,SNtype) for time in arr_time]
-    arr_images[0].save(str(Path(fig_path) / fig_name), save_all=True, append_images=arr_images, loop=5, duration=200)
