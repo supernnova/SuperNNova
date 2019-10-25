@@ -16,10 +16,12 @@ BI_COLORS = ["darkorange", "royalblue"]
 CONTRAST_COLORS = ["darkorange", "indigo"]
 MARKER_DIC = {"randomforest": "o", "vanilla": "s"}
 FILL_DIC = {"None": "none", "zpho": "bottom", "zspe": "full"}
-MARKER_LIST = ["o", "o", "v", "v", "^", "^", ">", ">", "<", "<", "s", "s", "D", "D"]
+MARKER_LIST = ["o", "o", "v", "v", "^", "^",
+               ">", ">", "<", "<", "s", "s", "D", "D"]
 CMAP = plt.cm.YlOrBr
 LINE_STYLE = ["-", "-", "-", "-", ":", ":", ":", ":", "-.", "-.", "-.", "-."]
-FILTER_COLORS = {"z": "maroon", "i": "darkorange", "r": "royalblue", "g": "indigo"}
+FILTER_COLORS = {"z": "maroon", "i": "darkorange",
+                 "r": "royalblue", "g": "indigo", "u": "purple", "Y": "red"}
 PATTERNS = ["", "", "", "", "", ".", ".", ".", "."]
 
 
