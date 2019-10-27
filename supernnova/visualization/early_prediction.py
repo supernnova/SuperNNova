@@ -20,7 +20,7 @@ plt.switch_backend("agg")
 
 def get_predictions(settings, dict_rnn, X, target, OOD=None):
 
-    list_data = [(X.copy(), target)]
+    list_data = [{"X_normed": X.copy(), "target_tuple": target, "peakmask_idx":None}]
 
     _, X_tensor, *_ = tu.get_data_batch(list_data, [0], settings, OOD=OOD)
 
@@ -50,19 +50,16 @@ def get_predictions(settings, dict_rnn, X, target, OOD=None):
                 ]
                 out = torch.cat(list_out, dim=0)
                 # Apply softmax to obtain a proba
-                pred_proba = nn.functional.softmax(
-                    out, dim=-1).data.cpu().numpy()
+                pred_proba = nn.functional.softmax(out, dim=-1).data.cpu().numpy()
             else:
                 outclass, outpeak, maskpeak = rnn(X_slice.expand(new_size))
                 # Apply softmax to obtain a proba
-                pred_proba = nn.functional.softmax(
-                    outclass, dim=-1).data.cpu().numpy()
+                pred_proba = nn.functional.softmax(outclass, dim=-1).data.cpu().numpy()
 
             # Add to buffer list
             d_pred[model_type]["prob"].append(pred_proba)
             # only last peak
-            d_pred[model_type]["peak"].append(
-                float(outpeak.data.cpu().numpy()[-1]))
+            d_pred[model_type]["peak"].append(float(outpeak.data.cpu().numpy()[-1]))
 
     # Stack
     for key in dict_rnn.keys():
@@ -103,7 +100,8 @@ def plot_predictions(
     ax.set_ylabel("FLUXCAL")
     ylim = ax.get_ylim()
 
-    SNtype = du.sntype_decoded(target, settings)
+    SNtype = du.sntype_decoded(target[0], settings)
+
     if settings.data_testing:
         ax.set_title(f"ID: {SNID}")
     elif OOD is not None:
@@ -111,7 +109,12 @@ def plot_predictions(
     else:
         ax.set_title(SNtype + f" (ID: {SNID}, redshift: {redshift:.3g})")
         # Add PEAKMJD
-        if OOD is None and not settings.data_testing and arr_time.min() < peak_MJD and peak_MJD > arr_time.max():
+        if (
+            OOD is None
+            and not settings.data_testing
+            and arr_time.min() < peak_MJD
+            and peak_MJD > arr_time.max()
+        ):
             ax.plot([peak_MJD, peak_MJD], ylim, "k--", label="Peak MJD")
 
     # Plot the classifications
@@ -153,26 +156,21 @@ def plot_predictions(
     ax.set_xlabel("Time (MJD)")
     ax.set_ylabel("classification probability")
     # Add PEAKMJD
-    if OOD is None and not settings.data_testing and arr_time.min() < peak_MJD and peak_MJD > arr_time.max():
+    if (
+        OOD is None
+        and not settings.data_testing
+        and arr_time.min() < peak_MJD
+        and peak_MJD > arr_time.max()
+    ):
         ax.plot([peak_MJD, peak_MJD], [0, 1], "k--", label="Peak MJD")
     ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.0)
 
     # plot peak MJD preds
     ax = plt.subplot(gs[2])
     # truth
-    ax.plot(
-        arr_time,
-        target[1],
-        color='grey',
-        linestyle='dotted',
-    )
+    ax.plot(arr_time, target[1], color="grey", linestyle="dotted")
     # predicted
-    ax.plot(
-        arr_time,
-        d_pred[key]["peak"],
-        color=color,
-        linestyle=linestyle,
-    )
+    ax.plot(arr_time, d_pred[key]["peak"], color=color, linestyle=linestyle)
     ax.set_xlabel("Time (MJD)")
     ax.set_ylabel("peak prediction")
 
@@ -186,9 +184,7 @@ def plot_predictions(
         fig_path = f"{settings.lightcurves_dir}/{parent_dir}/{prefix}early_prediction"
         fig_name = f"{parent_dir}_{prefix}class_pred_with_lc_{SNID}.png"
     else:
-        fig_path = (
-            f"{settings.lightcurves_dir}/{settings.pytorch_model_name}/{prefix}early_prediction"
-        )
+        fig_path = f"{settings.lightcurves_dir}/{settings.pytorch_model_name}/{prefix}early_prediction"
         fig_name = (
             f"{settings.pytorch_model_name}_{prefix}class_pred_with_lc_{SNID}.png"
         )
@@ -228,20 +224,16 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
         settings.model_files = [f"{settings.rnn_dir}/{settings.pytorch_model_name}.pt"]
     else:
         # check if the model files are there
-        tmp_not_found = [
-            m for m in settings.model_files if not os.path.exists(m)]
+        tmp_not_found = [m for m in settings.model_files if not os.path.exists(m)]
         if len(tmp_not_found) > 0:
             print(lu.str_to_redstr(f"Files not found {tmp_not_found}"))
-            tmp_model_files = [
-                m for m in settings.model_files if os.path.exists(m)]
+            tmp_model_files = [m for m in settings.model_files if os.path.exists(m)]
             settings.model_files = tmp_model_files
 
     # Check that the settings match the model file
     base_files = [Path(f).name for f in settings.model_files]
-    classes = [int(re.search(r"(?<=CLF\_)\d+(?=\_)", f).group())
-               for f in base_files]
-    redshifts = [re.search(r"(?<=R\_)[A-Za-z]+(?=\_)", f).group()
-                 for f in base_files]
+    classes = [int(re.search(r"(?<=CLF\_)\d+(?=\_)", f).group()) for f in base_files]
+    redshifts = [re.search(r"(?<=R\_)[A-Za-z]+(?=\_)", f).group() for f in base_files]
 
     assert len(set(classes)) == 1, lu.str_to_redstr(
         "Can't provide model files with different number of classes"
@@ -266,8 +258,7 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
         if "bayesian" in model_file:
             settings.model = "bayesian"
         rnn = tu.get_model(settings, len(settings.training_features))
-        rnn_state = torch.load(
-            model_file, map_location=lambda storage, loc: storage)
+        rnn_state = torch.load(model_file, map_location=lambda storage, loc: storage)
         rnn.load_state_dict(rnn_state)
         rnn.to(settings.device)
         rnn.eval()
@@ -284,14 +275,22 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
     # Loop over data to plot prediction
     # randomly select lcs to plot
     list_entries = np.random.randint(0, high=len(list_data_test), size=nb_lcs)
-    subset_to_plot = [list_data_test[i] for i in list_entries]
-    for X, target, SNID, _, X_ori in tqdm(subset_to_plot, ncols=100):
+    subset_to_plot = [
+        (
+            list_data_test[i]["X_normed"],
+            list_data_test[i]["target_tuple"],
+            list_data_test[i]["lc"],
+            list_data_test[i]["X_ori"],
+        )
+        for i in list_entries
+    ]
+    for X, target, SNID, X_ori in tqdm(subset_to_plot, ncols=100):
 
         try:
-            redshift = SNinfo_df[SNinfo_df["SNID"] ==
-                                 SNID]["SIM_REDSHIFT_CMB"].values[0]
-            peak_MJD = SNinfo_df[SNinfo_df["SNID"]
-                                 == SNID]["PEAKMJDNORM"].values[0]
+            redshift = SNinfo_df[SNinfo_df["SNID"] == SNID]["SIM_REDSHIFT_CMB"].values[
+                0
+            ]
+            peak_MJD = SNinfo_df[SNinfo_df["SNID"] == SNID]["PEAKMJDNORM"].values[0]
         except Exception:
             redshift = 0.0
             peak_MJD = 0.0
@@ -314,18 +313,22 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
                 # using clipping in case of min<model_min
                 X_clip = X_ori.copy()
                 X_clip = np.clip(
-                    X_clip[:, settings.idx_features_to_normalize], settings.arr_norm[:, 0], np.inf)
+                    X_clip[:, settings.idx_features_to_normalize],
+                    settings.arr_norm[:, 0],
+                    np.inf,
+                )
                 X_ori[:, settings.idx_features_to_normalize] = X_clip
                 assert np.all(
-                    np.all(np.isclose(np.ravel(X_ori), np.ravel(X_unnormed), atol=1e-1)))
+                    np.all(np.isclose(np.ravel(X_ori), np.ravel(X_unnormed), atol=1e-1))
+                )
 
             # TODO: IMPROVE
             df_temp = pd.DataFrame(data=X_unnormed, columns=features)
             arr_time = np.cumsum(df_temp.delta_time.values)
-            df_temp['time'] = arr_time
+            df_temp["time"] = arr_time
             for flt in settings.list_filters:
                 non_zero = np.where(
-                    ~np.isclose(df_temp[f"FLUXCAL_{flt}"].values, 0, atol=1E-2)
+                    ~np.isclose(df_temp[f"FLUXCAL_{flt}"].values, 0, atol=1e-2)
                 )[0]
                 d_plot[flt]["FLUXCAL"] = df_temp[f"FLUXCAL_{flt}"].values[non_zero]
                 d_plot[flt]["FLUXCALERR"] = df_temp[f"FLUXCALERR_{flt}"].values[
@@ -347,84 +350,118 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
             # use to create GIFs
             if not OOD:
                 if do_gifs:
-                    plot_gif(settings,
-                             df_temp,
-                             SNID,
-                             redshift,
-                             peak_MJD,
-                             target,
-                             arr_time,
-                             d_pred)
+                    plot_gif(
+                        settings,
+                        df_temp,
+                        SNID,
+                        redshift,
+                        peak_MJD,
+                        target,
+                        arr_time,
+                        d_pred,
+                    )
     lu.print_green("Finished plotting lightcurves and predictions ")
 
 
-def plot_gif(settings, df_plot, SNID, redshift, peak_MJD, target, arr_time, d_pred
-             ):
+def plot_gif(settings, df_plot, SNID, redshift, peak_MJD, target, arr_time, d_pred):
     """ Create GIFs for classification
     """
     import imageio
 
-    kwargs_write = {'fps': 1.0, 'quantizer': 'nq'}
+    kwargs_write = {"fps": 1.0, "quantizer": "nq"}
     fig = plt.figure()
     gs = gridspec.GridSpec(2, 1)
-    SNtype = du.sntype_decoded(target, settings)
+    SNtype = du.sntype_decoded(target[0], settings)
 
-    fig_path = (
-        f"{settings.lightcurves_dir}/{settings.pytorch_model_name}/gif"
-    )
-    fig_name = (
-        f"{settings.pytorch_model_name}_class_pred_with_lc_{SNID}.gif"
-    )
+    fig_path = f"{settings.lightcurves_dir}/{settings.pytorch_model_name}/gif"
+    fig_name = f"{settings.pytorch_model_name}_class_pred_with_lc_{SNID}.gif"
     Path(fig_path).mkdir(parents=True, exist_ok=True)
 
-    # complete lc gifs 
-    arr_images = [plot_image_for_gif(settings, fig, gs, df_plot, SNID, redshift, peak_MJD, target,
-                                     arr_time, d_pred, time, SNtype,plot_peak=False) for time in arr_time]
-    arr_images[0].save(str(Path(fig_path) / fig_name), save_all=True,
-                       append_images=arr_images, loop=1, duration=200)
+    # # complete lc gifs
+    # arr_images = [plot_image_for_gif(settings, fig, gs, df_plot, SNID, redshift, peak_MJD, target,
+    #                                  arr_time, d_pred, time, SNtype,plot_peak=False) for time in arr_time]
+    # arr_images[0].save(str(Path(fig_path) / fig_name), save_all=True,
+    #                    append_images=arr_images, loop=1, duration=200)
 
     # do gif around max only
-    fig_name = (
-        f"{settings.pytorch_model_name}_class_pred_with_lc_{SNID}_aroundmax.gif"
+    fig_name = f"{settings.pytorch_model_name}_class_pred_with_lc_{SNID}_aroundmax.gif"
+    idx_near_max = np.where(arr_time < peak_MJD + 10)[0][-1]
+    arr_images = [
+        plot_image_for_gif(
+            settings,
+            fig,
+            gs,
+            df_plot,
+            SNID,
+            redshift,
+            peak_MJD,
+            target,
+            arr_time[:idx_near_max],
+            d_pred,
+            time,
+            SNtype,
+            plot_peak=True,
+        )
+        for time in arr_time[:idx_near_max]
+    ]
+    arr_images[0].save(
+        str(Path(fig_path) / fig_name),
+        save_all=True,
+        append_images=arr_images,
+        loop=1,
+        duration=200,
     )
-    idx_near_max = np.where(arr_time < peak_MJD+7)[0][-1]
-    arr_images = [plot_image_for_gif(settings, fig, gs, df_plot, SNID, redshift, peak_MJD, target,
-                                     arr_time[:idx_near_max], d_pred, time, SNtype,plot_peak=True) for time in arr_time[:idx_near_max]]
-    arr_images[0].save(str(Path(fig_path) / fig_name), save_all=True,
-                       append_images=arr_images, loop=1, duration=200)
 
 
-def plot_image_for_gif(settings, fig, gs, df_plot, SNID, redshift, peak_MJD, target, arr_time, d_pred, time, SNtype,plot_peak=False):
+def plot_image_for_gif(
+    settings,
+    fig,
+    gs,
+    df_plot,
+    SNID,
+    redshift,
+    peak_MJD,
+    target,
+    arr_time,
+    d_pred,
+    time,
+    SNtype,
+    plot_peak=False,
+):
 
     # import ipdb; ipdb.set_trace()
 
     # Plot the lightcurve
     ax = plt.subplot(gs[0])
     # Used to keep the limits constant
-    flux_max = max(
-        df_plot[[k for k in df_plot.keys() if 'FLUXCAL_' in k]].max())
-    flux_min = min(
-        df_plot[[k for k in df_plot.keys() if 'FLUXCAL_' in k]].min())
+    flux_max = max(df_plot[[k for k in df_plot.keys() if "FLUXCAL_" in k]].max())
+    flux_min = min(df_plot[[k for k in df_plot.keys() if "FLUXCAL_" in k]].min())
     ax.set_ylim(flux_min - 5, flux_max + 5)
-    ax.set_xlim(-.5, max(arr_time) + 2)
+    ax.set_xlim(-0.5, max(arr_time) + 2)
 
     # slice for gif
-    df_sel = df_plot[df_plot['time'] <= time]
+    df_sel = df_plot[df_plot["time"] <= time]
     for flt in settings.list_filters:
-        ax.errorbar(df_sel['time'], df_sel[f"FLUXCAL_{flt}"],
-                    yerr=df_sel[f"FLUXCALERR_{flt}"],
-                    fmt="o",
-                    label=f"Filter {flt}",
-                    color=FILTER_COLORS[flt])
+        ax.errorbar(
+            df_sel["time"],
+            df_sel[f"FLUXCAL_{flt}"],
+            yerr=df_sel[f"FLUXCALERR_{flt}"],
+            fmt="o",
+            label=f"Filter {flt}",
+            color=FILTER_COLORS[flt],
+        )
 
-    ax.set(xlabel='', ylabel='flux',
-           title=f"{SNtype} (ID: {SNID}, redshift: {redshift:.3g})")
+    ax.set(
+        xlabel="",
+        ylabel="flux",
+        title=f"{SNtype} (ID: {SNID}, redshift: {redshift:.3g})",
+    )
 
     # Plot the classifications
     ax = plt.subplot(gs[1])
     ax.clear()
     ax.set_ylim(0, 1)
-    ax.set_xlim(-.5, max(arr_time) + 2)
+    ax.set_xlim(-0.5, max(arr_time) + 2)
     if plot_peak:
         ax.plot([peak_MJD, peak_MJD], [0, 1], "k--", label="Peak MJD")
 
@@ -440,41 +477,42 @@ def plot_image_for_gif(settings, fig, gs, df_plot, SNID, redshift, peak_MJD, tar
                 label += f" {key}"
 
             ax.plot(
-                arr_time[:len(df_sel)],
-                d_pred[key]["median"][:, class_prob][:len(df_sel)],
+                arr_time[: len(df_sel)],
+                d_pred[key]["median"][:, class_prob][: len(df_sel)],
                 color=color,
                 linestyle=linestyle,
                 label=label,
             )
             ax.fill_between(
-                arr_time[:len(df_sel)],
-                d_pred[key]["perc_16"][:, class_prob][:len(df_sel)],
-                d_pred[key]["perc_84"][:, class_prob][:len(df_sel)],
+                arr_time[: len(df_sel)],
+                d_pred[key]["perc_16"][:, class_prob][: len(df_sel)],
+                d_pred[key]["perc_84"][:, class_prob][: len(df_sel)],
                 color=color,
                 alpha=0.4,
             )
             ax.fill_between(
-                arr_time[:len(df_sel)],
-                d_pred[key]["perc_2"][:, class_prob][:len(df_sel)],
-                d_pred[key]["perc_98"][:, class_prob][:len(df_sel)],
+                arr_time[: len(df_sel)],
+                d_pred[key]["perc_2"][:, class_prob][: len(df_sel)],
+                d_pred[key]["perc_98"][:, class_prob][: len(df_sel)],
                 color=color,
                 alpha=0.2,
             )
 
-            to_print = [int(i) for i in d_pred[key]['peak']][:len(df_sel)]
+            to_print = [int(i) for i in d_pred[key]["peak"]][: len(df_sel)]
+            arr_y = np.tile([0.1, 0.2], len(df_sel) // 2 + 1)[: len(df_sel)]
             for i, txt in enumerate(to_print):
-                ax.annotate(
-                    txt, (arr_time[:len(df_sel)][i], 0.1*np.ones(len(df_sel))[i]))
+                ax.annotate(txt, (arr_time[: len(df_sel)][i], arr_y[i]))
     ax.set_ylabel("classification probability")
     ax.set_xlabel("time")
 
     # Used to return the plot as an image array
-    fig.canvas.draw()       # draw the canvas, cache the renderer
-    image = np.frombuffer(fig.canvas.tostring_rgb(), dtype='uint8')
+    fig.canvas.draw()  # draw the canvas, cache the renderer
+    image = np.frombuffer(fig.canvas.tostring_rgb(), dtype="uint8")
     image = image.reshape(fig.canvas.get_width_height()[::-1] + (3,))
 
     from PIL import Image
     import PIL.ImageOps as pops
+
     im = Image.fromarray(image)
     # make background transparent
     # im = im.convert('RGB')

@@ -199,10 +199,10 @@ def get_predictions(settings, model_file=None):
     ):
 
         start_idx, end_idx = batch_idxs[0], batch_idxs[-1] + 1
-        SNIDs = [data[2] for data in list_data_test[start_idx:end_idx]]
+        SNIDs = [data["lc"] for data in list_data_test[start_idx:end_idx]]
         peak_MJDs = df_SNinfo.loc[SNIDs]["PEAKMJDNORM"].values
         delta_times = [
-            data[3][:, settings.d_feat_to_idx["delta_time"]]
+            data["X_all"][:, settings.d_feat_to_idx["delta_time"]]
             for data in list_data_test[start_idx:end_idx]
         ]
         times = [np.cumsum(t) for t in delta_times]
@@ -214,7 +214,7 @@ def get_predictions(settings, model_file=None):
             # Full lightcurve prediction
             #############################
 
-            packed, _, target_tensor_tuple, idxs_rev_sort = tu.get_data_batch(
+            packed, _, target_tensor_tuple, idxs_rev_sort, maskpeak_tensor = tu.get_data_batch(
                 list_data_test, batch_idxs, settings
             )
 
@@ -296,7 +296,7 @@ def get_predictions(settings, model_file=None):
                     # We only carry out prediction for samples in ``inb_idxs``
                     offset_batch_idxs = [batch_idxs[b] for b in inb_idxs]
                     max_lengths = [slice_idxs[b] for b in inb_idxs]
-                    packed, _, target_tensor_tuple, idxs_rev_sort = tu.get_data_batch(
+                    packed, _, target_tensor_tuple, idxs_rev_sort, maskpeak_tensor = tu.get_data_batch(
                         list_data_test, offset_batch_idxs, settings, max_lengths=max_lengths
                     )
 
@@ -338,7 +338,7 @@ def get_predictions(settings, model_file=None):
             #############################
 
             for OOD in ["random", "shuffle", "reverse", "sin"]:
-                packed, _, target_tensor_tuple, idxs_rev_sort = tu.get_data_batch(
+                packed, _, target_tensor_tuple, idxs_rev_sort, maskpeak_tensor = tu.get_data_batch(
                     list_data_test, batch_idxs, settings, OOD=OOD
                 )
 
@@ -529,7 +529,7 @@ def get_predictions_for_speed_benchmark(settings):
             # Full lightcurve prediction
             #############################
 
-            packed, _, target_tensor_tuple, _ = tu.get_data_batch(
+            packed, _, target_tensor_tuple, _, _ = tu.get_data_batch(
                 list_data_test, batch_idxs, settings
             )
 

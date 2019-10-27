@@ -115,6 +115,11 @@ def fill_data_list(
         target_peak = peak_mjd_normed - arr_time
         target_tuple = target_class, target_peak
 
+        # mask for peak
+        idx = (np.abs(peak_mjd_normed - arr_time)).argmin()
+        # add two epochs to predict also slightly post-peak
+        peakmask_idx = min(idx + 2, len(arr_time))
+
         lc = int(arr_SNID[i])
 
         # Keep an unnormalized copy of the data (for test and display)
@@ -139,9 +144,27 @@ def fill_data_list(
         X_normed = X_normed_tmp[:, settings.idx_features]
 
         if test is True:
-            list_data.append((X_normed, target_tuple, lc, X_all, X_ori))
+            list_data.append(
+                {
+                    "X_normed": X_normed,
+                    "target_tuple": target_tuple,
+                    "lc": lc,
+                    "X_all": X_all,
+                    "X_ori": X_ori,
+                    "peakmask_idx": peakmask_idx,
+                }
+            )
         else:
-            list_data.append((X_normed, target_tuple, lc))
+            list_data.append(
+                {
+                    "X_normed": X_normed,
+                    "target_tuple": target_tuple,
+                    "lc": lc,
+                    "X_all": None,
+                    "X_ori": None,
+                    "peakmask_idx": peakmask_idx,
+                }
+            )
 
     return list_data
 
@@ -299,7 +322,7 @@ def get_data_batch(list_data, idxs, settings, max_lengths=None, OOD=None):
     """Create a batch in a deterministic way
 
     Args:
-        list_data: (list) tuples of (X, target, lightcurve_ID)
+        list_data: (list) dict of (X, target, lightcurve_ID)
         idxs: (array / list) indices of batch element in list_data
         settings (ExperimentSettings): controls experiment hyperparameters
         max_length (int): Maximum light curve length to be used Default: ``None``.
@@ -314,9 +337,10 @@ def get_data_batch(list_data, idxs, settings, max_lengths=None, OOD=None):
 
     list_len = []
     list_batch = []
+    list_maskpeak_idx = []
 
     for pos, i in enumerate(idxs):
-        X, target_tuple, *_ = list_data[i]
+        X, target_tuple, peakmask_idx = list_data[i]["X_normed"], list_data[i]["target_tuple"], list_data[i]["peakmask_idx"]
         # X is (L, D)
         if OOD is not None:
             # Make a copy to be sure we do not alter the original data
@@ -376,6 +400,7 @@ def get_data_batch(list_data, idxs, settings, max_lengths=None, OOD=None):
         input_dim = X.shape[1]
         list_len.append(X.shape[0])
         list_batch.append((X, target))
+        list_maskpeak_idx.append(peakmask_idx)
 
     # Get indices to sort the batch by sequence size (needed to use packed sequences in pytorch)
     # Sequences should be arranged in decreasing length
@@ -384,11 +409,16 @@ def get_data_batch(list_data, idxs, settings, max_lengths=None, OOD=None):
     max_len = list_len[idx_sort[0]]
     X_tensor = torch.zeros((max_len, len(idxs), input_dim))
     target_peak_tensor = torch.zeros((max_len, len(idxs), 1))
+
+    # mask peak
+    maskpeak_tensor = torch.zeros((max_len, len(idxs)))
+
     list_target_class = []
     lengths = []
     # Assign values for the tensor
     for i, idx in enumerate(idx_sort):
         X, target_tuple = list_batch[idx]
+        maskpeak_tensor[:list_maskpeak_idx[idx],i] = 1
         try:
             X_tensor[: X.shape[0], i, :] = torch.FloatTensor(X)
         except Exception:
@@ -407,6 +437,7 @@ def get_data_batch(list_data, idxs, settings, max_lengths=None, OOD=None):
         X_tensor = X_tensor.cuda()
         target_peak_tensor = target_peak_tensor.cuda()
         target_class_tensor = torch.LongTensor(list_target_class).cuda()
+        maskpeak_tensor = maskpeak_tensor.cuda()
     else:
         X_tensor = X_tensor
         target_peak_tensor = target_peak_tensor
@@ -417,7 +448,7 @@ def get_data_batch(list_data, idxs, settings, max_lengths=None, OOD=None):
     # Create a packed sequence
     packed_tensor = nn.utils.rnn.pack_padded_sequence(X_tensor, lengths)
 
-    return packed_tensor, X_tensor, target_tensor_tuple, idxs_rev_sort
+    return packed_tensor, X_tensor, target_tensor_tuple, idxs_rev_sort, maskpeak_tensor
 
 
 def train_step(
@@ -429,6 +460,7 @@ def train_step(
     optimizer,
     batch_size,
     num_batches,
+    maskpeak_tensor
 ):
     """Full training step : Forward and Backward pass
 
@@ -441,6 +473,7 @@ def train_step(
         optimizer (torch optim): the gradient descent optimizer
         batch_size (int): batch size
         num_batches (int): number of minibatches to scale KL cost in Bayesian
+        maskpeak_tensor (torch tensor)
     """
 
     # Set NN to train mode (deals with dropout and batchnorm)
@@ -463,11 +496,11 @@ def train_step(
         lossclass = lossclass + rnn.kl / (num_batches * batch_size)
     else:
         lossclass = criterion(outclass.squeeze(), target_tensor_tuple[0])
-
+        
     # peak regression loss
-    losspeak = ((outpeak - target_tensor_tuple[1].squeeze(-1)) * maskpeak).pow(
+    losspeak = ((outpeak - target_tensor_tuple[1].squeeze(-1)) * maskpeak_tensor).pow(
         2
-    ).sum() / maskpeak.sum()
+    ).sum() / maskpeak_tensor.sum()
 
     # to be checked!!!!
     # losspeak will always be >> lossclass
@@ -566,7 +599,7 @@ def get_evaluation_metrics(settings, list_data, model, sample_size=None):
     for batch_idxs in list_batches:
         random_length = settings.random_length
         settings.random_length = False
-        packed_tensor, X_tensor, target_tensor_tuple, idxs_rev_sort = get_data_batch(
+        packed_tensor, X_tensor, target_tensor_tuple, idxs_rev_sort, maskpeak_tensor = get_data_batch(
             list_data, batch_idxs, settings
         )
         settings.random_length = random_length
@@ -587,9 +620,7 @@ def get_evaluation_metrics(settings, list_data, model, sample_size=None):
         outpeak = outpeak.data.cpu()
         target_peak = target_tensor_tuple[1].squeeze(-1).data.cpu()
         maskpeak = maskpeak.data.cpu()
-        losspeak = ((outpeak - target_peak) * maskpeak).pow(
-            2
-        ).sum() / maskpeak.sum()
+        losspeak = ((outpeak - target_peak) * maskpeak).pow(2).sum() / maskpeak.sum()
 
         # Revert sort
         pred_proba = pred_proba[idxs_rev_sort]
@@ -598,7 +629,9 @@ def get_evaluation_metrics(settings, list_data, model, sample_size=None):
         list_pred.append(pred_proba)
         list_target.append(target_class_numpy)
         list_peak_loss.append(float(losspeak.data))
-        list_class_loss.append(metrics.log_loss(target_class_numpy, np.argmax(pred_proba, 1)))
+        list_class_loss.append(
+            metrics.log_loss(target_class_numpy, np.argmax(pred_proba, 1))
+        )
 
     targets = np.concatenate(list_target, axis=0)
     preds = np.concatenate(list_pred, axis=0)

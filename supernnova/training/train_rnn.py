@@ -52,7 +52,7 @@ def get_lr(settings):
         batch_num += 1
 
         # Sample a batch in packed sequence form
-        packed, _, target_tensor_tuple, idxs_rev_sort = tu.get_data_batch(
+        packed, _, target_tensor_tuple, idxs_rev_sort, maskpeak_tensor = tu.get_data_batch(
             list_data_train, batch_idxs, settings
         )
         # Train step : forward backward pass
@@ -166,7 +166,7 @@ def train_cyclic(settings):
             bar_format="{desc} |{bar}| {n_fmt}/{total_fmt} {rate_fmt}{postfix}",
         ):
             # Sample a batch in packed sequence form
-            packed, _, target_tensor_tuple, idxs_rev_sort = tu.get_data_batch(
+            packed, _, target_tensor_tuple, idxs_rev_sort, maskpeak_tensor = tu.get_data_batch(
                 list_data_train, batch_idxs, settings
             )
             # Train step : forward backward pass
@@ -312,7 +312,7 @@ def train(settings):
         ):
 
             # Sample a batch in packed sequence form
-            packed, _, target_tensor_tuple, idxs_rev_sort = tu.get_data_batch(
+            packed, _, target_tensor_tuple, idxs_rev_sort, maskpeak_tensor = tu.get_data_batch(
                 list_data_train, batch_idxs, settings
             )
 
@@ -326,6 +326,7 @@ def train(settings):
                 optimizer,
                 target_tensor_tuple[0].size(0),
                 len(list_batches),
+                maskpeak_tensor
             )
             # debugging
             # train_totalloss.append(float(totalloss.data))
