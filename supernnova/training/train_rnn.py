@@ -299,11 +299,6 @@ def train(settings):
         list_batches = np.array_split(np.arange(num_elem), num_batches)
         np.random.shuffle(list_batches)
 
-        # debugging
-        # train_totalloss = []
-        # train_classloss = []
-        # train_peakloss = []
-
         for batch_idxs in tqdm(
             list_batches,
             desc=desc,
@@ -328,10 +323,6 @@ def train(settings):
                 len(list_batches),
                 maskpeak_tensor
             )
-            # debugging
-            # train_totalloss.append(float(totalloss.data))
-            # train_classloss.append(float(lossclass.data))
-            # train_peakloss.append(float(losspeak.data))
 
         if (epoch + 1) % settings.monitor_interval == 0:
 

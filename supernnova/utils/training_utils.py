@@ -460,7 +460,7 @@ def train_step(
     optimizer,
     batch_size,
     num_batches,
-    maskpeak_tensor
+    maskpeak_aroundmax_tensor
 ):
     """Full training step : Forward and Backward pass
 
@@ -473,7 +473,7 @@ def train_step(
         optimizer (torch optim): the gradient descent optimizer
         batch_size (int): batch size
         num_batches (int): number of minibatches to scale KL cost in Bayesian
-        maskpeak_tensor (torch tensor)
+        maskpeak_aroundmax_tensor (torch tensor): mask time steps after max
     """
 
     # Set NN to train mode (deals with dropout and batchnorm)
@@ -496,11 +496,16 @@ def train_step(
         lossclass = lossclass + rnn.kl / (num_batches * batch_size)
     else:
         lossclass = criterion(outclass.squeeze(), target_tensor_tuple[0])
-        
+
     # peak regression loss
-    losspeak = ((outpeak - target_tensor_tuple[1].squeeze(-1)) * maskpeak_tensor).pow(
+    # more weight for early epochs 
+    losspeak = ((outpeak - target_tensor_tuple[1].squeeze(-1)) * maskpeak_aroundmax_tensor).pow(
         2
-    ).sum() / maskpeak_tensor.sum()
+    ).sum() / maskpeak_aroundmax_tensor.sum()
+    # general peak loss
+    losspeak = ((outpeak - target_tensor_tuple[1].squeeze(-1)) * maskpeak).pow(
+        2
+    ).sum() / maskpeak.sum()
 
     # to be checked!!!!
     # losspeak will always be >> lossclass
