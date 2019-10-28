@@ -210,26 +210,6 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
             tmp_model_files = [m for m in settings.model_files if os.path.exists(m)]
             settings.model_files = tmp_model_files
 
-    # Check that the settings match the model file
-    base_files = [Path(f).name for f in settings.model_files]
-    classes = [int(re.search(r"(?<=CLF\_)\d+(?=\_)", f).group()) for f in base_files]
-    redshifts = [re.search(r"(?<=R\_)[A-Za-z]+(?=\_)", f).group() for f in base_files]
-
-    assert len(set(classes)) == 1, lu.str_to_redstr(
-        "Can't provide model files with different number of classes"
-    )
-    assert len(set(redshifts)) == 1, lu.str_to_redstr(
-        "Can't provide model files with different redshifts"
-    )
-
-    nb_classes, redshift = classes[0], redshifts[0]
-    assert settings.nb_classes == nb_classes, lu.str_to_redstr(
-        "Incompatible nb_classes between CLI and model files"
-    )
-    assert str(settings.redshift) == redshift, lu.str_to_redstr(
-        "Incompatible redshift between CLI and model files"
-    )
-
     for model_file in settings.model_files:
         if "variational" in model_file:
             settings.model = "variational"
