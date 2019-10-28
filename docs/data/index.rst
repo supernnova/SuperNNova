@@ -99,7 +99,7 @@ The default filter set is the one from the Dark Energy Survey Supernova ``g,r,i,
 
     python run.py --dump_dir <path/to/save/database/> --data --raw_dir <path/to/raw/data/>  --list_filters <your/filters> --list_filters_combination <your/filter/combination>
 
-e.g. ``--list_filters g r --list_filters_combination g r gr``. Also, beware that the ``--sntypes`` are coherent with your data! 
+e.g. ``--list_filters g r --list_filters_combination g r gr``. 
 
 Under the hood
 -------------------------------
@@ -115,7 +115,7 @@ We first compute the data splits:
 - The splits are different for the salt/photometry datasets
 - The splits are different depending on the classification target
 - We downsample the dataset so that for a given classification task, all classes have the same cardinality
-- The supernova/light-curve types supported can be changed using ``--sntypes``. Default contians 7 classes.
+- The supernova/light-curve types supported can be changed using ``--sntypes``. Default contains 7 classes. If a class is not given as input in ``--sntypes``, it will be assigned to the last available tag. If a 'Ia' exists in  provided ``--sntypes``, this will be taken as tag 0 in data splits, else the first class will be used.
 
 Preprocessing
 ~~~~~~~~~~~~~~
