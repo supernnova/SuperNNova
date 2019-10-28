@@ -40,21 +40,17 @@ def build_traintestval_splits(settings):
 
     # Load photometry
     # either in HEAD.FITS or csv format
-    list_files_tmp = natsorted(
-        glob.glob(os.path.join(settings.raw_dir, "*HEAD.FITS*"))
-    )
+    list_files_tmp = natsorted(glob.glob(os.path.join(settings.raw_dir, "*HEAD.FITS*")))
     if len(list_files_tmp) > 0:
         list_files = list_files_tmp
-        fmat = 'FITS'
+        fmat = "FITS"
     else:
-        list_files = natsorted(
-            glob.glob(os.path.join(settings.raw_dir, "*HEAD.csv*"))
-        )
-        fmat = 'csv'
+        list_files = natsorted(glob.glob(os.path.join(settings.raw_dir, "*HEAD.csv*")))
+        fmat = "csv"
     list_files = list_files[:]
     print("List files", list_files)
     # use parallelization to speed up processing
-    if fmat == 'FITS':
+    if fmat == "FITS":
         process_fn = partial(
             data_utils.process_header_FITS,
             settings=settings,
@@ -84,7 +80,7 @@ def build_traintestval_splits(settings):
         # if no fits file we include all lcs
         logging_utils.print_yellow(f"All lcs used for salt and photometry samples")
         df_salt = pd.DataFrame()
-        df_salt['SNID'] = df_photo["SNID"]
+        df_salt["SNID"] = df_photo["SNID"]
     df_salt["is_salt"] = 1
 
     # Check all SNID in df_salt are also in df_photo
@@ -92,12 +88,16 @@ def build_traintestval_splits(settings):
         assert np.all(np.in1d(df_salt.SNID.values, df_photo.SNID.values))
     except Exception:
         logging_utils.print_red(
-            " BEWARE! This is not the fits file for this photometry ")
-        print(logging_utils.str_to_redstr(
-            "   do point at the correct --fits_dir "))
-        print(logging_utils.str_to_redstr(
-            "   (cheat: or an empty folder to override use of salt2fits) "))
+            " BEWARE! This is not the fits file for this photometry "
+        )
+        print(logging_utils.str_to_redstr("   do point at the correct --fits_dir "))
+        print(
+            logging_utils.str_to_redstr(
+                "   (cheat: or an empty folder to override use of salt2fits) "
+            )
+        )
         import sys
+
         sys.exit(1)
 
     # Merge left on df_photo
@@ -129,11 +129,7 @@ def build_traintestval_splits(settings):
             # splits are incorrect.
             if settings.data_testing:
                 # when just classifying data balancing is not necessary
-                g = (
-                    g.apply(lambda x: x)
-                    .reset_index(drop=True)
-                    .sample(frac=1)
-                )
+                g = g.apply(lambda x: x).reset_index(drop=True).sample(frac=1)
             else:
                 g = (
                     g.apply(lambda x: x.sample(g.size().min()))
@@ -148,9 +144,8 @@ def build_traintestval_splits(settings):
             # Now create train/test/validation indices
             if settings.data_training:
                 SNID_train = sampled_SNIDs[: int(0.99 * n_samples)]
-                SNID_val = sampled_SNIDs[int(
-                    0.99 * n_samples): int(0.995 * n_samples)]
-                SNID_test = sampled_SNIDs[int(0.995 * n_samples):]
+                SNID_val = sampled_SNIDs[int(0.99 * n_samples) : int(0.995 * n_samples)]
+                SNID_test = sampled_SNIDs[int(0.995 * n_samples) :]
             elif settings.data_testing:
                 SNID_test = sampled_SNIDs[:]
                 # the train and val sets wont be used in this case
@@ -158,9 +153,8 @@ def build_traintestval_splits(settings):
                 SNID_val = sampled_SNIDs[0]
             else:
                 SNID_train = sampled_SNIDs[: int(0.8 * n_samples)]
-                SNID_val = sampled_SNIDs[int(
-                    0.8 * n_samples): int(0.9 * n_samples)]
-                SNID_test = sampled_SNIDs[int(0.9 * n_samples):]
+                SNID_val = sampled_SNIDs[int(0.8 * n_samples) : int(0.9 * n_samples)]
+                SNID_test = sampled_SNIDs[int(0.9 * n_samples) :]
 
             # Find the indices of our train test val splits
             idxs_train = np.where(np.in1d(all_SNIDs, SNID_train))[0]
@@ -180,8 +174,7 @@ def build_traintestval_splits(settings):
             # Display classes balancing in the dataset, for each split
             logging_utils.print_bright("Dataset composition")
             for split_name, idxs in zip(
-                ["Training", "Validation", "Test"], [
-                    idxs_train, idxs_val, idxs_test]
+                ["Training", "Validation", "Test"], [idxs_train, idxs_val, idxs_test]
             ):
                 # We count the number of occurence in each class and each split with
                 # pandas.value_counts
@@ -196,15 +189,13 @@ def build_traintestval_splits(settings):
                     df["SNTYPE"].iloc[idxs].value_counts().sort_values().to_dict()
                 )
                 total_samples = sum(d_occurences.values())
-                total_samples_str = logging_utils.str_to_yellowstr(
-                    total_samples)
+                total_samples_str = logging_utils.str_to_yellowstr(total_samples)
 
                 str_ = f"# samples {total_samples_str} "
                 for c_, n_samples in d_occurences.items():
                     class_str = logging_utils.str_to_yellowstr(c_)
                     class_fraction = f"{100 *(n_samples/total_samples):.2g}%"
-                    class_fraction_str = logging_utils.str_to_yellowstr(
-                        class_fraction)
+                    class_fraction_str = logging_utils.str_to_yellowstr(class_fraction)
                     str_ += f"Class {class_str}: {class_fraction_str} samples "
 
                 list_stat.append(
@@ -321,19 +312,22 @@ def process_single_FITS(file_path, settings):
     if settings.photo_window_files:
         if Path(settings.photo_window_files[0]).exists():
             # load fits file
-            df_peak = pd.read_csv(settings.photo_window_files[0], comment="#",
-                          delimiter=" ", skipinitialspace=True)
+            df_peak = pd.read_csv(
+                settings.photo_window_files[0],
+                comment="#",
+                delimiter=" ",
+                skipinitialspace=True,
+            )
             df_peak["SNID"] = df_peak["CID"].astype(int)
             try:
-                df_peak = df_peak[['SNID',settings.photo_window_var]]
+                df_peak = df_peak[["SNID", settings.photo_window_var]]
             except Exception:
-                logging_utils.print_red('Provide a correct photo_window variable')
+                logging_utils.print_red("Provide a correct photo_window variable")
                 raise Exception
             # merge with header
-            df_header = pd.merge(df_header, df_peak, on='SNID')
+            df_header = pd.merge(df_header, df_peak, on="SNID")
         else:
-            logging_utils.print_red('Provide a valid photo_window_file')
-    
+            logging_utils.print_red("Provide a valid photo_window_file")
 
     #############################################
     # Compute SNID for df and join with df_header
@@ -357,13 +351,15 @@ def process_single_FITS(file_path, settings):
     # Photometry window selection
     #############################################
     if settings.photo_window_files:
-        df['window_time_cut'] = True
-        mask = (df['MJD'] != -777.00)
-        df['window_delta_time'] = df['MJD'] - df[settings.photo_window_var]
-        df.loc[mask, 'window_time_cut'] = df["window_delta_time"].apply(
-        lambda x: True if (x > 0 and x < settings.photo_window_max) else (True if (x <= 0 and x > settings.photo_window_min) else False)
+        df["window_time_cut"] = True
+        mask = df["MJD"] != -777.00
+        df["window_delta_time"] = df["MJD"] - df[settings.photo_window_var]
+        df.loc[mask, "window_time_cut"] = df["window_delta_time"].apply(
+            lambda x: True
+            if (x > 0 and x < settings.photo_window_max)
+            else (True if (x <= 0 and x > settings.photo_window_min) else False)
         )
-        df = df[df['window_time_cut'] == True]
+        df = df[df["window_time_cut"] == True]
 
     #############################################
     # Miscellaneous data processing
@@ -372,7 +368,7 @@ def process_single_FITS(file_path, settings):
     # filters have a trailing white space which we remove
     df.FLT = df.FLT.apply(lambda x: x.rstrip()).values.astype(str)
     # keep only filters we are going to use for classification
-    df = df[df['FLT'].isin(settings.list_filters)]
+    df = df[df["FLT"].isin(settings.list_filters)]
     # Drop the delimiter lines
     df = df[df.MJD != -777.000]
     # Reset the index (it is no longer continuous after dropping lines)
@@ -385,9 +381,7 @@ def process_single_FITS(file_path, settings):
     #############################################
     # Add class and dataset information
     #############################################
-    df_SNID = pd.read_pickle(
-        f"{settings.processed_dir}/SNID.pickle"
-    )
+    df_SNID = pd.read_pickle(f"{settings.processed_dir}/SNID.pickle")
     # Check all SNID in df are in df_SNID
     assert np.all(np.in1d(df.SNID.values, df_SNID.SNID.values))
     # Merge left on df: len(df) will not change and will now include
@@ -471,9 +465,7 @@ def process_single_csv(file_path, settings):
     #############################################
     # Add class and dataset information
     #############################################
-    df_SNID = pd.read_pickle(
-        f"{settings.processed_dir}/SNID.pickle"
-    )
+    df_SNID = pd.read_pickle(f"{settings.processed_dir}/SNID.pickle")
     # Check all SNID in df are in df_SNID
     assert np.all(np.in1d(df.SNID.values, df_SNID.SNID.values))
     # Merge left on df: len(df) will not change and will now include
@@ -508,16 +500,12 @@ def preprocess_data(settings):
     """
 
     # Get the list of FITS files
-    list_files = natsorted(
-        glob.glob(os.path.join(settings.raw_dir, f"*PHOT.FITS*"))
-    )
+    list_files = natsorted(glob.glob(os.path.join(settings.raw_dir, f"*PHOT.FITS*")))
     if len(list_files) > 0:
         # Parameters of multiprocessing below
         parallel_fn = partial(process_single_FITS, settings=settings)
     else:
-        list_files = natsorted(
-            glob.glob(os.path.join(settings.raw_dir, f"*PHOT.csv*"))
-        )
+        list_files = natsorted(glob.glob(os.path.join(settings.raw_dir, f"*PHOT.csv*")))
         parallel_fn = partial(process_single_csv, settings=settings)
 
     logging_utils.print_green("List to preprocess ", list_files)
@@ -536,8 +524,7 @@ def preprocess_data(settings):
         with ProcessPoolExecutor(max_workers=max_workers) as executor:
             start, end = chunk_idx[0], chunk_idx[-1] + 1
             # Need to cast to list because executor returns an iterator
-            host_spe_tmp += list(executor.map(parallel_fn,
-                                              list_files[start:end]))
+            host_spe_tmp += list(executor.map(parallel_fn, list_files[start:end]))
     # for debugging only (parallelization needs to be commented)
     # host_spe_tmp.append(process_single_FITS(list_files[0], settings))
     # host_spe_tmp.append(process_single_csv(list_files[0], settings))
@@ -592,15 +579,13 @@ def pivot_dataframe_single(filename, settings):
 
     # Some filters (i, r, g, z) may appear multiple times with the same grouped MJD within same light curve
     # When this happens, we select the one with lowest FLUXCALERR
-    df = df.sort_values("FLUXCALERR").groupby(
-        ["SNID", "grouped_MJD", "FLT"]).first()
+    df = df.sort_values("FLUXCALERR").groupby(["SNID", "grouped_MJD", "FLT"]).first()
     # We then reset the index
     df = df.reset_index()
     # Compute PEAKMJDNORM = PEAKMJD in days since the start of the light curve
     df["PEAKMJDNORM"] = df["PEAKMJD"] - df["MJD"]
     # The correct PEAKMJDNORM is the first one hence the use of first after groupby
-    df_PEAKMJDNORM = df[["SNID", "PEAKMJDNORM"]
-                        ].groupby("SNID").first().reset_index()
+    df_PEAKMJDNORM = df[["SNID", "PEAKMJDNORM"]].groupby("SNID").first().reset_index()
     # Remove PEAKMJDNORM
     df = df.drop("PEAKMJDNORM", 1)
     # Add PEAKMJDNORM back to df with a merge on SNID
@@ -663,8 +648,7 @@ def pivot_dataframe_single(filename, settings):
         elif "classes" in c and df[c].dtype == np.int64:
             df[c] = df[c].astype(np.int8)
     # Add some extra columns from the FITOPT file
-    df_salt = data_utils.load_fitfile(
-        settings, verbose=False)
+    df_salt = data_utils.load_fitfile(settings, verbose=False)
     if len(df_salt) > 1:
         df_salt = df_salt.set_index("SNID")
     else:
@@ -742,18 +726,12 @@ def make_dataset(settings):
     preprocess_data(settings)
 
     # Pivot dataframe
-    list_files = natsorted(
-        glob.glob(f"{settings.preprocessed_dir}/*PHOT*")
-    )
+    list_files = natsorted(glob.glob(f"{settings.preprocessed_dir}/*PHOT*"))
     pivot_dataframe_batch(list_files, settings)
 
     # Aggregate the pivoted dataframe
     list_files = natsorted(
-        glob.glob(
-            os.path.join(
-                settings.preprocessed_dir, f"*pivot.pickle"
-            )
-        )
+        glob.glob(os.path.join(settings.preprocessed_dir, f"*pivot.pickle"))
     )
     logging_utils.print_green("Concatenating pivot")
 
@@ -768,7 +746,8 @@ def make_dataset(settings):
         datasets_plots(SNinfo_df, settings)
     except Exception:
         logging_utils.print_yellow(
-            "Warning: can't do data plots if no saltfit for this dataset")
+            "Warning: can't do data plots if no saltfit for this dataset"
+        )
 
     # Clean preprocessed directory
     shutil.rmtree(settings.preprocessed_dir)
