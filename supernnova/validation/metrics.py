@@ -98,12 +98,8 @@ def get_metrics_singlemodel(settings, prediction_file=None, model_type="rnn"):
         )
 
         dump_dir = f"{settings.models_dir}/{model_name}"
-        prediction_file = (
-            f"{dump_dir}/" f"PRED_{model_name}.pickle"
-        )
-        metrics_file = (
-            f"{dump_dir}/" f"METRICS_{model_name}.pickle"
-        )
+        prediction_file = f"{dump_dir}/" f"PRED_{model_name}.pickle"
+        metrics_file = f"{dump_dir}/" f"METRICS_{model_name}.pickle"
         source_data = settings.source_data
 
     assert os.path.isfile(prediction_file), lu.str_to_redstr(
@@ -220,7 +216,7 @@ def get_rnn_performance_metrics_singlemodel(settings, df, host_zspe_list):
     return df_perf
 
 
-def get_randomforest_performance_metrics_singlemodel(settings, df, host_zspe_list):
+def get_randomforest_performance_metrics(df, host_zspe_list, sntypes):
     """Compute performance metrics (accuracy, AUC, purity etc) for
     a randomforest model
 
@@ -236,7 +232,7 @@ def get_randomforest_performance_metrics_singlemodel(settings, df, host_zspe_lis
     # Compute metrics
     zspe_df = pu.reformat_df(df, "all")
     accuracy, auc, purity, efficiency, _ = pu.performance_metrics(zspe_df)
-    contamination_df = pu.contamination_by_SNTYPE(zspe_df, settings)
+    contamination_df = pu.contamination_by_SNTYPE(zspe_df, sntypes)
 
     # Reweighted for SNe with zspe
     zspe_df = zspe_df[zspe_df["SNID"].isin(host_zspe_list)]
@@ -416,7 +412,7 @@ def get_classification_stats_singlemodel(df, nb_classes):
         # percentage of non-classified lcs
         threshold = {2: 0.6, 3: 0.4, 7: 0.2}  # choosing half of the score
         idx = np.where(np.max(arr_preds, axis=1) < threshold[nb_classes])[0]
-        percentage = len(idx) * 100. / len(arr_preds)
+        percentage = len(idx) * 100.0 / len(arr_preds)
         list_clf_stats.append(percentage)
 
         data = np.array(list_clf_stats).reshape(1, -1)

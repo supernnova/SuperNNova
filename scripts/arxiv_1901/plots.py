@@ -11,13 +11,13 @@ from matplotlib.lines import Line2D
 from astropy.cosmology import FlatLambdaCDM
 from sklearn.metrics import confusion_matrix
 
-from ..utils import data_utils as du
-from ..utils import logging_utils as lu
-from ..utils import performance_utils as pu
-from ..utils import visualization_utils as vu
+from supernnova.utils import data_utils as du
+from supernnova.utils import logging_utils as lu
+from supernnova.utils import performance_utils as pu
+from supernnova.utils import visualization_utils as vu
 
 # Plotting styles
-from ..utils.visualization_utils import (
+from supernnova.utils.visualization_utils import (
     ALL_COLORS,
     BI_COLORS,
     CONTRAST_COLORS,
@@ -338,7 +338,7 @@ def plot_confusion_matrix(
     plt.savefig(f"{plot_path}/{nameout}.png")
 
 
-def multiplot_violin_paper(df, fname, settings):
+def multiplot_violin_paper(df, fname, sntypes, fig_dir):
     """Plot data properties as violin plots.
     
     Far from optimized code: seaborn does not make this easy so added
@@ -365,19 +365,22 @@ def multiplot_violin_paper(df, fname, settings):
 
     axes = [ax_00, ax_01, ax_02, ax_03]
 
+    hue = "salt" if len(df.salt.unique()) > 1 else None
+    
     # Ia vs non Ia
     sns.set_palette(sns.color_palette(BI_COLORS))
     g = sns.violinplot(
         x="target",
         y="SIM_PEAKMAG_g",
-        hue="salt",
+        hue=hue,
         data=df,
         split=True,
         ax=axes[0],
         inner="quartile",
     )
     g.set_xlabel("")
-    g.legend_.remove()
+    if g.legend_ is not None:
+        g.legend_.remove()
     g.yaxis.set_tick_params(labelsize=14)
     g.set_title("g", fontsize=14)
     g.set_ylabel("magnitude", fontsize=14)
@@ -389,7 +392,7 @@ def multiplot_violin_paper(df, fname, settings):
     g = sns.violinplot(
         x="target",
         y="SIM_PEAKMAG_i",
-        hue="salt",
+        hue=hue,
         data=df,
         split=True,
         ax=axes[1],
@@ -397,7 +400,8 @@ def multiplot_violin_paper(df, fname, settings):
     )
     g.set_xlabel("")
     g.set_ylabel("")
-    g.legend_.remove()
+    if g.legend_ is not None:
+        g.legend_.remove()
     g.yaxis.set_ticks_position("none")
     g.set_title("i", fontsize=14)
     g.set_ylim(20, 28)
@@ -410,13 +414,14 @@ def multiplot_violin_paper(df, fname, settings):
     g = sns.violinplot(
         x="target",
         y="SIM_PEAKMAG_r",
-        hue="salt",
+        hue=hue,
         data=df,
         split=True,
         ax=axes[2],
         inner="quartile",
     )
-    g.legend_.remove()
+    if g.legend_ is not None:
+        g.legend_.remove()
     g.yaxis.set_ticks_position("none")
     g.set_xlabel("")
     g.set_ylabel("")
@@ -432,13 +437,14 @@ def multiplot_violin_paper(df, fname, settings):
     g = sns.violinplot(
         x="target",
         y="SIM_PEAKMAG_z",
-        hue="salt",
+        hue=hue,
         data=df,
         split=True,
         ax=axes[3],
         inner="quartile",
     )
-    g.legend_.remove()
+    if g.legend_ is not None:
+        g.legend_.remove()
     g.yaxis.set_ticks_position("none")
     g.set_title("z", fontsize=14)
     g.set_xlabel("")
@@ -454,7 +460,7 @@ def multiplot_violin_paper(df, fname, settings):
     g = sns.violinplot(
         x="SNTYPE",
         y="SIM_REDSHIFT_CMB",
-        hue="salt",
+        hue=hue,
         data=df,
         split=True,
         ax=ax_1,
@@ -463,16 +469,18 @@ def multiplot_violin_paper(df, fname, settings):
     g.set_ylabel("simulated redshift", fontsize=14)
     g.set_xlabel("")
     g.set_ylim(0, 1.0)
-    g.set_xticklabels([a for a in settings.sntypes.values()], fontsize=14)
+    g.set_xticklabels([a for a in sntypes.values()], fontsize=14)
     g.xaxis.set_tick_params(labelsize=14)
     g.yaxis.set_tick_params(labelsize=14)
-    g.legend_.remove()
+    if g.legend_ is not None:
+        g.legend_.remove()
     g.spines["right"].set_visible(False)
     g.spines["top"].set_visible(False)
     g.spines["bottom"].set_visible(False)
 
-    plt.savefig(f"{settings.figures_dir}/multiviolin_{fname}.png")
-    plt.close()
+    plt.savefig(f"{fig_dir}/multiviolin_{fname}.png")
+    plt.clf()
+    plt.close("all")
     del fig
 
 
@@ -764,7 +772,7 @@ def plot_HDres_histos_vs_z(
 #################
 
 
-def seaborn_formatting_mag(df, settings):
+def seaborn_formatting_mag(df, sntypes):
     """Seaborn friendly formatting
     
     Basic formatting and eliminating outliers (to avoid rejection by seaborn of pd.DataFrame)
@@ -775,9 +783,9 @@ def seaborn_formatting_mag(df, settings):
     Returns:
         df (DataFrame): reformatted
     """
-    df["salt"] = df["dataset_saltfit_2classes"] != -1
-    df = du.tag_type(df, settings, type_column="SNTYPE")
-    # because it doesn't like my normal df
+    
+    df = du.tag_type(df, sntypes, type_column="SNTYPE")
+
     df_skimmed = pd.DataFrame()
     for f in ["g", "r", "i", "z"]:
         var = "SIM_PEAKMAG_" + f
@@ -792,6 +800,7 @@ def seaborn_formatting_mag(df, settings):
     for f in ["g", "r", "i", "z"]:
         var = "SIM_PEAKMAG_" + f
         df_skimmed = df_skimmed[(df_skimmed[var] > 20) & (df_skimmed[var] < 28)]
+
 
     return df_skimmed
 
@@ -887,7 +896,7 @@ def sel_eff(merged, threshold, settings):
 #################
 
 
-def datasets_plots(df, settings):
+def datasets_plots(df, sntypes, fig_dir):
     """Dataset violin plots
     peak magnitudes and redshift distributions of representative and non-representative datasets
     
@@ -897,8 +906,8 @@ def datasets_plots(df, settings):
     """
 
     # Reformat into seaborn friendly format
-    df = seaborn_formatting_mag(df, settings)
-    multiplot_violin_paper(df, "test", settings)
+    df = seaborn_formatting_mag(df, sntypes)
+    multiplot_violin_paper(df, "test", sntypes, fig_dir)
 
 
 def performance_plots(settings):

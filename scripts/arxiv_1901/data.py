@@ -13,7 +13,7 @@ from astropy.table import Table
 
 from supernnova.utils import data_utils
 from supernnova.utils import logging_utils
-from supernnova.paper.superNNova_plots import datasets_plots
+from plots import datasets_plots
 
 from constants import SNTYPES, LIST_FILTERS, OFFSETS, OFFSETS_STR, FILTER_DICT
 
@@ -103,15 +103,12 @@ def preprocess_data(config):
     """
 
     raw_dir = config["raw_dir"]
-    processed_dir = config["raw_dir"]
+    processed_dir = config["processed_dir"]
     raw_format = config["raw_format"]
     preprocessed_dir = config["preprocessed_dir"]
     max_workers = max(1, multiprocessing.cpu_count() - 2)
 
-    logging_utils.print_green(f"Computing splits")
-
     # Get the list of FITS files
-    # TODO support csv
     list_files = natsorted(map(str, Path(raw_dir).glob(f"*PHOT.{raw_format}*")))
     process_fn = partial(
         process_phot_file, preprocessed_dir=preprocessed_dir, list_filters=LIST_FILTERS
@@ -303,13 +300,20 @@ def make_dataset(config_path):
     )
 
     # Save plots to visualize the distribution of some of the data features
-    try:
-        SNinfo_df = data_utils.load_HDF5_SNinfo(settings)
-        datasets_plots(SNinfo_df, settings)
-    except Exception:
-        logging_utils.print_yellow(
-            "Warning: can't do data plots if no saltfit for this dataset"
-        )
+    # try:
+    SNinfo_df = data_utils.load_HDF5_SNinfo(config["processed_dir"])
+    df_fitop = data_utils.load_fitfile(config["fitopt_file"], SNTYPES)
+    df_fitop["salt"] = True
+    SNinfo_df = SNinfo_df.merge(df_fitop[["SNID", "salt"]], how="left", on="SNID")
+    SNinfo_df["salt"].fillna(False)
+    # All lightcurves in df_fitop are salt
+    fig_dir = Path(config["fig_dir"])
+    fig_dir.mkdir(parents=True, exist_ok=True)
+    datasets_plots(SNinfo_df, SNTYPES, fig_dir)
+    # except Exception:
+    #     logging_utils.print_yellow(
+    #         "Warning: can't do data plots if no saltfit for this dataset"
+    #     )
 
     # Clean preprocessed directory
     shutil.rmtree(preprocessed_dir)

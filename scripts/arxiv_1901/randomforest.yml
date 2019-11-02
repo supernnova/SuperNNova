@@ -8,8 +8,9 @@ max_features: 5
 max_depth: 7
 fitopt_file: /home/SuperNNova/tests/fits/FITOPT000.FITRES
 processed_dir: /home/SuperNNova/tests/dump/processed
-dump_dir: /home/SuperNNova/tests/dump/randomforest
-model_name: rf_000
+dump_dir: /home/SuperNNova/tests/dump/randomforest/rf_000
+fig_dir: /home/SuperNNova/tests/dump/figures
+data_fraction: 1.
 
 features:
   - x1

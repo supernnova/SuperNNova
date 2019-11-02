@@ -1,6 +1,7 @@
 import yaml
 import argparse
 import numpy as np
+import pandas as pd
 from pathlib import Path
 from sklearn.ensemble import RandomForestClassifier
 
@@ -42,10 +43,12 @@ def train(config):
 
     # load data
     df_data = data_utils.load_fitfile(config["fitopt_file"], SNTYPES)
-    SNID = df_data["SNID"].values
-
-    # Load training and validation SNID to make our train/val split
     sn_df = data_utils.load_HDF5_SNinfo(config["processed_dir"])
+
+    # Subsample with data fraction
+    n_samples = int(config.get("data_fraction", 1) * sn_df.shape[0])
+    idxs = np.random.choice(sn_df.shape[0], n_samples, replace=False)
+    sn_df = sn_df.iloc[idxs].reset_index(drop=True)
 
     class_map = {}
     for key, value in SNTYPES.items():
@@ -73,10 +76,12 @@ def train(config):
     print(f"{n_0} ({100 * n_0 / n:.2f} %) class 0 samples after balancing")
     print(f"{n_1} ({100 * n_1 / n:.2f} %) class 1 samples after balancing")
 
-    # Train val split
+    # 80/10/10 Train/val/test split
     n_train = int(0.8 * n)
+    n_val = int(0.9 * n)
     df_train = sn_df[:n_train]
-    df_val = sn_df[n_train:]
+    df_val = sn_df[n_train:n_val]
+    df_test = sn_df[n_val:]
 
     features = config["features"]
 
@@ -86,6 +91,9 @@ def train(config):
 
     df_train = df_train.merge(df_data, on="SNID", how="left")[features + ["target"]]
     df_val = df_val.merge(df_data, on="SNID", how="left")[features + ["target"]]
+    df_test = df_test.merge(df_data, on="SNID", how="left")[
+        features + ["target", "SNID"]
+    ]
 
     ###################
     # Training
@@ -98,6 +106,8 @@ def train(config):
     X_val = df_val[features].values
     y_val = df_val["target"].values
 
+    X_test = df_test[features].values
+
     logging_utils.print_green("Features", ",".join(features))
 
     # Fit  and evaluate model
@@ -105,72 +115,16 @@ def train(config):
         clf, X_train, y_train, X_val, y_val
     )
     # save the model to disk
-    save_file = (Path(config["dump_dir"]) / f"{config['model_name']}.pickle").as_posix()
+    save_file = (Path(config["dump_dir"]) / f"model.pickle").as_posix()
     Path(save_file).parent.mkdir(exist_ok=True, parents=True)
     training_utils.save_randomforest_model(save_file, clf)
 
-
-def get_predictions(settings, model_file=None):
-    """Test random forest models on independent test set
-
-    Features are stored in a .FITRES file found in data_dir
-    Use predefined splits to select test set
-    Save predicted target and probabilities to preds_dir
-
-    Args:
-        settings (ExperimentSettings): custom class to hold hyperparameters
-        model_file (str): path to saved randomforest model
-    """
-
-    assert settings.source_data == "saltfit", logging_utils.str_to_redstr(
-        "Only salfit is a valid data source for random forest"
-    )
-    assert settings.nb_classes == 2, logging_utils.str_to_redstr(
-        "Binary classification is the only task allowed for RandomForest"
-    )
-
-    if model_file is None:
-        dump_dir = f"{settings.models_dir}/{settings.randomforest_model_name}"
-        model_file = f"{dump_dir}/{settings.randomforest_model_name}.pickle"
-    else:
-        dump_dir = Path(model_file).parent
-
-    if settings.override_source_data is not None:
-        settings.source_data = settings.override_source_data
-        settings.set_pytorch_model_name()
-
-    prediction_file = f"{dump_dir}/PRED_{settings.randomforest_model_name}.pickle"
-
-    # load data
-    df_test = data_utils.load_fitfile(settings)
-
-    # Load the dataframe containing  the list of the independent test SNID
-    sn_df = data_utils.load_HDF5_SNinfo(settings)
-    df_SNID = sn_df[sn_df["dataset_saltfit_2classes"] == 2][
-        ["SNID", "PEAKMJD", "PEAKMJDNORM", "SIM_REDSHIFT_CMB", "SNTYPE"]
-    ]
-
-    # Make sure SNID is of type int
-    df_SNID["SNID"] = df_SNID["SNID"].astype(int)
-    df_test["SNID"] = df_test["SNID"].astype(int)
-
-    # Select only IDs that are in df_SNID and df_test
-    df_test = df_test.merge(df_SNID, on="SNID")
-
-    # Add redshift features if required by settings
-    df_test = data_utils.add_redshift_features(settings, df_test)
-
-    # Load randomforest model
-    clf = training_utils.load_randomforest_model(settings, model_file=model_file)
-    # Make predictions and save to dataframe
-    X = df_test[settings.randomforest_features].values
-    y_pred_proba = clf.predict_proba(X)
+    y_pred_proba = clf.predict_proba(X_test)
     y_pred_class = np.argmax(y_pred_proba, axis=1)
 
     df_test["all_class0"] = y_pred_proba[:, 0]
     df_test["all_class1"] = y_pred_proba[:, 1]
     df_test["predicted_target"] = y_pred_class
-    df_test["target"] = df_test["target_2classes"]
 
     # Cache results for future re-use
     list_features_save = [
@@ -180,9 +134,52 @@ def get_predictions(settings, model_file=None):
         "predicted_target",
         "target",
     ]
+    prediction_file = (Path(config["dump_dir"]) / f"PRED.pickle").as_posix()
     df_test[list_features_save].to_pickle(prediction_file)
 
-    return prediction_file
+
+def get_metrics(config):
+    """Launch computation of all evaluation metrics for a given model, specified
+    by the settings object or by a model file
+
+    Save a pickled dataframe (we pickle  because we're saving numpy arrays, which
+    are not easily savable with the ``to_csv`` method).
+
+    Args:
+        settings (ExperimentSettings): custom class to hold hyperparameters
+        prediction_file (str): Path to saved predictions. Default: ``None``
+        model_type (str): Choose ``rnn`` or ``randomforest``
+
+    Returns:
+        (pandas.DataFrame) holds the performance metrics for this dataframe
+    """
+
+    processed_dir = config["processed_dir"]
+    prediction_file = (Path(config["dump_dir"]) / f"PRED.pickle").as_posix()
+    metrics_file = (Path(config["dump_dir"]) / f"METRICS.pickle").as_posix()
+
+    df_SNinfo = data_utils.load_HDF5_SNinfo(config["processed_dir"])
+    host = pd.read_pickle(f"{processed_dir}/hostspe_SNID.pickle")
+    host_zspe_list = host["SNID"].tolist()
+
+    df = pd.read_pickle(prediction_file)
+    df = pd.merge(df, df_SNinfo[["SNID", "SNTYPE"]], on="SNID", how="left")
+
+    list_df_metrics = []
+
+    # Metrics shared between RF and RNN
+    list_df_metrics.append(metrics.get_calibration_metrics_singlemodel(df))
+    list_df_metrics.append(
+        metrics.get_randomforest_performance_metrics(df, host_zspe_list, SNTYPES)
+    )
+
+    df_metrics = pd.concat(list_df_metrics, 1)
+
+    df_metrics["model_name"] = Path(config["dump_dir"]).name
+    df_metrics["source_data"] = "saltfit"
+    df_metrics.to_pickle(metrics_file)
+
+    logging_utils.print_green("Finished getting metrics ")
 
 
 def main(config_path):
@@ -192,14 +189,10 @@ def main(config_path):
     # setting random seeds
     np.random.seed(config["seed"])
 
+    # Train and sav predictions
     train(config)
-    import ipdb
-
-    ipdb.set_trace()
-    # Obtain predictions
-    get_predictions(config)
     # Compute metrics
-    metrics.get_metrics_singlemodel(config, model_type="rf")
+    get_metrics(config)
 
     logging_utils.print_blue("Finished rf training, validating and testing")
 

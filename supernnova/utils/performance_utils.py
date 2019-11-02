@@ -18,7 +18,9 @@ def performance_metrics(df, sample_target=0):
     n_targets = len(np.unique(df["target"]))
 
     # Accuracy & AUC
-    accuracy = metrics.balanced_accuracy_score(df["target"].astype(int), df["predicted_target"])
+    accuracy = metrics.balanced_accuracy_score(
+        df["target"].astype(int), df["predicted_target"]
+    )
     accuracy = round(accuracy * 100, 2)
     if n_targets == 2:  # valid for biclass only
         auc = round(metrics.roc_auc_score(df["target"], df["class1"]), 4)
@@ -40,7 +42,7 @@ def performance_metrics(df, sample_target=0):
     return accuracy, auc, purity, efficiency, truepositivefraction
 
 
-def contamination_by_SNTYPE(df, settings, sample_target=0):
+def contamination_by_SNTYPE(df, sntypes, sample_target=0):
     """Get contamination contribution by each SN type in sample percentage
 
     Args:
@@ -59,7 +61,7 @@ def contamination_by_SNTYPE(df, settings, sample_target=0):
     # Get contamination percentage
     contribution_arr = []
     type_arr = []
-    for typ in [int(t) for t in settings.sntypes.keys() if t != 101]:
+    for typ in [int(t) for t in sntypes.keys() if t != 101]:
         df_selection = df_cont[df_cont["SNTYPE"] == typ]
         if sample_size > 1:
             contribution_arr.append(round(100 * len(df_selection) / sample_size, 2))
