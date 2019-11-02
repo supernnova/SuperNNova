@@ -1,9 +1,8 @@
-raw_dir: "/home/SuperNNova/tests/raw"
-preprocessed_dir: "/home/SuperNNova/tests/dump/preprocessed"
-processed_dir: "/home/SuperNNova/tests/dump/processed"
-hdf5_file: "/home/SuperNNova/tests/dump/processed/data.hdf5"
-fitopt_file: "/home/SuperNNova/tests/fits/FITOPT000.FITRES"
+raw_dir: /home/SuperNNova/tests/raw
+preprocessed_dir: /home/SuperNNova/tests/dump/preprocessed
+processed_dir: /home/SuperNNova/tests/dump/processed
+fitopt_file: /home/SuperNNova/tests/fits/FITOPT000.FITRES
 
-raw_format: "FITS"
+raw_format: FITS
 
 overwrite: True

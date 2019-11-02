@@ -1,5 +1,4 @@
 import os
-import glob
 import yaml
 import shutil
 import argparse
@@ -19,188 +18,8 @@ from supernnova.paper.superNNova_plots import datasets_plots
 from constants import SNTYPES, LIST_FILTERS, OFFSETS, OFFSETS_STR, FILTER_DICT
 
 
-# def build_data_splits(config):
-#     """Build dataset split in the following way
-
-#     - Downsample each class so that it has the same cardinality as the lowest cardinality class
-#     - Randomly assign lightcurves to a 80/10/10 train test val split (except Out-of-distribution data 1/1/98)
-
-#     OOD:
-#         Will use the complete sample for testing, does not require settings.
-
-#     Args:
-#         settings (ExperimentSettings): controls experiment hyperparameters
-#     """
-
-#     raw_dir = config["raw_dir"]
-#     processed_dir = config["raw_dir"]
-#     raw_format = config["raw_format"]
-#     fitopt_file = config["fitopt_file"]
-#     max_workers = max(1, multiprocessing.cpu_count() - 2)
-#     photo_columns = ["SNID"] + [
-#         f"target_{nb_classes}classes" for nb_classes in list([2, len(sntypes)])
-#     ]
-
-#     logging_utils.print_green(f"Computing splits")
-
-#     # Get list of data files
-#     list_files = natsorted(Path(raw_dir).glob(f"*HEAD.{raw_format}*"))
-#     print("List files", "\n".join(list_files))
-
-#     # Load files into pandas Dataframes
-#     process_fn = partial(
-#         data_utils.process_header, sntypes=sntypes, columns=photo_columns + ["SNTYPE"]
-#     )
-#     pool = multiprocessing.Pool(max_workers)
-#     list_df = pool.map(process_fn, list_files)
-#     pool.close()
-
-#     # Load df_photo
-#     df_photo = pd.concat(list_df)
-#     df_photo["SNID"] = df_photo["SNID"].astype(int)
-
-#     # load FITOPT file on which we will base our splits
-#     if fitopt_file is not None:
-#         df_salt = data_utils.load_fitfile(fitopt_file, sntypes)
-#     else:
-#         df_salt["SNID"] = df_photo["SNID"].copy()
-#     df_salt["is_salt"] = 1
-
-#     # Check all SNID in df_salt are also in df_photo
-#     assert np.all(np.in1d(df_salt.SNID.values, df_photo.SNID.values))
-
-#     # Merge left on df_photo
-#     df = df_photo.merge(df_salt[["SNID", "is_salt"]], on=["SNID"], how="left")
-#     # Some curves are in photo and not in salt, these curves have is_salt = NaN
-#     # We replace the NaN with 0
-#     df["is_salt"] = df["is_salt"].fillna(0).astype(int)
-
-#     # Save dataset stats
-#     list_stat = []
-
-#     # Save a dataframe to record train/test/val split for
-#     # binary, ternary and all-classes classification
-#     for dataset in ["saltfit", "photometry"]:
-#         for nb_classes in list([2, len(sntypes.keys())]):
-#             logging_utils.print_green(
-#                 f"Computing {dataset} splits for {nb_classes}-way classification"
-#             )
-#             # Randomly sample SNIDs such that all class have the same number of occurences
-#             if dataset == "saltfit":
-#                 g = df[df.is_salt == 1].groupby(f"target_{nb_classes}classes")
-#             else:
-#                 g = df.groupby(f"target_{nb_classes}classes")
-
-#             # Line below: we have grouped df by target, we find out which of those
-#             # group has the smallest size with g.size().min(), then we sample randomly
-#             # from this group and reset the index. We then sample with frac=1 to shuffle
-#             # the whole dataset. Otherwise, the classes are sorted and the train/test/val
-#             # splits are incorrect.
-#             if settings.data_testing:
-#                 # when just classifying data balancing is not necessary
-#                 g = g.apply(lambda x: x).reset_index(drop=True).sample(frac=1)
-#             else:
-#                 g = (
-#                     g.apply(lambda x: x.sample(g.size().min()))
-#                     .reset_index(drop=True)
-#                     .sample(frac=1)
-#                 )
-
-#             all_SNIDs = df.SNID.values
-#             sampled_SNIDs = g["SNID"].values
-#             n_samples = len(sampled_SNIDs)
-
-#             # Now create train/test/validation indices
-#             if settings.data_training:
-#                 SNID_train = sampled_SNIDs[: int(0.99 * n_samples)]
-#                 SNID_val = sampled_SNIDs[int(0.99 * n_samples) : int(0.995 * n_samples)]
-#                 SNID_test = sampled_SNIDs[int(0.995 * n_samples) :]
-#             elif settings.data_testing:
-#                 SNID_test = sampled_SNIDs[:]
-#                 # the train and val sets wont be used in this case
-#                 SNID_train = sampled_SNIDs[0]
-#                 SNID_val = sampled_SNIDs[0]
-#             else:
-#                 SNID_train = sampled_SNIDs[: int(0.8 * n_samples)]
-#                 SNID_val = sampled_SNIDs[int(0.8 * n_samples) : int(0.9 * n_samples)]
-#                 SNID_test = sampled_SNIDs[int(0.9 * n_samples) :]
-
-#             # Find the indices of our train test val splits
-#             idxs_train = np.where(np.in1d(all_SNIDs, SNID_train))[0]
-#             idxs_val = np.where(np.in1d(all_SNIDs, SNID_val))[0]
-#             idxs_test = np.where(np.in1d(all_SNIDs, SNID_test))[0]
-
-#             # Create a new column that will state to which data split
-#             # a given SNID will be assigned
-#             # train: 0, val: 1, test:2 others: -1
-#             arr_dataset = -np.ones(len(df)).astype(int)
-#             arr_dataset[idxs_train] = 0
-#             arr_dataset[idxs_val] = 1
-#             arr_dataset[idxs_test] = 2
-
-#             df[f"dataset_{dataset}_{nb_classes}classes"] = arr_dataset
-
-#             # Display classes balancing in the dataset, for each split
-#             logging_utils.print_bright("Dataset composition")
-#             for split_name, idxs in zip(
-#                 ["Training", "Validation", "Test"], [idxs_train, idxs_val, idxs_test]
-#             ):
-#                 # We count the number of occurence in each class and each split with
-#                 # pandas.value_counts
-#                 d_occurences = (
-#                     df[f"target_{nb_classes}classes"]
-#                     .iloc[idxs]
-#                     .value_counts()
-#                     .sort_values()
-#                     .to_dict()
-#                 )
-#                 d_occurences_SNTYPE = (
-#                     df["SNTYPE"].iloc[idxs].value_counts().sort_values().to_dict()
-#                 )
-#                 total_samples = sum(d_occurences.values())
-#                 total_samples_str = logging_utils.str_to_yellowstr(total_samples)
-
-#                 str_ = f"# samples {total_samples_str} "
-#                 for c_, n_samples in d_occurences.items():
-#                     class_str = logging_utils.str_to_yellowstr(c_)
-#                     class_fraction = f"{100 *(n_samples/total_samples):.2g}%"
-#                     class_fraction_str = logging_utils.str_to_yellowstr(class_fraction)
-#                     str_ += f"Class {class_str}: {class_fraction_str} samples "
-
-#                 list_stat.append(
-#                     [
-#                         dataset,
-#                         nb_classes,
-#                         split_name,
-#                         total_samples,
-#                         d_occurences,
-#                         d_occurences_SNTYPE,
-#                     ]
-#                 )
-
-#                 logging_utils.print_green(f"{split_name} set", str_)
-#     # Save to pickle
-#     df.to_pickle(f"{processed_dir}/SNID.pickle")
-
-#     logging_utils.print_green("Done")
-
-
 def process_phot_file(file_path, preprocessed_dir, list_filters):
     """
-    Carry out preprocessing on FITS file and save results to pickle.
-    Pickle is preferred to csv as it is faster to read and write.
-
-    - Join column from header files
-    - Select columns that will be useful laer on
-    - Compute SNID to tag each light curve
-    - Compute delta times between measures
-    - Filter preprocessing
-    - Removal of delimiter rows
-
-    Args:
-        file_path (str): path to ``.FITS`` file
-        settings (ExperimentSettings): controls experiment hyperparameters
-
     """
 
     # Load the PHOT and HEAD files
@@ -231,34 +50,6 @@ def process_phot_file(file_path, preprocessed_dir, list_filters):
     df_header = df_header[keep_col_header].copy()
     df_header["SNID"] = df_header["SNID"].astype(np.int64)
 
-    # TODO
-    # #############################################
-    # # Photometry window init
-    # #############################################
-    # if settings.photo_window_files:
-    #     if Path(settings.photo_window_files[0]).exists():
-    #         # load fits file
-    #         df_peak = pd.read_csv(
-    #             settings.photo_window_files[0],
-    #             comment="#",
-    #             delimiter=" ",
-    #             skipinitialspace=True,
-    #         )
-    #         df_peak["SNID"] = df_peak["CID"].astype(int)
-    #         try:
-    #             df_peak = df_peak[["SNID", settings.photo_window_var]]
-    #         except Exception:
-    #             logging_utils.print_red("Provide a correct photo_window variable")
-    #             raise Exception
-    #         # merge with header
-    #         df_header = pd.merge(df_header, df_peak, on="SNID")
-    #     else:
-    #         logging_utils.print_red("Provide a valid photo_window_file")
-
-    #############################################
-    # Compute SNID for df and join with df_header
-    #############################################
-
     # New light curves are identified by MJD == -777.0
     # Last line may be a line with MJD = -777.
     # Remove it so that it does not interfere with arr_ID below
@@ -280,21 +71,6 @@ def process_phot_file(file_path, preprocessed_dir, list_filters):
     # join df and header
     df = df.join(df_header).reset_index()
 
-    # TODO
-    # #############################################
-    # # Photometry window selection
-    # #############################################
-    # if settings.photo_window_files:
-    #     df["window_time_cut"] = True
-    #     mask = df["MJD"] != -777.00
-    #     df["window_delta_time"] = df["MJD"] - df[settings.photo_window_var]
-    #     df.loc[mask, "window_time_cut"] = df["window_delta_time"].apply(
-    #         lambda x: True
-    #         if (x > 0 and x < settings.photo_window_max)
-    #         else (True if (x <= 0 and x > settings.photo_window_min) else False)
-    #     )
-    #     df = df[df["window_time_cut"] == True]
-
     #############################################
     # Miscellaneous data processing
     #############################################
@@ -312,8 +88,6 @@ def process_phot_file(file_path, preprocessed_dir, list_filters):
     # Remove rows post large delta time in the same light curve(delta_time > 150)
     # df = data_utils.remove_data_post_large_delta_time(df)
 
-    # TODO photometry / saltfit /nb classes
-
     # Save for future use
     basename = os.path.basename(file_path)
     df.to_pickle(f"{preprocessed_dir}/{basename.replace('.FITS', '.pickle')}")
@@ -325,15 +99,7 @@ def process_phot_file(file_path, preprocessed_dir, list_filters):
 
 
 def preprocess_data(config):
-    """Preprocess the FITS data
-
-    - Use multiprocessing/threading to speed up data processing
-    - Preprocess every FIT file in the raw data dir
-    - Also save a DataFrame of Host Spe for publication plots
-
-    Args:
-        config (dict): experiment hyperparameters
-
+    """
     """
 
     raw_dir = config["raw_dir"]
@@ -369,17 +135,6 @@ def preprocess_data(config):
 
 def pivot_dataframe_single(filename, list_filters, fitopt_file, sntypes):
     """
-    Carry out pivot: we will group time-wise close observations on the same row
-    and each row in the dataframe will show a value for each of the flux and flux
-    error column
-
-    - All observations withing 8 hours of each other are assigned the same MJD
-    - Results are cached with pickle
-
-    Args:
-        filename (str): path to a ``.pickle`` file containing pre-processed data
-        settings (ExperimentSettings): controls experiment hyperparameters
-
     """
 
     df = pd.read_pickle(filename)
@@ -420,8 +175,6 @@ def pivot_dataframe_single(filename, list_filters, fitopt_file, sntypes):
     df = df.merge(df_PEAKMJDNORM, how="left", on="SNID")
     # drop columns that won"t be used onwards
     df = df.drop(["MJD", "delta_time"], 1)
-
-    # TODO class columns removed
 
     group_features_list = [
         "SNID",
@@ -491,13 +244,6 @@ def pivot_dataframe_single(filename, list_filters, fitopt_file, sntypes):
 
 def pivot_dataframe_batch(list_files, config):
     """
-    - Use multiprocessing/threading to speed up data processing
-    - Pivot every file in list_files and cache the result with pickle
-
-    Args:
-        list_files (list): list of ``.pickle`` files containing pre-processed data
-        settings (ExperimentSettings): controls experiment hyperparameters
-
     """
 
     fitopt_file = config["fitopt_file"]
@@ -531,16 +277,12 @@ def make_dataset(config_path):
 
     preprocessed_dir = config["preprocessed_dir"]
     processed_dir = config["processed_dir"]
-    hdf5_file = config["hdf5_file"]
+    hdf5_file = (Path(processed_dir) / "database.h5").as_posix()
 
     # Clean up data folders
     for folder in [preprocessed_dir, processed_dir]:
-        if config.get("overwrite", True):
-            shutil.rmtree(folder, ignore_errors=True)
+        shutil.rmtree(folder, ignore_errors=True)
         Path(folder).mkdir(exist_ok=True, parents=True)
-
-    # # split dataset in train test and validation
-    # build_data_splits(config)
 
     # Preprocess dataset
     preprocess_data(config)
@@ -551,8 +293,6 @@ def make_dataset(config_path):
 
     # Aggregate the pivoted dataframe
     list_files = natsorted(map(str, Path(f"{preprocessed_dir}").glob("*pivot.pickle*")))
-    logging_utils.print_green("Concatenating pivot")
-
     df = pd.concat([pd.read_pickle(f) for f in list_files], axis=0).reset_index(
         drop=True
     )

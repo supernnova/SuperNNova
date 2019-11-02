@@ -12,27 +12,8 @@ from collections import namedtuple, OrderedDict
 
 from . import logging_utils
 
-OFFSETS = [-2, -1, 0, 1, 2]
-OOD_TYPES = ["random", "reverse", "shuffle", "sin"]
-OFFSETS_STR = ["-2", "-1", "", "+1", "+2"]
-
 
 LogStandardized = namedtuple("LogStandardized", ["arr_min", "arr_mean", "arr_std"])
-
-
-# def load_pandas_from_fit(fit_file_path):
-#     """Load a FIT file and cast it to a PANDAS dataframe
-
-#     Args:
-#         fit_file_path (str): path to FIT file
-
-#     Returns:
-#         (pandas.DataFrame) load dataframe from FIT file
-#     """
-#     dat = Table.read(fit_file_path, format="fits")
-#     df = dat.to_pandas()
-
-#     return df
 
 
 def sntype_decoded(target, settings):
@@ -122,7 +103,7 @@ def tag_type(df, sntypes, type_column="TYPE"):
     return df
 
 
-def load_fitfile(fitopt_file, sntypes, verbose=True):
+def load_fitfile(fitopt_file, sntypes):
     """Load the FITOPT file as a pandas dataframe
 
     Pickle it for future use (it is faster to load as a pickled dataframe)
@@ -134,9 +115,6 @@ def load_fitfile(fitopt_file, sntypes, verbose=True):
     Returns:
         (pandas.DataFrame) dataframe with FITOPT data
     """
-    if verbose:
-        logging_utils.print_green("Loading FITRES file")
-
     df = pd.read_csv(
         fitopt_file, index_col=False, comment="#", delimiter=" ", skipinitialspace=True
     )
@@ -176,48 +154,6 @@ def process_header(file_path, sntypes, columns=None):
 
     if columns is not None:
         df = df[columns]
-
-    return df
-
-
-def add_redshift_features(settings, df):
-    """Add redshift features to pandas dataframe.
-
-    Args:
-        settings (ExperimentSettings): controls experiment hyperparameters
-        df (str): pandas DataFrame with FIT data
-
-    Returns:
-        (pandas.DataFrame) the dataframe, possibly with added redshift features
-    """
-
-    # check if we use host redshift as feature
-    host_features = [f for f in settings.randomforest_features if "HOST" in f]
-    use_redshift = len(host_features) > 0
-
-    if use_redshift > 0:
-        logging_utils.print_green("Adding redshift features...")
-
-        columns_to_read = ["SNID"] + host_features
-        # reading from batch pickles
-        list_files = natsorted(glob.glob(f"{settings.preprocessed_dir}/*_PHOT.pickle"))
-        # Check file with redshift features exist
-        error_msg = "Preprocessed_file not found. Call python run.py --data"
-        assert os.path.isfile(list_files[0]), error_msg
-
-        extra_info_df = pd.concat(
-            [pd.read_pickle(f)[columns_to_read] for f in list_files]
-        )
-
-        # In extra_info_df, there are many SNID duplicates as each row corresponds to a time step in a given curve
-        # We use groupby + first to only select the first row of each lightcurve
-        # Then we can merge knowing there won't be SNID duplicates in extra_info_df
-        extra_info_df = (
-            extra_info_df.groupby("SNID")[host_features].first().reset_index()
-        )
-
-        # Add redshift info to df
-        df = df.merge(extra_info_df, how="left", on="SNID")
 
     return df
 
@@ -284,30 +220,24 @@ def remove_data_post_large_delta_time(df):
     return df
 
 
-def load_HDF5_SNinfo(settings):
-    """Load physical information related to the created database of lightcurves
-
-    Args:
-        settings (ExperimentSettings): controls experiment hyperparameters
-
-    Returns:
-        (pandas.DataFrame) dataframe holding physics information about the dataset
+def load_HDF5_SNinfo(processed_dir):
+    """
     """
 
-    file_name = f"{settings.processed_dir}/database.h5"
+    file_name = f"{processed_dir}/database.h5"
 
-    dict_SNinfo = {}
     with h5py.File(file_name, "r") as hf:
 
-        columns_to_keep = ["SNID", "SNTYPE", "mB", "c", "x1"]
+        print("WARNING COL TO KEEP")
+        print("WARNING COL TO KEEP")
+        print("WARNING COL TO KEEP")
 
-        columns_to_keep += [c for c in hf.keys() if "SIM_" in c]
-        columns_to_keep += [c for c in hf.keys() if "dataset_" in c]
-        columns_to_keep += [c for c in hf.keys() if "PEAK" in c]
+        data = hf["metadata"][:]
+        columns = hf["metadata"].attrs["columns"]
 
-        for key in columns_to_keep:
-            dict_SNinfo[key] = hf[key][:]
-    df_SNinfo = pd.DataFrame(dict_SNinfo)
+        df_SNinfo = pd.DataFrame(data, columns=columns)
+        df_SNinfo["SNID"] = hf["SNID"][:]
+        df_SNinfo["SNTYPE"] = hf["SNTYPE"][:]
 
     return df_SNinfo
 
@@ -361,7 +291,7 @@ def save_to_HDF5(
     for flt in list_filters:
         # Check presence / absence of the filter at all time steps
         df[f"has_{flt}"] = df.FLT.str.contains(flt).astype(int)
-        for offset, suffix in zip(OFFSETS, OFFSETS_STR):
+        for offset, suffix in zip(offsets, offsets_str):
             new_column = f"PEAKMJD{suffix}_num_{flt}"
             df_flt = (
                 df[df["time"] < df["PEAKMJDNORM"] + offset][[f"has_{flt}", "SNID"]]
@@ -376,13 +306,7 @@ def save_to_HDF5(
 
     list_training_features = [f"FLUXCAL_{f}" for f in list_filters]
     list_training_features += [f"FLUXCALERR_{f}" for f in list_filters]
-    list_training_features += [
-        "delta_time",
-        "HOSTGAL_PHOTOZ",
-        "HOSTGAL_PHOTOZ_ERR",
-        "HOSTGAL_SPECZ",
-        "HOSTGAL_SPECZ_ERR",
-    ]
+    list_training_features += ["delta_time"]
     list_features_to_normalize = [f for f in list_training_features if "FLUX" in f] + [
         "delta_time"
     ]
@@ -398,6 +322,7 @@ def save_to_HDF5(
         "SIM_PEAKMAG_i",
     ]
     list_metadata_features += [f for f in df.columns.values if "PEAKMJD" in f]
+    list_metadata_features += [f for f in df.columns.values if "HOSTGAL" in f]
     list_metadata_features = [k for k in list_metadata_features if k in df.keys()]
 
     # Get the list of lightcurve IDs

@@ -1,0 +1,33 @@
+seed: 42
+bootstrap: False
+min_samples_leaf: 3
+n_estimators: 50
+min_samples_split: 10
+criterion: entropy
+max_features: 5
+max_depth: 7
+fitopt_file: /home/SuperNNova/tests/fits/FITOPT000.FITRES
+processed_dir: /home/SuperNNova/tests/dump/processed
+dump_dir: /home/SuperNNova/tests/dump/randomforest
+model_name: rf_000
+
+features:
+  - x1
+  - x1ERR
+  - c
+  - cERR
+  - mB
+  - mBERR
+  - x0
+  - x0ERR
+  - FITCHI2
+  - m0obs_r
+  - m0obs_i
+  - m0obs_g
+  - m0obs_z
+  - em0obs_i
+  - em0obs_r
+  - em0obs_g
+  - em0obs_z
+  - HOSTGAL_PHOTOZ
+  - HOSTGAL_PHOTOZ_ERR

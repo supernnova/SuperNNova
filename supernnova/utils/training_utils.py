@@ -69,7 +69,7 @@ def unnormalize_arr(arr, settings):
     arr_to_unnorm = arr[:, settings.idx_features_to_normalize]
 
     arr_to_unnorm = arr_to_unnorm * arr_std + arr_mean
-    arr_unnormed = np.exp(arr_to_unnorm) + arr_min - 1E-5
+    arr_unnormed = np.exp(arr_to_unnorm) + arr_min - 1e-5
 
     arr[:, settings.idx_features_to_normalize] = arr_unnormed
 
@@ -118,13 +118,14 @@ def fill_data_list(
         # using clipping in case of min<model_min
         X_clip = X_all.copy()
         X_clip = np.clip(
-            X_clip[:, settings.idx_features_to_normalize], settings.arr_norm[:, 0], np.inf)
+            X_clip[:, settings.idx_features_to_normalize],
+            settings.arr_norm[:, 0],
+            np.inf,
+        )
         X_all[:, settings.idx_features_to_normalize] = X_clip
 
-        X_tmp = unnormalize_arr(normalize_arr(
-            X_all.copy(), settings), settings)
-        assert np.all(
-            np.all(np.isclose(np.ravel(X_all), np.ravel(X_tmp), atol=1e-1)))
+        X_tmp = unnormalize_arr(normalize_arr(X_all.copy(), settings), settings)
+        assert np.all(np.all(np.isclose(np.ravel(X_all), np.ravel(X_tmp), atol=1e-1)))
         # Normalize features that need to be normalized
         X_normed = X_all.copy()
         X_normed_tmp = normalize_arr(X_normed, settings)
@@ -178,8 +179,7 @@ def load_HDF5(settings, test=False):
             try:
                 idxs_test = np.where(hf[dataset_split_key][:] == 2)[0]
             except Exception:
-                idxs_test = np.where(
-                    hf['dataset_photometry_2classes'][:] != 100)[0]
+                idxs_test = np.where(hf["dataset_photometry_2classes"][:] != 100)[0]
         else:
             idxs_train = np.where(hf[dataset_split_key][:] == 0)[0]
             idxs_val = np.where(hf[dataset_split_key][:] == 1)[0]
@@ -190,8 +190,7 @@ def load_HDF5(settings, test=False):
             np.random.shuffle(idxs_val)
             np.random.shuffle(idxs_test)
 
-            idxs_train = idxs_train[: int(
-                settings.data_fraction * len(idxs_train))]
+            idxs_train = idxs_train[: int(settings.data_fraction * len(idxs_train))]
 
         n_features = hf["data"].attrs["n_features"]
 
@@ -205,7 +204,7 @@ def load_HDF5(settings, test=False):
             try:
                 arr_target = hf[target_key][:]
             except Exception:
-                arr_target = hf['target_2classes'][:]
+                arr_target = hf["target_2classes"][:]
         else:
             arr_target = hf[target_key][:]
         arr_SNID = hf["SNID"][:]
@@ -380,7 +379,8 @@ def get_data_batch(list_data, idxs, settings, max_lengths=None, OOD=None):
             X_tensor[: X.shape[0], i, :] = torch.FloatTensor(X)
         except Exception:
             X_tensor[: X.shape[0], i, :] = torch.FloatTensor(
-                torch.from_numpy(np.flip(X, axis=0).copy()))
+                torch.from_numpy(np.flip(X, axis=0).copy())
+            )
         list_target.append(target)
         lengths.append(list_len[idx])
 
@@ -480,8 +480,7 @@ def plot_loss(d_train, d_val, epoch, settings):
     for key in d_train.keys():
 
         plt.figure()
-        plt.plot(d_train["epoch"], d_train[key],
-                 label="Train %s" % key.title())
+        plt.plot(d_train["epoch"], d_train[key], label="Train %s" % key.title())
         plt.plot(d_val["epoch"], d_val[key], label="Val %s" % key.title())
         plt.legend(loc="best", fontsize=18)
         plt.xlabel("Step", fontsize=22)
@@ -639,7 +638,7 @@ def save_training_results(settings, d_monitor, training_time):
 #######################
 
 
-def save_randomforest_model(settings, clf):
+def save_randomforest_model(save_file, clf):
     """Save RandomForest model
 
     Args:
@@ -647,8 +646,7 @@ def save_randomforest_model(settings, clf):
         clf (RandomForestClassifier): RandomForest model
     """
 
-    filename = f"{settings.rf_dir}/{settings.randomforest_model_name}.pickle"
-    with open(filename, "wb") as f:
+    with open(save_file, "wb") as f:
         pickle.dump(clf, f)
     lu.print_green("Saved model")
 
@@ -694,8 +692,7 @@ def train_and_evaluate_randomforest_model(clf, X_train, y_train, X_val, y_val):
     # Compute AUC and precision
     fpr, tpr, thresholds = metrics.roc_curve(y_val, probas_[:, 1])
     roc_auc = metrics.auc(fpr, tpr)
-    pscore = metrics.precision_score(
-        y_val, clf.predict(X_val), average="binary")
+    pscore = metrics.precision_score(y_val, clf.predict(X_val), average="binary")
     lu.print_green("Validation AUC", roc_auc)
     lu.print_green("Validation precision score", pscore)
 
@@ -704,8 +701,7 @@ def train_and_evaluate_randomforest_model(clf, X_train, y_train, X_val, y_val):
         100 * (sum(clf.predict(X_train) == y_train)) / X_train.shape[0],
     )
     lu.print_green(
-        "Val data accuracy", 100 *
-        (sum(clf.predict(X_val) == y_val)) / X_val.shape[0]
+        "Val data accuracy", 100 * (sum(clf.predict(X_val) == y_val)) / X_val.shape[0]
     )
 
     return clf
