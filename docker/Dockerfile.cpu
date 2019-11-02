@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM ubuntu:18.04
 
 ####################################
 # Apt libraries
@@ -46,7 +46,7 @@ RUN curl -o ~/miniconda.sh -O  https://repo.continuum.io/miniconda/Miniconda3-la
      ~/miniconda.sh -b -p /home/miniconda3 && \
      rm ~/miniconda.sh &&\
     /home/miniconda3/bin/conda update -y conda &&\
-    /home/miniconda3/bin/conda install -y pytorch-cpu torchvision-cpu -c pytorch && \
+    /home/miniconda3/bin/conda install pytorch torchvision cpuonly -c pytorch && \
     /home/miniconda3/bin/conda config --add channels conda-forge  &&\
     /home/miniconda3/bin/conda install -y \
      h5py \
