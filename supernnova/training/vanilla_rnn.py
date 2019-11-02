@@ -2,7 +2,6 @@ import torch
 
 
 class VanillaRNN(torch.nn.Module):
-
     def __init__(self, input_size, settings):
         super(VanillaRNN, self).__init__()
 

@@ -30,7 +30,10 @@ def plot_lightcurves(df, SNIDs, settings):
         df_temp = df.loc[SNID]
 
         # Prepare plotting data in a dict
-        d = {flt: {"FLUXCAL": [], "FLUXCALERR": [], "MJD": []} for flt in settings.list_filters}
+        d = {
+            flt: {"FLUXCAL": [], "FLUXCALERR": [], "MJD": []}
+            for flt in settings.list_filters
+        }
 
         current_time = 0
         for idx in range(len(df_temp)):

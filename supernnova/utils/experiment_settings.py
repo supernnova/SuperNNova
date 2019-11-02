@@ -282,4 +282,3 @@ class ExperimentSettings:
                         list_norm.append([minv, meanv, stdv])
 
             self.arr_norm = np.array(list_norm)
-

@@ -130,7 +130,7 @@ def preprocess_data(config):
     logging_utils.print_green("Finished preprocessing")
 
 
-def pivot_dataframe_single(filename, list_filters, fitopt_file, sntypes):
+def pivot_dataframe_single(filename, list_filters, df_salt, sntypes):
     """
     """
 
@@ -219,19 +219,12 @@ def pivot_dataframe_single(filename, list_filters, fitopt_file, sntypes):
         if df[c].dtype == np.float64:
             df[c] = df[c].astype(np.float32)
 
-    # load FITOPT file on which we will base our splits
-    if fitopt_file is not None:
-        df_salt = data_utils.load_fitfile(fitopt_file, sntypes)
+    if df_salt is not None:
+        df_salt["salt"] = 1
+        df = df.merge(df_salt[["SNID", "mB", "c", "x1", "salt"]], on="SNID", how="left")
+        df["salt"] = df["salt"].fillna(0)
     else:
-        # if no fits file we populate with dummies
-        # logging_utils.print_yellow(f"Creating dummy mB,c,x1")
-        df_salt = pd.DataFrame()
-        df_salt["SNID"] = np.array(df.index.unique())
-        df_salt["mB"] = np.zeros(len(df.index.unique()))
-        df_salt["c"] = np.zeros(len(df.index.unique()))
-        df_salt["x1"] = np.zeros(len(df.index.unique()))
-
-    df = df.merge(df_salt[["SNID", "mB", "c", "x1"]], on="SNID", how="left")
+        df["salt"] = 0
 
     df.drop(columns="MJD", inplace=True)
     # Save to pickle
@@ -243,21 +236,26 @@ def pivot_dataframe_batch(list_files, config):
     """
     """
 
-    fitopt_file = config["fitopt_file"]
+    fitopt_file = config.get("fitopt_file", None)
     max_workers = max(1, multiprocessing.cpu_count() - 2)
 
     pool = multiprocessing.Pool(max_workers)
     n_files = len(list_files)
     chunk_size = min(len(list_files), 10)
 
+    # load FITOPT file on which we will base our splits
+    df_salt = (
+        data_utils.load_fitfile(fitopt_file, SNTYPES)
+        if fitopt_file is not None
+        else None
+    )
+
     process_fn = partial(
         pivot_dataframe_single,
         list_filters=LIST_FILTERS,
-        fitopt_file=fitopt_file,
+        df_salt=df_salt,
         sntypes=SNTYPES,
     )
-
-    process_fn(list_files[0])
 
     # Loop over chunks of files
     for idx in tqdm(range(0, n_files, chunk_size), desc="Preprocess", ncols=100):
@@ -300,20 +298,11 @@ def make_dataset(config_path):
     )
 
     # Save plots to visualize the distribution of some of the data features
-    # try:
     SNinfo_df = data_utils.load_HDF5_SNinfo(config["processed_dir"])
-    df_fitop = data_utils.load_fitfile(config["fitopt_file"], SNTYPES)
-    df_fitop["salt"] = True
-    SNinfo_df = SNinfo_df.merge(df_fitop[["SNID", "salt"]], how="left", on="SNID")
-    SNinfo_df["salt"].fillna(False)
-    # All lightcurves in df_fitop are salt
-    fig_dir = Path(config["fig_dir"])
-    fig_dir.mkdir(parents=True, exist_ok=True)
-    datasets_plots(SNinfo_df, SNTYPES, fig_dir)
-    # except Exception:
-    #     logging_utils.print_yellow(
-    #         "Warning: can't do data plots if no saltfit for this dataset"
-    #     )
+    if np.any(SNinfo_df.salt.values == 1):
+        fig_dir = Path(config["fig_dir"])
+        fig_dir.mkdir(parents=True, exist_ok=True)
+        datasets_plots(SNinfo_df, SNTYPES, fig_dir)
 
     # Clean preprocessed directory
     shutil.rmtree(preprocessed_dir)

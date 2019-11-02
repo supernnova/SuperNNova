@@ -1,18 +1,22 @@
-import torch.nn as nn
-import torch
-from . import logging_utils as lu
-from ..training import bayesian_rnn
-from ..training import variational_rnn
-from ..training import vanilla_rnn
 import os
 import h5py
 import json
 import pickle
 import numpy as np
+import pandas as pd
 from tqdm import tqdm
 from pathlib import Path
 from sklearn import metrics
 import matplotlib.pyplot as plt
+
+import torch
+import torch.nn as nn
+
+from . import logging_utils as lu
+from supernnova.training import bayesian_rnn
+from supernnova.training import variational_rnn
+from supernnova.training import vanilla_rnn
+
 
 plt.switch_backend("agg")
 
@@ -140,11 +144,11 @@ def fill_data_list(
     return list_data
 
 
-def load_HDF5(settings, test=False):
+def load_HDF5(config, sntypes, test=False):
     """Load data from HDF5
 
     Args:
-        settings (ExperimentSettings): controls experiment hyperparameters
+        config (ExperimentSettings): controls experiment hyperparameters
         test (bool): If True: load data for test. Default: ``False``
 
     Returns:
@@ -156,7 +160,8 @@ def load_HDF5(settings, test=False):
             - list_data_train (list): training data tuples
             - list_data_val (list): validation data tuples
     """
-    file_name = f"{settings.processed_dir}/database.h5"
+    processed_dir = config["processed_dir"]
+    file_name = f"{processed_dir}/database.h5"
     lu.print_green(f"Loading {file_name}")
 
     with h5py.File(file_name, "r") as hf:
@@ -164,50 +169,70 @@ def load_HDF5(settings, test=False):
         list_data_train = []
         list_data_val = []
 
-        config_name = f"{settings.source_data}_{settings.nb_classes}classes"
-
-        dataset_split_key = f"dataset_{config_name}"
-        target_key = f"target_{settings.nb_classes}classes"
-
-        if any([settings.train_plasticc, settings.predict_plasticc]):
-            target_key = "target"
-            dataset_split_key = "dataset"
-
-        if test:
-            # ridiculous failsafe in case we have different classes in dataset/model
-            # we will always have 2 classes
-            try:
-                idxs_test = np.where(hf[dataset_split_key][:] == 2)[0]
-            except Exception:
-                idxs_test = np.where(hf["dataset_photometry_2classes"][:] != 100)[0]
-        else:
-            idxs_train = np.where(hf[dataset_split_key][:] == 0)[0]
-            idxs_val = np.where(hf[dataset_split_key][:] == 1)[0]
-            idxs_test = np.where(hf[dataset_split_key][:] == 2)[0]
-
-            # Shuffle for good measure
-            np.random.shuffle(idxs_train)
-            np.random.shuffle(idxs_val)
-            np.random.shuffle(idxs_test)
-
-            idxs_train = idxs_train[: int(settings.data_fraction * len(idxs_train))]
-
-        n_features = hf["data"].attrs["n_features"]
-
-        training_features = " ".join(hf["features"][:][settings.idx_features])
-        lu.print_green("Features used", training_features)
-
+        # Load data
         arr_data = hf["data"][:]
-        if test:
-            # ridiculous failsafe in case we have different classes in dataset/model
-            # we will always have 2 classes
-            try:
-                arr_target = hf[target_key][:]
-            except Exception:
-                arr_target = hf["target_2classes"][:]
-        else:
-            arr_target = hf[target_key][:]
         arr_SNID = hf["SNID"][:]
+        arr_SNTYPE = hf["SNTYPE"][:]
+
+        # Load metadata
+        data = hf["metadata"][:]
+        columns = hf["metadata"].attrs["columns"]
+        df_meta = pd.DataFrame(data, columns=columns)
+        df_meta["SNID"] = arr_SNID
+        df_meta["SNTYPE"] = arr_SNTYPE
+
+        # Create target
+        class_map = {}
+        nb_classes = config["nb_classes"]
+        if nb_classes == 2:
+            for key, value in sntypes.items():
+                class_map[int(key)] = 0 if value == "Ia" else 1
+        else:
+            for i, key in enumerate(sntypes):
+                class_map[int(key)] = i
+        df_meta["target"] = df_meta["SNTYPE"].map(class_map)
+
+        arr_target = df_meta["target"].values
+
+        # Subsample with data fraction
+        n_samples = int(config.get("data_fraction", 1) * len(df_meta))
+        idxs = np.random.choice(len(df_meta), n_samples, replace=False)
+        df_meta = df_meta.iloc[idxs].reset_index(drop=True)
+
+        # Pandas magic to downample each class down to lowest cardinality class
+        df_meta = df_meta.groupby("target")
+        df_meta = (
+            df_meta.apply(lambda x: x.sample(df_meta.size().min()))
+            .reset_index(drop=True)
+            .sample(frac=1)
+        ).reset_index(drop=True)
+
+        n_samples = len(df_meta)
+
+        for t in range(nb_classes):
+            n = len(df_meta[df_meta.target == t])
+            print(
+                f"{n} ({100 * n / n_samples:.2f} %) class {t} samples after balancing"
+            )
+
+        # 80/10/10 Train/val/test split
+        n_train = int(0.8 * n)
+        n_val = int(0.9 * n)
+        SNID_train = df_meta["SNID"].values[:n_train]
+        SNID_val = df_meta["SNID"].values[n_train:n_val]
+        SNID_test = df_meta["SNID"].values[n_val:]
+
+        idxs_train = np.where(np.in1d(arr_SNID, SNID_train))[0]
+        idxs_val = np.where(np.in1d(arr_SNID, SNID_val))[0]
+        idxs_test = np.where(np.in1d(arr_SNID, SNID_test))[0]
+
+        # Shuffle for good measure
+        np.random.shuffle(idxs_train)
+        np.random.shuffle(idxs_val)
+        np.random.shuffle(idxs_test)
+
+        training_features = " ".join(config["features"])
+        lu.print_green("Features used", training_features)
 
         if test is True:
             return fill_data_list(

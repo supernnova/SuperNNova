@@ -320,6 +320,7 @@ def save_to_HDF5(
         "SIM_PEAKMAG_g",
         "SIM_PEAKMAG_r",
         "SIM_PEAKMAG_i",
+        "salt",
     ]
     list_metadata_features += [f for f in df.columns.values if "PEAKMJD" in f]
     list_metadata_features += [f for f in df.columns.values if "HOSTGAL" in f]

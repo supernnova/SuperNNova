@@ -12,7 +12,6 @@ import torch.nn.functional as F
 
 
 class BayesianRNN(nn.Module):
-
     def __init__(self, input_size, settings):
         super(BayesianRNN, self).__init__()
 
@@ -130,7 +129,6 @@ class BayesianRNN(nn.Module):
 
 
 class BayesRNNBase(nn.Module):
-
     def __init__(
         self,
         mode,
@@ -436,19 +434,16 @@ class BayesRNNBase(nn.Module):
 
 
 class BayesLSTM(BayesRNNBase):
-
     def __init__(self, *args, **kwargs):
         super(BayesLSTM, self).__init__("LSTM", *args, **kwargs)
 
 
 class BayesGRU(BayesRNNBase):
-
     def __init__(self, *args, **kwargs):
         super(BayesGRU, self).__init__("GRU", *args, **kwargs)
 
 
 class BayesLinear(nn.Module):
-
     def __init__(
         self, in_features, out_features, prior, mu_lower, mu_upper, rho_lower, rho_upper
     ):
@@ -504,7 +499,6 @@ class BayesLinear(nn.Module):
 
 
 class BayesBiasLinear(nn.Module):
-
     def __init__(
         self, in_features, out_features, prior, mu_lower, mu_upper, rho_lower, rho_upper
     ):
@@ -553,7 +547,6 @@ class BayesBiasLinear(nn.Module):
 
 
 class BayesEmbedding(nn.Module):
-
     def __init__(
         self,
         num_embeddings,
@@ -587,7 +580,7 @@ class BayesEmbedding(nn.Module):
 
         # Sample weight
         mean = self.mu
-        sigma = F.softplus(self.rho) + 1E-5
+        sigma = F.softplus(self.rho) + 1e-5
 
         if mean_field_inference:
             weights = mean
@@ -595,7 +588,7 @@ class BayesEmbedding(nn.Module):
             # This way of creating the epsilon variable is faster than
             # from numpy or torch.randn or FloatTensor.normal_ when mean is already
             # on the GPU
-            eps = mean.data.new(mean.size()).normal_(0., 1.)
+            eps = mean.data.new(mean.size()).normal_(0.0, 1.0)
             weights = mean + eps * sigma
 
         # Compute KL divergence
@@ -630,7 +623,6 @@ class BayesEmbedding(nn.Module):
 
 
 class Prior(object):
-
     def __init__(self, pi=0.25, log_sigma1=-1.0, log_sigma2=-7.0):
         self.pi_mixture = pi
         self.log_sigma1 = log_sigma1
