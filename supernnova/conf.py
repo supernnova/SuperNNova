@@ -13,8 +13,7 @@ def get_args():
 
     parser = argparse.ArgumentParser(description="SNIa classification")
 
-    parser.add_argument("--seed", type=int, default=0,
-                        help="Random seed to be used")
+    parser.add_argument("--seed", type=int, default=0, help="Random seed to be used")
 
     #######################
     # General parameters
@@ -22,8 +21,7 @@ def get_args():
     parser.add_argument(
         "--data", action="store_true", help="Create dataset for ML training"
     )
-    parser.add_argument("--train_rnn", action="store_true",
-                        help="Train RNN model")
+    parser.add_argument("--train_rnn", action="store_true", help="Train RNN model")
     parser.add_argument(
         "--train_rf", action="store_true", help="Train RandomForest model"
     )
@@ -45,8 +43,7 @@ def get_args():
         action="store_true",
         help="Plot a random selection of lightcurves",
     )
-    parser.add_argument("--speed", action="store_true",
-                        help="Get RNN speed benchmark")
+    parser.add_argument("--speed", action="store_true", help="Get RNN speed benchmark")
 
     parser.add_argument(
         "--monitor_interval",
@@ -84,38 +81,9 @@ def get_args():
     parser.add_argument(
         "--prediction_files", nargs="+", help="Path to prediction files"
     )
-    parser.add_argument("--metric_files", nargs="+",
-                        help="Path to metric files")
-    parser.add_argument("--done_file", default=None,
-                        type=str, help="Done or failure file name")
-
-    #######################
-    # PLASTICC parameters
-    #######################
+    parser.add_argument("--metric_files", nargs="+", help="Path to metric files")
     parser.add_argument(
-        "--viz_plasticc",
-        action="store_true",
-        help="Visualize data PLASTICC competition",
-    )
-    parser.add_argument(
-        "--train_plasticc",
-        action="store_true",
-        help="Train model for PLASTICC competition",
-    )
-    parser.add_argument(
-        "--predict_plasticc",
-        action="store_true",
-        help="Make predictions for PLASTICC competition",
-    )
-    parser.add_argument(
-        "--data_plasticc_train",
-        action="store_true",
-        help="Create dataset for PLASTICC competition",
-    )
-    parser.add_argument(
-        "--data_plasticc_test",
-        action="store_true",
-        help="Create dataset for PLASTICC competition",
+        "--done_file", default=None, type=str, help="Done or failure file name"
     )
 
     ########################
@@ -186,37 +154,45 @@ def get_args():
     parser.add_argument(
         "--photo_window_var",
         type=str,
-        default='PKMJDINI',
-        help="Variable representing PEAKMJD for photo window (in photo_window_files)"
+        default="PKMJDINI",
+        help="Variable representing PEAKMJD for photo window (in photo_window_files)",
     )
     parser.add_argument(
-        "--photo_window_min",
-        type=int,
-        default=-30,
-        help="Window size before peak"
+        "--photo_window_min", type=int, default=-30, help="Window size before peak"
     )
     parser.add_argument(
-        "--photo_window_max",
-        type=int,
-        default=100,
-        help="Window size after peak"
+        "--photo_window_max", type=int, default=100, help="Window size after peak"
     )
     # Survey configuration
     parser.add_argument(
         "--list_filters",
-        nargs='+',
+        nargs="+",
         default=natsorted(["g", "i", "r", "z"]),
-        help="Survey filters"
+        help="Survey filters",
     )
     parser.add_argument(
         "--list_filters_combination",
-        nargs='+',
-        default=natsorted(['g', 'r', 'i', 'z',
-                                 'gr', 'gi', 'gz',
-                                 'ir', 'iz',
-                                 'rz',
-                                 'gir', 'giz', 'grz', 'irz', 'girz']),
-        help="Possible combination of filters"
+        nargs="+",
+        default=natsorted(
+            [
+                "g",
+                "r",
+                "i",
+                "z",
+                "gr",
+                "gi",
+                "gz",
+                "ir",
+                "iz",
+                "rz",
+                "gir",
+                "giz",
+                "grz",
+                "irz",
+                "girz",
+            ]
+        ),
+        help="Possible combination of filters",
     )
 
     ######################
@@ -273,21 +249,32 @@ def get_args():
         "--nb_classes", default=2, type=int, help="Number of classification targets"
     )
     parser.add_argument(
-        "--sntypes", default=OrderedDict({"101": "Ia", "120": "IIP", "121": "IIn", "122": "IIL1", "123": "IIL2", "132": "Ib", "133": "Ic"}), type=json.loads, help="SN classes in sims (put Ia always first)"
+        "--sntypes",
+        default=OrderedDict(
+            {
+                "101": "Ia",
+                "120": "IIP",
+                "121": "IIn",
+                "122": "IIL1",
+                "123": "IIL2",
+                "132": "Ib",
+                "133": "Ic",
+            }
+        ),
+        type=json.loads,
+        help="SN classes in sims (put Ia always first)",
     )
     parser.add_argument(
         "--nb_epoch", default=90, type=int, help="Number of batches per epoch"
     )
-    parser.add_argument("--batch_size", default=128,
-                        type=int, help="Batch size")
+    parser.add_argument("--batch_size", default=128, type=int, help="Batch size")
     parser.add_argument(
         "--hidden_dim", default=32, type=int, help="Hidden layer dimension"
     )
     parser.add_argument(
         "--num_layers", default=2, type=int, help="Number of recurrent layers"
     )
-    parser.add_argument("--dropout", default=0.05,
-                        type=float, help="Dropout value")
+    parser.add_argument("--dropout", default=0.05, type=float, help="Dropout value")
     parser.add_argument(
         "--bidirectional",
         choices=[True, False],
@@ -343,8 +330,7 @@ def get_args():
         type=int,
         help="Minimum samples required to be a leaf node",
     )
-    parser.add_argument("--n_estimators", default=50,
-                        type=int, help="Number of trees")
+    parser.add_argument("--n_estimators", default=50, type=int, help="Number of trees")
     parser.add_argument(
         "--min_samples_split", default=10, type=int, help="Min samples to create split"
     )
@@ -354,8 +340,7 @@ def get_args():
     parser.add_argument(
         "--max_features", default=5, type=int, help="Max features per tree"
     )
-    parser.add_argument("--max_depth", default=7,
-                        type=int, help="Max tree depth")
+    parser.add_argument("--max_depth", default=7, type=int, help="Max tree depth")
 
     args = parser.parse_args()
 
@@ -435,14 +420,15 @@ def get_norm_from_model(model_file, settings):
 
     import json
     import numpy as np
+
     norm_file = Path(model_file).parent / "data_norm.json"
     with open(norm_file, "r") as f:
         norm_args = json.load(f)
         list_norm = []
         for f in settings.training_features_to_normalize:
-            minv = norm_args[f]['min']
-            meanv = norm_args[f]['mean']
-            stdv = norm_args[f]['std']
+            minv = norm_args[f]["min"]
+            meanv = norm_args[f]["mean"]
+            stdv = norm_args[f]["std"]
             list_norm.append([minv, meanv, stdv])
     settings.arr_norm = np.array(list_norm)
 

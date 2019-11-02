@@ -233,7 +233,7 @@ def save_normalizations(settings):
     dic_norm = {}
     for i, f in enumerate(settings.training_features_to_normalize):
         dic_norm[f] = {}
-        for j, w in enumerate(['min', 'mean', 'std']):
+        for j, w in enumerate(["min", "mean", "std"]):
             dic_norm[f][w] = float(settings.arr_norm[i, j])
 
     fname = f"{Path(settings.rnn_dir)}/data_norm.json"
@@ -255,15 +255,7 @@ def train(settings):
     list_data_train, list_data_val = tu.load_HDF5(settings, test=False)
     # Model specification
     rnn = tu.get_model(settings, len(settings.training_features))
-    if settings.__class__.__name__ == "PlasticcSettings":
-        criterion = nn.CrossEntropyLoss(
-            weight=torch.from_numpy(
-                np.array([1, 2, 1, 1, 1, 1, 1, 2, 1, 1,
-                          1, 1, 1, 1]).astype(np.float32)
-            )
-        )
-    else:
-        criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss()
     optimizer = tu.get_optimizer(settings, rnn)
 
     # Prepare for GPU if required
@@ -328,8 +320,7 @@ def train(settings):
                 settings, list_data_val, rnn, sample_size=None
             )
 
-            end_condition = plateau_accuracy.step(
-                d_losses_val["Acc"], optimizer)
+            end_condition = plateau_accuracy.step(d_losses_val["Acc"], optimizer)
             if end_condition is True:
                 break
 

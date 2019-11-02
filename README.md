@@ -66,7 +66,7 @@ The paper was produced using the branch "paper".
     make gpu  # gpu image (requires NVIDIA Drivers + nvidia-docker)
 
     # Launch docker container
-    python launch_docker.py (--use_gpu to run GPU based container)
+    docker run -it --rm -v /home/tmain/Lyrebird/SuperNNova:/home/SuperNNova rnn-cpu:latest
 
 
 For more detailed instructions, check the full [setup instructions](https://supernnova.readthedocs.io/en/latest/installation/python.html)

@@ -16,43 +16,23 @@ OFFSETS = [-2, -1, 0, 1, 2]
 OOD_TYPES = ["random", "reverse", "shuffle", "sin"]
 OFFSETS_STR = ["-2", "-1", "", "+1", "+2"]
 
-PLASTICC_FILTERS = natsorted(["u", "g", "r", "i", "z", "y"])
-DICT_PLASTICC_FILTERS = {0: "u", 1: "g", 2: "r", 3: "i", 4: "z", 5: "y"}
-DICT_PLASTICC_CLASS = OrderedDict(
-    {
-        6: 0,
-        15: 1,
-        16: 2,
-        42: 3,
-        52: 4,
-        53: 5,
-        62: 6,
-        64: 7,
-        65: 8,
-        67: 9,
-        88: 10,
-        90: 11,
-        92: 12,
-        95: 13,
-        99: 14,
-    }
-)
+
 LogStandardized = namedtuple("LogStandardized", ["arr_min", "arr_mean", "arr_std"])
 
 
-def load_pandas_from_fit(fit_file_path):
-    """Load a FIT file and cast it to a PANDAS dataframe
+# def load_pandas_from_fit(fit_file_path):
+#     """Load a FIT file and cast it to a PANDAS dataframe
 
-    Args:
-        fit_file_path (str): path to FIT file
+#     Args:
+#         fit_file_path (str): path to FIT file
 
-    Returns:
-        (pandas.DataFrame) load dataframe from FIT file
-    """
-    dat = Table.read(fit_file_path, format="fits")
-    df = dat.to_pandas()
+#     Returns:
+#         (pandas.DataFrame) load dataframe from FIT file
+#     """
+#     dat = Table.read(fit_file_path, format="fits")
+#     df = dat.to_pandas()
 
-    return df
+#     return df
 
 
 def sntype_decoded(target, settings):
@@ -91,7 +71,7 @@ def sntype_decoded(target, settings):
     return SNtype
 
 
-def tag_type(df, settings, type_column="TYPE"):
+def tag_type(df, sntypes, type_column="TYPE"):
     """Create classes based on a type columns
 
     Depending on the number of classes (2 or all), we create distinct
@@ -99,7 +79,6 @@ def tag_type(df, settings, type_column="TYPE"):
 
     Args:
         df (pandas.DataFrame): the input dataframe
-        settings (ExperimentSettings): controls experiment hyperparameters
         type_column (str): the type column in df
 
     Returns:
@@ -108,42 +87,42 @@ def tag_type(df, settings, type_column="TYPE"):
 
     # 2 classes
     # taking the first type vs. others
-    list_types = list(set([x for x in settings.sntypes.values()]))
+    list_types = list(set([x for x in sntypes.values()]))
     if "Ia" in list_types:
         df[type_column] = df[type_column].astype(str)
         # get keys of Ias, the rest tag them as CC
-        keys_ia = [key for (key, value) in settings.sntypes.items() if value == "Ia"]
+        keys_ia = [key for (key, value) in sntypes.items() if value == "Ia"]
         df["target_2classes"] = df[type_column].apply(
             lambda x: 0 if x in keys_ia else 1
         )
     else:
         arr_temp = df[type_column].values.copy()
-        df["target_2classes"] = (
-            arr_temp != int(list(settings.sntypes.keys())[0])
-        ).astype(np.uint8)
+        df["target_2classes"] = (arr_temp != int(list(sntypes.keys())[0])).astype(
+            np.uint8
+        )
 
     # All classes
     # check if all types are given in input dictionary
-    tmp = df[~df[type_column].isin(settings.sntypes.keys())][type_column]
+    tmp = df[~df[type_column].isin(sntypes.keys())][type_column]
     if len(tmp) > 0:
         logging_utils.print_red("Not all sntypes are given in input")
         logging_utils.print_red(f"missing: {tmp.unique()}")
-        logging_utils.print_red(f"tagging them as class {len(settings.sntypes)}")
+        logging_utils.print_red(f"tagging them as class {len(sntypes)}")
 
     classes_to_use = {}
-    for i, k in enumerate(settings.sntypes.keys()):
+    for i, k in enumerate(sntypes.keys()):
         classes_to_use[k] = i
     for kk in tmp.unique():
-        classes_to_use[kk] = len(settings.sntypes)
+        classes_to_use[kk] = len(sntypes)
 
-    df[f"target_{len(settings.sntypes)}classes"] = df[type_column].apply(
+    df[f"target_{len(sntypes)}classes"] = df[type_column].apply(
         lambda x: classes_to_use[x]
     )
 
     return df
 
 
-def load_fitfile(settings, verbose=True):
+def load_fitfile(fitopt_file, sntypes, verbose=True):
     """Load the FITOPT file as a pandas dataframe
 
     Pickle it for future use (it is faster to load as a pickled dataframe)
@@ -158,85 +137,46 @@ def load_fitfile(settings, verbose=True):
     if verbose:
         logging_utils.print_green("Loading FITRES file")
 
-    if Path(f"{settings.preprocessed_dir}/FITOPT000.FITRES.pickle").exists():
-        df = pd.read_pickle(f"{settings.preprocessed_dir}/FITOPT000.FITRES.pickle")
-        if verbose:
-            print(f"Loaded {settings.preprocessed_dir}/FITOPT000.FITRES.pickle")
+    df = pd.read_csv(
+        fitopt_file, index_col=False, comment="#", delimiter=" ", skipinitialspace=True
+    )
+    df = tag_type(df, sntypes)
 
-    elif (
-        Path(f"{settings.fits_dir}/FITOPT000.FITRES").exists()
-        or Path(f"{settings.fits_dir}/FITOPT000.FITRES.gz").exists()
-    ):
-        fit_name = (
-            f"{settings.fits_dir}/FITOPT000.FITRES"
-            if Path(f"{settings.fits_dir}/FITOPT000.FITRES").exists()
-            else f"{settings.fits_dir}/FITOPT000.FITRES.gz"
-        )
-        df = pd.read_csv(
-            fit_name, index_col=False, comment="#", delimiter=" ", skipinitialspace=True
-        )
-        df = tag_type(df, settings)
-
-        # Rename CID to SNID
-        # SNID is CID in FITOPT000.FITRES
-        df = df.rename(columns={"CID": "SNID"})
-
-        # Save to pickle for later use and fast reload
-        df.to_pickle(f"{settings.preprocessed_dir}/FITOPT000.FITRES.pickle")
-        if verbose:
-            print(f"Loaded {fit_name}")
-    else:
-        # returning empty df
-        df = pd.DataFrame()
-        if verbose:
-            logging_utils.print_yellow("Warning: No FITRES file to load")
+    # Rename CID to SNID
+    # SNID is CID in FITOPT000.FITRES
+    df = df.rename(columns={"CID": "SNID"})
 
     return df
 
 
-def process_header_FITS(file_path, settings, columns=None):
+def process_header(file_path, sntypes, columns=None):
     """Read the HEAD FIT file, add target columns and return
     in pandas DataFrame format
 
     Args:
         file_path (str): the  path to the header FIT file
-        settings (ExperimentSettings): controls experiment hyperparameters
         columns (lsit): list of columns to keep. Default: ``None``
 
     Returns:
         (pandas.DataFrame) the dataframe, with new target columns
     """
 
-    # Data
-    df = load_pandas_from_fit(file_path)
+    extension = os.path.splitext(str(file_path))[-1]
 
-    df = tag_type(df, settings, type_column="SNTYPE")
+    if "csv" in extension:
+        df = pd.read_csv(file_path)
+    elif "FITS" in extension:
+        dat = Table.read(file_path, format="fits")
+        df = dat.to_pandas()
+    else:
+        msg = f"Invalid file extension. Got {extension}, should be [FITS|csv]"
+        raise RuntimeError(msg)
 
-    if columns is not None:
-        df = df[columns]
-
-    return df
-
-
-def process_header_csv(file_path, settings, columns=None):
-    """Read the HEAD csv file, add target columns and return
-    in pandas DataFrame format
-
-    Args:
-        file_path (str): the  path to the header FIT file
-        settings (ExperimentSettings): controls experiment hyperparameters
-        columns (lsit): list of columns to keep. Default: ``None``
-
-    Returns:
-        (pandas.DataFrame) the dataframe, with new target columns
-    """
-
-    # Data
-    df = pd.read_csv(file_path)
-    df = tag_type(df, settings, type_column="SNTYPE")
+    df = tag_type(df, sntypes, type_column="SNTYPE")
 
     if columns is not None:
         df = df[columns]
+
     return df
 
 
@@ -393,7 +333,9 @@ def log_standardization(arr):
     return LogStandardized(arr_min=arr_min, arr_mean=arr_mean, arr_std=arr_std)
 
 
-def save_to_HDF5(settings, df):
+def save_to_HDF5(
+    df, hdf5_file, sntypes, list_filters, offsets, offsets_str, filter_dict
+):
     """Saved processed dataframe to HDF5
 
     Args:
@@ -401,9 +343,39 @@ def save_to_HDF5(settings, df):
         df (pandas.DataFrame): dataframe holding processed data
 
     """
-    # One hot encode filter information and Normalize features
-    list_training_features = [f"FLUXCAL_{f}" for f in settings.list_filters]
-    list_training_features += [f"FLUXCALERR_{f}" for f in settings.list_filters]
+
+    # Compute how many unique nights of data taking existed around PEAKMJD
+    df["time"] = df[["SNID", "delta_time"]].groupby("SNID").cumsum()
+    for offset, suffix in zip(offsets, offsets_str):
+        new_column = f"PEAKMJD{suffix}_unique_nights"
+        df_night = (
+            df[df["time"] < df["PEAKMJDNORM"] + offset][["PEAKMJDNORM", "SNID"]]
+            .groupby("SNID")
+            .count()
+            .rename(columns={f"PEAKMJDNORM": new_column})
+            .reset_index()
+        )
+        df = df.merge(df_night, how="left", on="SNID")
+
+    # Compute how many occurences of a specific filter around PEAKMJD
+    for flt in list_filters:
+        # Check presence / absence of the filter at all time steps
+        df[f"has_{flt}"] = df.FLT.str.contains(flt).astype(int)
+        for offset, suffix in zip(OFFSETS, OFFSETS_STR):
+            new_column = f"PEAKMJD{suffix}_num_{flt}"
+            df_flt = (
+                df[df["time"] < df["PEAKMJDNORM"] + offset][[f"has_{flt}", "SNID"]]
+                .groupby("SNID")
+                .sum()
+                .astype(int)
+                .rename(columns={f"has_{flt}": new_column})
+                .reset_index()
+            )
+            df = df.merge(df_flt, how="left", on="SNID")
+        df.drop(columns=f"has_{flt}", inplace=True)
+
+    list_training_features = [f"FLUXCAL_{f}" for f in list_filters]
+    list_training_features += [f"FLUXCALERR_{f}" for f in list_filters]
     list_training_features += [
         "delta_time",
         "HOSTGAL_PHOTOZ",
@@ -411,10 +383,11 @@ def save_to_HDF5(settings, df):
         "HOSTGAL_SPECZ",
         "HOSTGAL_SPECZ_ERR",
     ]
+    list_features_to_normalize = [f for f in list_training_features if "FLUX" in f] + [
+        "delta_time"
+    ]
 
-    list_misc_features = [
-        "PEAKMJD",
-        "SNTYPE",
+    list_metadata_features = [
         "mB",
         "c",
         "x1",
@@ -424,115 +397,40 @@ def save_to_HDF5(settings, df):
         "SIM_PEAKMAG_r",
         "SIM_PEAKMAG_i",
     ]
-    list_misc_features = [k for k in list_misc_features if k in df.keys()]
-
-    assert df.index.name == "SNID", "Must set SNID as index"
+    list_metadata_features += [f for f in df.columns.values if "PEAKMJD" in f]
+    list_metadata_features = [k for k in list_metadata_features if k in df.keys()]
 
     # Get the list of lightcurve IDs
-    ID = df.index.values
+    ID = df.SNID.values
     # Find out when ID changes => find start and end idx of each lightcurve
     idx_change = np.where(ID[1:] != ID[:-1])[0] + 1
     idx_change = np.hstack(([0], idx_change, [len(df)]))
     list_start_end = [(s, e) for s, e in zip(idx_change[:-1], idx_change[1:])]
     # N.B. We could use df.loc[SNID], more elegant but much slower
 
-    # Filter list start end so we get only light curves with at least 3 points
-    # except when creating testing data (we want to classify all lcs even w. 1-2 epochs)
-    if not settings.data_testing:
-        list_start_end = list(filter(lambda x: x[1] - x[0] >= 3, list_start_end))
-
     # Shuffle
     np.random.shuffle(list_start_end)
 
+    # Drop features we no longer need
+    df.drop(columns=["time", "SNID"], inplace=True)
+
     # Save hdf5 file
-    with h5py.File(settings.hdf5_file_name, "w") as hf:
+    with h5py.File(hdf5_file, "w") as hf:
 
         n_samples = len(list_start_end)
-        list_classes = list(set([2, len(settings.sntypes.keys())]))
-        list_names = ["target", "dataset_photometry", "dataset_saltfit"]
 
-        # These arrays can be filled in one shot
+        # Fill non variable length arrays
         start_idxs = [i[0] for i in list_start_end]
-        shuffled_ID = ID[start_idxs]
+        arr_metadata = df[list_metadata_features].values[start_idxs].astype(np.float32)
+        hf.create_dataset("metadata", data=arr_metadata)
+        hf["metadata"].attrs["columns"] = list_metadata_features
+        hf.create_dataset("SNID", data=ID[start_idxs].astype(np.int64))
         hf.create_dataset(
-            "SNID", data=shuffled_ID.astype(np.int32), dtype=np.dtype("int32")
-        )
-        df_SNID = pd.DataFrame(shuffled_ID, columns=["SNID"])
-        logging_utils.print_green("Saving misc features")
-        for feat in list_misc_features:
-            if feat == "SNTYPE":
-                dtype = np.dtype("int32")
-            else:
-                dtype = np.dtype("float32")
-            hf.create_dataset(feat, data=df[feat].values[start_idxs], dtype=dtype)
-            df.drop(columns=feat, inplace=True)
-
-        logging_utils.print_green("Saving class")
-        for c_ in list_classes:
-            for name in list_names:
-                field_name = f"{name}_{c_}classes"
-                hf.create_dataset(
-                    field_name,
-                    data=df[field_name].values[start_idxs],
-                    dtype=np.dtype("int8"),
-                )
-                df.drop(columns=field_name, inplace=True)
-
-        df["time"] = df[["delta_time"]].groupby(df.index).cumsum()
-        df = df.reset_index()
-
-        logging_utils.print_green("Saving unique nights")
-        # Compute how many unique nights of data taking existed around PEAKMJD
-        for offset, suffix in zip(OFFSETS, OFFSETS_STR):
-            new_column = f"PEAKMJD{suffix}_unique_nights"
-            df_nights = (
-                df[df["time"] < df["PEAKMJDNORM"] + offset][["PEAKMJDNORM", "SNID"]]
-                .groupby("SNID")
-                .count()
-                .astype(np.uint8)
-                .rename(columns={f"PEAKMJDNORM": new_column})
-                .reset_index()
-            )
-
-            hf.create_dataset(
-                new_column,
-                data=df_SNID.merge(df_nights, on="SNID", how="left")[new_column].values,
-                dtype=np.dtype("uint8"),
-            )
-
-        logging_utils.print_green("Saving filter occurences")
-        # Compute how many occurences of a specific filter around PEAKMJD
-        for flt in settings.list_filters:
-            # Check presence / absence of the filter at all time steps
-            df[f"has_{flt}"] = df.FLT.str.contains(flt).astype(np.uint8)
-            for offset, suffix in zip(OFFSETS, OFFSETS_STR):
-                new_column = f"PEAKMJD{suffix}_num_{flt}"
-                df_flt = (
-                    df[df["time"] < df["PEAKMJDNORM"] + offset][[f"has_{flt}", "SNID"]]
-                    .groupby("SNID")
-                    .sum()
-                    .astype(np.uint8)
-                    .rename(columns={f"has_{flt}": new_column})
-                    .reset_index()
-                )
-                hf.create_dataset(
-                    new_column,
-                    data=df_SNID.merge(df_flt, on="SNID", how="left")[
-                        new_column
-                    ].values,
-                    dtype=np.dtype("uint8"),
-                )
-
-            df.drop(columns=f"has_{flt}", inplace=True)
-
-        # FInally save PEAKMJDNORM
-        hf.create_dataset(
-            "PEAKMJDNORM",
-            data=df["PEAKMJDNORM"].values[start_idxs],
-            dtype=np.dtype("float32"),
+            "SNTYPE", data=df["SNTYPE"].values[start_idxs].astype(np.int64)
         )
 
-        df.drop(columns=["time", "SNID", "PEAKMJDNORM"], inplace=True)
+        df = df.drop(columns=list_metadata_features)
+        df = df.drop(columns=["SNTYPE"])
 
         ########################
         # Normalize per feature
@@ -541,7 +439,7 @@ def save_to_HDF5(settings, df):
         gnorm = hf.create_group("normalizations")
 
         # using normalization per feature
-        for feat in settings.training_features_to_normalize:
+        for feat in list_features_to_normalize:
             # Log transform plus mean subtraction and standard dev subtraction
             log_standardized = log_standardization(df[feat].values)
             # Store normalization parameters
@@ -558,7 +456,7 @@ def save_to_HDF5(settings, df):
         ################
         # FLUX features
         #################
-        flux_features = [f"FLUXCAL_{f}" for f in settings.list_filters]
+        flux_features = [f"FLUXCAL_{f}" for f in list_filters]
         flux_log_standardized = log_standardization(df[flux_features].values)
         # Store normalization parameters
         gnorm.create_dataset(f"FLUXCAL/min", data=flux_log_standardized.arr_min)
@@ -568,7 +466,7 @@ def save_to_HDF5(settings, df):
         ###################
         # FLUXERR features
         ###################
-        fluxerr_features = [f"FLUXCALERR_{f}" for f in settings.list_filters]
+        fluxerr_features = [f"FLUXCALERR_{f}" for f in list_filters]
         fluxerr_log_standardized = log_standardization(df[fluxerr_features].values)
         # Store normalization parameters
         gnorm.create_dataset(f"FLUXCALERR/min", data=fluxerr_log_standardized.arr_min)
@@ -587,31 +485,15 @@ def save_to_HDF5(settings, df):
 
         hf.create_dataset("data", (n_samples,), dtype=data_type)
 
-        # Fit a one hot encoder for FLT
-        logging_utils.print_green("Fit onehot on FLT")
-        assert sorted(df.columns.values.tolist()) == sorted(
-            list_training_features + ["FLT"]
-        )
-        # to have the same onehot for all datasets
-        tmp = pd.Series(settings.list_filters_combination).append(df["FLT"])
-        tmp_onehot = pd.get_dummies(tmp)
-        # this is ok since it goes by length not by index (which I never reset)
-        FLT_onehot = tmp_onehot[len(settings.list_filters_combination) :]
-        df = pd.concat([df[list_training_features], FLT_onehot], axis=1)
-        # store feature names
-        list_training_features = df.columns.values.tolist()
-        hf.create_dataset(
-            "features",
-            (len(list_training_features),),
-            dtype=h5py.special_dtype(vlen=str),
-        )
-        hf["features"][:] = list_training_features
-        logging_utils.print_green("Saved features:", ",".join(list_training_features))
+        df["FLT"] = df["FLT"].map(filter_dict).astype(np.float32)
+
+        list_training_features += ["FLT"]
+        hf["data"].attrs["columns"] = list_training_features
+        hf["data"].attrs["n_features"] = len(list_training_features)
 
         # Save training features to hdf5
         logging_utils.print_green("Save data features to HDF5")
         arr_feat = df[list_training_features].values
-        hf["data"].attrs["n_features"] = len(list_training_features)
         for idx, idx_pair in enumerate(
             tqdm(list_start_end, desc="Filling hdf5", ncols=100)
         ):
