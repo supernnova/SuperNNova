@@ -255,12 +255,12 @@ def log_standardization(arr):
         (LogStandardized) namedtuple holding normalization data
     """
 
-    arr_min = np.min(arr)
-    arr_log = np.log(-arr_min + arr + 1e-5)
+    arr_min = -100
+    arr_log = np.log(-arr_min + np.clip(arr, a_min=arr_min, a_max=np.inf) + 1e-5)
     arr_mean = arr_log.mean()
     arr_std = arr_log.std()
 
-    return LogStandardized(arr_min=arr_min, arr_mean=arr_mean, arr_std=arr_std)
+    return [arr_min, arr_mean, arr_std]
 
 
 def save_to_HDF5(
@@ -345,7 +345,7 @@ def save_to_HDF5(
 
         n_samples = len(list_start_end)
 
-        # Fill non variable length arrays
+        # Fill metadata
         start_idxs = [i[0] for i in list_start_end]
         arr_metadata = df[list_metadata_features].values[start_idxs].astype(np.float32)
         hf.create_dataset("metadata", data=arr_metadata)
@@ -358,58 +358,23 @@ def save_to_HDF5(
         df = df.drop(columns=list_metadata_features)
         df = df.drop(columns=["SNTYPE"])
 
-        ########################
-        # Normalize per feature
-        ########################
-        logging_utils.print_green("Compute normalizations")
-        gnorm = hf.create_group("normalizations")
-
-        # using normalization per feature
-        for feat in list_features_to_normalize:
-            # Log transform plus mean subtraction and standard dev subtraction
-            log_standardized = log_standardization(df[feat].values)
-            # Store normalization parameters
-            gnorm.create_dataset(f"{feat}/min", data=log_standardized.arr_min)
-            gnorm.create_dataset(f"{feat}/mean", data=log_standardized.arr_mean)
-            gnorm.create_dataset(f"{feat}/std", data=log_standardized.arr_std)
-
-        #####################################
-        # Normalize flux and fluxerr globally
-        #####################################
-        logging_utils.print_green("Compute global normalizations")
-        gnorm = hf.create_group("normalizations_global")
-
-        ################
-        # FLUX features
-        #################
-        flux_features = [f"FLUXCAL_{f}" for f in list_filters]
-        flux_log_standardized = log_standardization(df[flux_features].values)
-        # Store normalization parameters
-        gnorm.create_dataset(f"FLUXCAL/min", data=flux_log_standardized.arr_min)
-        gnorm.create_dataset(f"FLUXCAL/mean", data=flux_log_standardized.arr_mean)
-        gnorm.create_dataset(f"FLUXCAL/std", data=flux_log_standardized.arr_std)
-
-        ###################
-        # FLUXERR features
-        ###################
-        fluxerr_features = [f"FLUXCALERR_{f}" for f in list_filters]
-        fluxerr_log_standardized = log_standardization(df[fluxerr_features].values)
-        # Store normalization parameters
-        gnorm.create_dataset(f"FLUXCALERR/min", data=fluxerr_log_standardized.arr_min)
-        gnorm.create_dataset(f"FLUXCALERR/mean", data=fluxerr_log_standardized.arr_mean)
-        gnorm.create_dataset(f"FLUXCALERR/std", data=fluxerr_log_standardized.arr_std)
-
         ####################################
         # Save the rest of the data to hdf5
         ####################################
-
-        logging_utils.print_green("Save non-data features to HDF5")
-
-        # This type allows one to store flat arrays of variable
-        # length inside an HDF5 group
         data_type = h5py.special_dtype(vlen=np.dtype("float32"))
-
         hf.create_dataset("data", (n_samples,), dtype=data_type)
+
+        # Add normalizations
+        flux_features = [f"FLUXCAL_{f}" for f in list_filters]
+        fluxerr_features = [f"FLUXCALERR_{f}" for f in list_filters]
+
+        hf["data"].attrs["flux_norm"] = log_standardization(df[flux_features].values)
+        hf["data"].attrs["fluxerr_norm"] = log_standardization(
+            df[fluxerr_features].values
+        )
+        hf["data"].attrs["delta_time_norm"] = log_standardization(
+            df["delta_time"].values
+        )
 
         df["FLT"] = df["FLT"].map(filter_dict).astype(np.float32)
 

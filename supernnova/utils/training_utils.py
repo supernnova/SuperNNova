@@ -21,67 +21,23 @@ from supernnova.training import vanilla_rnn
 plt.switch_backend("agg")
 
 
-def normalize_arr(arr, settings):
-    """Normalize array before input to RNN
-
-    - Log transform
-    - Mean and std dev normalization
-
-    Args:
-        arr (np.array) array to normalize
-        settings (ExperimentSettings): controls experiment hyperparameters
-
-    Returns:
-        (np.array) the normalized array
+def log_norm(x, min_clip, mean, std, F=torch):
+    """
     """
 
-    if settings.norm == "none":
-        return arr
-
-    arr_min = settings.arr_norm[:, 0]
-    arr_mean = settings.arr_norm[:, 1]
-    arr_std = settings.arr_norm[:, 2]
-
-    arr_to_norm = arr[:, settings.idx_features_to_normalize]
-    # clipping
-    arr_to_norm = np.clip(arr_to_norm, arr_min, np.inf)
-
-    arr_normed = np.log(arr_to_norm - arr_min + 1e-5)
-    arr_normed = (arr_normed - arr_mean) / arr_std
-
-    arr[:, settings.idx_features_to_normalize] = arr_normed
-    return arr
+    x = (F.log(x - min_clip + 1e-5) - mean) / std
+    return x
 
 
-def unnormalize_arr(arr, settings):
-    """UnNormalize array
+def inverse_log_norm(x, min_clip, mean, std):
 
-    Args:
-        arr (np.array) array to normalize
-        settings (ExperimentSettings): controls experiment hyperparameters
+    x = F.exp(x * std + mean) + min_clip - 1e-5
 
-    Returns:
-        (np.array) the normalized array
-    """
-
-    if settings.norm == "none":
-        return arr
-
-    arr_min = settings.arr_norm[:, 0]
-    arr_mean = settings.arr_norm[:, 1]
-    arr_std = settings.arr_norm[:, 2]
-    arr_to_unnorm = arr[:, settings.idx_features_to_normalize]
-
-    arr_to_unnorm = arr_to_unnorm * arr_std + arr_mean
-    arr_unnormed = np.exp(arr_to_unnorm) + arr_min - 1e-5
-
-    arr[:, settings.idx_features_to_normalize] = arr_unnormed
-
-    return arr
+    return x
 
 
 def fill_data_list(
-    idxs, arr_data, arr_target, arr_SNID, settings, n_features, desc, test=False
+    idxs, arr_data, arr_meta, arr_target, arr_SNID, list_features, desc, test=False
 ):
     """Utility to create a list of data tuples used as inputs to RNN model
 
@@ -104,42 +60,43 @@ def fill_data_list(
 
     list_data = []
 
-    if desc == "":
-        iterator = idxs
-    else:
-        iterator = tqdm(idxs, desc=desc, ncols=100)
+    iterator = tqdm(idxs, desc=desc, ncols=100) if desc != "" else idxs
+    n_features = len(list_features)
+
+    flux_features_idxs = [
+        i for i in range(n_features) if "FLUXCAL_" in list_features[i]
+    ]
+    fluxerr_features_idxs = [
+        i for i in range(n_features) if "FLUXCALERR_" in list_features[i]
+    ]
+    time_idxs = list_features.index("delta_time")
+    flt_idxs = list_features.index("FLT")
 
     for i in iterator:
 
-        X_all = arr_data[i].reshape(-1, n_features)
+        X = arr_data[i].reshape(-1, n_features)
+
+        X_flux = X[:, flux_features_idxs]
+        X_fluxerr = X[:, fluxerr_features_idxs]
+        X_time = X[:, time_idxs]
+        X_flt = X[:, flt_idxs]
+
         target = int(arr_target[i])
-        lc = int(arr_SNID[i])
+        SNID = int(arr_SNID[i])
 
-        # Keep an unnormalized copy of the data (for test and display)
-        X_ori = X_all.copy()[:, settings.idx_features]
+        d = {
+            "X_flux": X_flux,
+            "X_fluxerr": X_fluxerr,
+            "X_time": X_time,
+            "X_flt": X_flt,
+            "X_target": target,
+            "SNID": SNID,
+        }
 
-        # check if normalization converges
-        # using clipping in case of min<model_min
-        X_clip = X_all.copy()
-        X_clip = np.clip(
-            X_clip[:, settings.idx_features_to_normalize],
-            settings.arr_norm[:, 0],
-            np.inf,
-        )
-        X_all[:, settings.idx_features_to_normalize] = X_clip
+        if arr_meta is not None:
+            d["X_meta"] = arr_meta[i]
 
-        X_tmp = unnormalize_arr(normalize_arr(X_all.copy(), settings), settings)
-        assert np.all(np.all(np.isclose(np.ravel(X_all), np.ravel(X_tmp), atol=1e-1)))
-        # Normalize features that need to be normalized
-        X_normed = X_all.copy()
-        X_normed_tmp = normalize_arr(X_normed, settings)
-        # Select features as specified by the settings
-        X_normed = X_normed_tmp[:, settings.idx_features]
-
-        if test is True:
-            list_data.append((X_normed, target, lc, X_all, X_ori))
-        else:
-            list_data.append((X_normed, target, lc))
+        list_data.append(d)
 
     return list_data
 
@@ -174,12 +131,18 @@ def load_HDF5(config, sntypes, test=False):
         arr_SNID = hf["SNID"][:]
         arr_SNTYPE = hf["SNTYPE"][:]
 
+        list_features = hf["data"].attrs["columns"].tolist()
+
         # Load metadata
-        data = hf["metadata"][:]
+        metadata_features = config.get("metadata_features", [])
+        arr_meta = hf["metadata"][:]
         columns = hf["metadata"].attrs["columns"]
-        df_meta = pd.DataFrame(data, columns=columns)
+        df_meta = pd.DataFrame(arr_meta, columns=columns)
         df_meta["SNID"] = arr_SNID
         df_meta["SNTYPE"] = arr_SNTYPE
+
+        # Prepare metadata features array
+        arr_meta = df_meta[metadata_features].values if metadata_features else None
 
         # Create target
         class_map = {}
@@ -231,17 +194,14 @@ def load_HDF5(config, sntypes, test=False):
         np.random.shuffle(idxs_val)
         np.random.shuffle(idxs_test)
 
-        training_features = " ".join(config["features"])
-        lu.print_green("Features used", training_features)
-
         if test is True:
             return fill_data_list(
                 idxs_test,
                 arr_data,
+                arr_meta,
                 arr_target,
                 arr_SNID,
-                settings,
-                n_features,
+                list_features,
                 "Loading Test Set",
                 test,
             )
@@ -250,71 +210,26 @@ def load_HDF5(config, sntypes, test=False):
             list_data_train = fill_data_list(
                 idxs_train,
                 arr_data,
+                arr_meta,
                 arr_target,
                 arr_SNID,
-                settings,
-                n_features,
+                list_features,
                 "Loading Training Set",
             )
             list_data_val = fill_data_list(
                 idxs_val,
                 arr_data,
+                arr_meta,
                 arr_target,
                 arr_SNID,
-                settings,
-                n_features,
+                list_features,
                 "Loading Validation Set",
             )
 
         return list_data_train, list_data_val
 
 
-def get_model(settings, input_size):
-    """Create RNN model
-
-    Args:
-        settings (ExperimentSettings): controls experiment hyperparameters
-        input_size (int): dimension of the input data
-
-    Returns:
-        (torch.nn Model) pytorch model
-    """
-
-    if settings.model == "vanilla":
-        rnn = vanilla_rnn.VanillaRNN
-    elif settings.model == "variational":
-        rnn = variational_rnn.VariationalRNN
-    elif settings.model == "bayesian":
-        rnn = bayesian_rnn.BayesianRNN
-
-    rnn = rnn(input_size, settings)
-
-    print(rnn)
-
-    return rnn
-
-
-def get_optimizer(settings, model):
-    """Create gradient descent optimizer
-
-    Args:
-        settings (ExperimentSettings): controls experiment hyperparameters
-        model (torch.nn Model): the pytorch model
-
-    Returns:
-        (torch.optim) the gradient descent optimizer
-    """
-
-    optimizer = torch.optim.Adam(
-        model.parameters(),
-        lr=settings.learning_rate,
-        weight_decay=settings.weight_decay,
-    )
-
-    return optimizer
-
-
-def get_data_batch(list_data, idxs, settings, max_lengths=None, OOD=None):
+def get_data_batch(list_data, idxs, device):
     """Create a batch in a deterministic way
 
     Args:
@@ -331,97 +246,54 @@ def get_data_batch(list_data, idxs, settings, max_lengths=None, OOD=None):
             - target_tensor (torch Tensor): the target
     """
 
-    list_len = []
-    list_batch = []
+    list_lengths = [list_data[i]["X_flux"].shape[0] for i in idxs]
+    B = len(idxs)
+    L = max(list_lengths)
+    Dflux = list_data[0]["X_flux"].shape[1]
+    Dfluxerr = list_data[0]["X_fluxerr"].shape[1]
 
-    for pos, i in enumerate(idxs):
-        X, target, *_ = list_data[i]
-        # X is (L, D)
-        if OOD is not None:
-            # Make a copy to be sure we do not alter the original data
-            X = X.copy()
-        if OOD == "reverse":
-            # For OOD test, reverse the sequence
-            X = np.ascontiguousarray(X[::-1])
-        elif OOD == "shuffle":
-            # For OOD test, shuffle X
-            p = np.random.permutation(X.shape[0])
-            X = X[p]
-        elif OOD == "sin":
-            # For OOD test, set sine values to fluxes
-            arr_flux = X[:, settings.idx_flux]
-            arr_fluxerr = X[:, settings.idx_fluxerr]
+    if "X_meta" in list_data[0]:
+        has_meta = True
+        Dmeta = list_data[0]["X_meta"].shape[0]
 
-            X_unnorm = unnormalize_arr(X.copy(), settings)
-            arr_delta_time = X_unnorm[:, settings.idx_delta_time]
-            arr_MJD = np.cumsum(arr_delta_time, axis=0)
+    X_flux = np.zeros((B, L, Dflux), dtype=np.float32)
+    X_fluxerr = np.zeros((B, L, Dfluxerr), dtype=np.float32)
+    X_time = np.zeros((B, L, 1), dtype=np.float32)
+    X_meta = np.zeros((B, Dmeta), dtype=np.float32) if has_meta else None
+    X_flt = np.zeros((B, L), dtype=np.int64)
+    X_target = np.zeros((B,), dtype=np.int64)
 
-            # Sine oscillations with 30 day period
-            X[:, settings.idx_flux] = np.sin(arr_MJD * 2 * np.pi / 30) * np.max(
-                arr_flux, axis=0, keepdims=True
-            )
-            X[:, settings.idx_fluxerr] = np.random.uniform(
-                arr_fluxerr.min(), arr_fluxerr.max(), size=arr_fluxerr.shape
-            )
-        elif OOD == "random":
-            # For OOD test, set random fluxes and errors
-            arr_flux = X[:, settings.idx_flux]
-            arr_fluxerr = X[:, settings.idx_fluxerr]
+    arr_lengths = np.array(list_lengths).astype(np.int64)
 
-            X[:, settings.idx_flux] = np.random.uniform(
-                arr_flux.min(), arr_flux.max(), size=arr_flux.shape
-            )
-            X[:, settings.idx_fluxerr] = np.random.uniform(
-                arr_fluxerr.min(), arr_fluxerr.max(), size=arr_fluxerr.shape
-            )
+    for pos, idx in enumerate(idxs):
 
-        if max_lengths is not None:
-            assert settings.random_length is False
-            assert settings.random_redshift is False
-            X = X[: max_lengths[pos]]
-        if settings.random_length:
-            random_length = np.random.randint(1, X.shape[0] + 1)
-            X = X[:random_length]
-        if settings.redshift == "zspe" and settings.random_redshift:
-            if np.random.binomial(1, 0.5) == 0:
-                X[:, settings.idx_specz] = -1
-        input_dim = X.shape[1]
-        list_len.append(X.shape[0])
-        list_batch.append((X, target))
+        data = list_data[idx]
+        length = data["X_flux"].shape[0]
 
-    # Get indices to sort the batch by sequence size (needed to use packed sequences in pytorch)
-    # Sequences should be arranged in decreasing length
-    idx_sort = np.argsort(list_len)[::-1]
-    idxs_rev_sort = np.argsort(idx_sort)  # these indices revert the sort
-    max_len = list_len[idx_sort[0]]
-    X_tensor = torch.zeros((max_len, len(idxs), input_dim))
-    list_target = []
-    lengths = []
-    # Assign values for the tensor
-    for i, idx in enumerate(idx_sort):
-        X, target = list_batch[idx]
-        try:
-            X_tensor[: X.shape[0], i, :] = torch.FloatTensor(X)
-        except Exception:
-            X_tensor[: X.shape[0], i, :] = torch.FloatTensor(
-                torch.from_numpy(np.flip(X, axis=0).copy())
-            )
-        list_target.append(target)
-        lengths.append(list_len[idx])
+        X_flux[pos, :length, :] = data["X_flux"]
+        X_fluxerr[pos, :length, :] = data["X_fluxerr"]
+        X_time[pos, :length, 0] = data["X_time"]
+        X_flt[pos, :length] = data["X_flt"]
+        X_target[pos] = data["X_target"]
 
-    # Move data to GPU if required
-    if settings.use_cuda:
-        X_tensor = X_tensor.cuda()
-        target_tensor = torch.LongTensor(list_target).cuda()
+        if has_meta:
+            X_meta[pos] = data["X_meta"]
 
-    else:
-        X_tensor = X_tensor
-        target_tensor = torch.LongTensor(list_target)
+    X_mask = (arr_lengths.reshape(-1, 1) > np.arange(L).reshape(1, -1)).astype(np.bool)
 
-    # Create a packed sequence
-    packed_tensor = nn.utils.rnn.pack_padded_sequence(X_tensor, lengths)
+    out = {
+        "X_flux": torch.from_numpy(X_flux).to(device),
+        "X_fluxerr": torch.from_numpy(X_fluxerr).to(device),
+        "X_time": torch.from_numpy(X_time).to(device),
+        "X_flt": torch.from_numpy(X_flt).to(device),
+        "X_target": torch.from_numpy(X_target).to(device),
+        "X_mask": torch.from_numpy(X_mask).to(device),
+    }
 
-    return packed_tensor, X_tensor, target_tensor, idxs_rev_sort
+    if has_meta:
+        out["X_meta"] = torch.from_numpy(X_meta).to(device)
+
+    return out
 
 
 def train_step(

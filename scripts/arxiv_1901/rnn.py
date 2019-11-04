@@ -1,6 +1,8 @@
+import h5py
 import json
 import yaml
 import argparse
+import importlib
 import numpy as np
 from tqdm import tqdm
 from time import time
@@ -12,7 +14,14 @@ from supernnova.utils import logging_utils as lu
 import torch
 import torch.nn as nn
 
-from constants import SNTYPES, LIST_FILTERS, OFFSETS, OFFSETS_STR, FILTER_DICT
+from constants import (
+    SNTYPES,
+    LIST_FILTERS,
+    OFFSETS,
+    OFFSETS_STR,
+    FILTER_DICT,
+    LIST_FILTERS_COMBINATIONS,
+)
 
 
 # def get_lr(settings):
@@ -227,24 +236,28 @@ from constants import SNTYPES, LIST_FILTERS, OFFSETS, OFFSETS_STR, FILTER_DICT
 #     tu.save_training_results(settings, d_monitor_val, training_time)
 
 
-def save_normalizations(settings):
-    """Save normalization used for training
+def forward_pass(model, data):
 
-    Saves a json file with the normalization used for each feature
+    # Forward pass
 
-    Arguments:
-        settings (ExperimentSettings): controls experiment hyperparameters
-    """
+    X_flux = data["X_flux"]
+    X_fluxerr = data["X_fluxerr"]
+    X_flt = data["X_flt"]
+    X_time = data["X_time"]
+    X_mask = data["X_mask"]
+    X_meta = data.get("X_meta", None)
 
-    dic_norm = {}
-    for i, f in enumerate(settings.training_features_to_normalize):
-        dic_norm[f] = {}
-        for j, w in enumerate(["min", "mean", "std"]):
-            dic_norm[f][w] = float(settings.arr_norm[i, j])
+    X_target = data["X_target"]
 
-    fname = f"{Path(settings.rnn_dir)}/data_norm.json"
-    with open(fname, "w") as f:
-        json.dump(dic_norm, f, indent=4, sort_keys=True)
+    loss = model(X_flux, X_fluxerr, X_flt, X_time, X_mask, x_meta=X_meta)
+
+    import ipdb
+
+    ipdb.set_trace()
+
+    # TODO BBB
+
+    # Backward pass
 
 
 def train(config):
@@ -256,43 +269,64 @@ def train(config):
 
     # Data
     list_data_train, list_data_val = tu.load_HDF5(config, SNTYPES, test=False)
+
     # Model specification
-    rnn = tu.get_model(settings, len(settings.training_features))
-    criterion = nn.CrossEntropyLoss()
-    optimizer = tu.get_optimizer(settings, rnn)
-
-    # save training data config
-    save_normalizations(settings)
-
-    # Prepare for GPU if required
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    rnn.to(device)
-    criterion.to(device)
+    config["model"]["num_embeddings"] = len(LIST_FILTERS_COMBINATIONS)
+    Model = importlib.import_module(f"supernnova.modules.{config['module']}").Model
+    model = Model(**config["model"]).to(device)
 
-    # Keep track of losses for plotting
+    criterion = nn.CrossEntropyLoss(reduction=None)
+
+    optimizer = torch.optim.Adam(
+        model.parameters(), lr=config["learning_rate"], weight_decay=1e-6
+    )
+
+    if model.normalize:
+        # Load normalizations
+        processed_dir = config["processed_dir"]
+        file_name = f"{processed_dir}/database.h5"
+        with h5py.File(file_name, "r") as hf:
+            flux_norm = np.array(hf["data"].attrs["flux_norm"]).astype(np.float32)
+            fluxerr_norm = np.array(hf["data"].attrs["fluxerr_norm"]).astype(np.float32)
+            delta_time_norm = np.array(hf["data"].attrs["delta_time_norm"]).astype(
+                np.float32
+            )
+
+            flux_norm = torch.from_numpy(flux_norm).to(device)
+            fluxerr_norm = torch.from_numpy(fluxerr_norm).to(device)
+            delta_time_norm = torch.from_numpy(delta_time_norm).to(device)
+
+            model.flux_norm.data = flux_norm
+            model.fluxerr_norm.data = fluxerr_norm
+            model.delta_time_norm.data = delta_time_norm
+
+    # TODO monitoring
+    # # Keep track of losses for plotting
     loss_str = ""
-    d_monitor_train = {"loss": [], "AUC": [], "Acc": [], "epoch": []}
-    d_monitor_val = {"loss": [], "AUC": [], "Acc": [], "epoch": []}
-    if "bayesian" in settings.pytorch_model_name:
-        d_monitor_train["KL"] = []
-        d_monitor_val["KL"] = []
+    # d_monitor_train = {"loss": [], "AUC": [], "Acc": [], "epoch": []}
+    # d_monitor_val = {"loss": [], "AUC": [], "Acc": [], "epoch": []}
+    # if "bayesian" in settings.pytorch_model_name:
+    #     d_monitor_train["KL"] = []
+    #     d_monitor_val["KL"] = []
 
-    lu.print_green("Starting training")
+    # lu.print_green("Starting training")
 
-    plateau_accuracy = tu.StopOnPlateau(reduce_lr_on_plateau=True)
+    # plateau_accuracy = tu.StopOnPlateau(reduce_lr_on_plateau=True)
 
     best_loss = float("inf")
 
     training_start_time = time()
 
-    for epoch in tqdm(range(settings.nb_epoch), desc="Training", ncols=100):
+    for epoch in tqdm(range(config["nb_epoch"]), desc="Training", ncols=100):
 
         desc = f"Epoch: {epoch} -- {loss_str}"
 
         num_elem = len(list_data_train)
-        num_batches = num_elem // min(num_elem // 2, settings.batch_size)
+        num_batches = max(1, num_elem // config["batch_size"])
         list_batches = np.array_split(np.arange(num_elem), num_batches)
         np.random.shuffle(list_batches)
+
         for batch_idxs in tqdm(
             list_batches,
             desc=desc,
@@ -300,21 +334,17 @@ def train(config):
             bar_format="{desc} |{bar}| {n_fmt}/{total_fmt} {rate_fmt}{postfix}",
         ):
 
-            # Sample a batch in packed sequence form
-            packed, _, target_tensor, idxs_rev_sort = tu.get_data_batch(
-                list_data_train, batch_idxs, settings
-            )
+            # Sample a batch
+            data = tu.get_data_batch(list_data_train, batch_idxs, device)
+
+            model.train()
+            optimizer.zero_grad()
+
             # Train step : forward backward pass
-            tu.train_step(
-                settings,
-                rnn,
-                packed,
-                target_tensor,
-                criterion,
-                optimizer,
-                target_tensor.size(0),
-                len(list_batches),
-            )
+            forward_pass(model, data)
+
+            loss.backward()
+            optimizer.step()
 
         if (epoch + 1) % settings.monitor_interval == 0:
 
@@ -343,10 +373,7 @@ def train(config):
             tu.plot_loss(d_monitor_train, d_monitor_val, epoch, settings)
             if d_monitor_val["loss"][-1] < best_loss:
                 best_loss = d_monitor_val["loss"][-1]
-                torch.save(
-                    rnn.state_dict(),
-                    f"{settings.rnn_dir}/{settings.pytorch_model_name}.pt",
-                )
+                torch.save(rnn.state_dict(), f"{config['dump_dir']}/net.pt")
 
     lu.print_green("Finished training")
 
