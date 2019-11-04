@@ -20,6 +20,7 @@ from constants import (
     OFFSETS,
     OFFSETS_STR,
     FILTER_DICT,
+    INVERSE_FILTER_DICT,
     LIST_FILTERS_COMBINATIONS,
 )
 
@@ -238,14 +239,49 @@ from constants import (
 
 def forward_pass(model, data):
 
-    X_flux = data["X_flux"]
-    X_fluxerr = data["X_fluxerr"]
-    X_flt = data["X_flt"]
-    X_time = data["X_time"]
-    X_mask = data["X_mask"]
+    X_flux = data["X_flux"]  # .detach().cpu().numpy()
+    X_fluxerr = data["X_fluxerr"]  # .detach().cpu().numpy()
+    X_flt = data["X_flt"]  # .detach().cpu().numpy()
+    X_time = data["X_time"]  # .detach().cpu().numpy()
+    X_mask = data["X_mask"]  # .detach().cpu().numpy()
     X_meta = data.get("X_meta", None)
 
-    X_target = data["X_target"]
+    X_target = data["X_target"]  # .detach().cpu().numpy()
+
+    # import matplotlib.pylab as plt
+    # import matplotlib.gridspec as gridspec
+    # from matplotlib.pyplot import cm
+
+    # for i in range(X_flux.shape[0]):
+    #     fig = plt.figure(figsize=(10, 10))
+    #     gs = gridspec.GridSpec(1, 1)
+    #     ax = plt.subplot(gs[0])
+    #     time = X_time[i].cumsum()
+    #     length = X_mask[i].astype(int).sum()
+    #     for j, c in enumerate(LIST_FILTERS):
+    #         flux = [
+    #             X_flux[i, t, j]
+    #             for t in range(length)
+    #             if c in INVERSE_FILTER_DICT[X_flt[i, t]]
+    #         ]
+    #         fluxerr = [
+    #             X_fluxerr[i, t, j]
+    #             for t in range(length)
+    #             if c in INVERSE_FILTER_DICT[X_flt[i, t]]
+    #         ]
+    #         tmp = [
+    #             time[t] for t in range(length) if c in INVERSE_FILTER_DICT[X_flt[i, t]]
+    #         ]
+    #         ax.errorbar(tmp, flux, yerr=fluxerr, color=f"C{j}")
+
+    #     plt.title(f"Class {X_target[i]}")
+    #     plt.savefig(f"fig_{i}.png")
+    #     plt.clf()
+    #     plt.close("all")
+
+    # import ipdb
+
+    # ipdb.set_trace()
 
     X_pred = model(X_flux, X_fluxerr, X_flt, X_time, X_mask, x_meta=X_meta)
 
@@ -264,10 +300,15 @@ def get_predictions(model, list_data, list_batches, device):
         for batch_idxs in list_batches:
             data = tu.get_data_batch(list_data, batch_idxs, device)
             _, X_pred, X_target = forward_pass(model, data)
-            list_target.append(X_target.cpu().numpy())
-            list_pred.append(X_pred.cpu().numpy())
+            list_target.append(X_target)
+            list_pred.append(X_pred)
 
-    return np.concatenate(list_target), np.concatenate(list_pred)
+    X_pred = torch.cat(list_pred, dim=0)
+    X_target = torch.cat(list_target, dim=0)
+
+    X_pred = torch.nn.functional.softmax(X_pred, dim=-1)
+
+    return X_target, X_pred
 
 
 def train(config):
@@ -293,8 +334,6 @@ def train(config):
     config["model"]["num_embeddings"] = len(LIST_FILTERS_COMBINATIONS)
     Model = importlib.import_module(f"supernnova.modules.{config['module']}").Model
     model = Model(**config["model"]).to(device)
-
-    criterion = nn.CrossEntropyLoss(reduction=None)
 
     optimizer = torch.optim.Adam(
         model.parameters(), lr=config["learning_rate"], weight_decay=1e-6
@@ -331,7 +370,7 @@ def train(config):
     best_loss = float("inf")
     training_start_time = time()
 
-    for epoch in tqdm(range(config["nb_epoch"]), desc="Training", ncols=100):
+    for epoch in range(config["nb_epoch"]):
 
         desc = f"Epoch: {epoch} -- {loss_str}"
 
@@ -388,7 +427,7 @@ def train(config):
             loss_str = tu.get_loss_string(d_losses_train, d_losses_val)
 
             save_prefix = f"{config['dump_dir']}/loss"
-            tu.plot_loss(d_monitor_train, d_monitor_val, epoch, save_prefix)
+            tu.plot_loss(d_monitor_train, d_monitor_val, save_prefix)
             if d_monitor_val["loss"][-1] < best_loss:
                 best_loss = d_monitor_val["loss"][-1]
                 torch.save(model.state_dict(), f"{config['dump_dir']}/net.pt")
@@ -396,8 +435,6 @@ def train(config):
     lu.print_green("Finished training")
 
     training_time = time() - training_start_time
-
-    tu.save_training_results(settings, d_monitor_val, training_time)
 
 
 def main(config_path):

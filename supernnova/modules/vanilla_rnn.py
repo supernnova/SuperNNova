@@ -42,16 +42,15 @@ class Model(torch.nn.Module):
 
     def forward(self, x_flux, x_fluxerr, x_flt, x_time, x_mask, x_meta=None):
 
+        x_flux = x_flux.clamp(-100)
+        x_fluxerr = x_fluxerr.clamp(-100)
+
         if self.normalize:
             x_flux = log_norm(x_flux, *self.flux_norm)
             x_fluxerr = log_norm(x_fluxerr, *self.flux_norm)
             x_time = log_norm(x_time, *self.flux_norm)
 
         x_flt = self.embedding(x_flt)
-
-        import ipdb
-
-        ipdb.set_trace()
 
         x = torch.cat([x_flux, x_fluxerr, x_time, x_flt], dim=-1)
         # x is (B, L, D)
@@ -66,7 +65,7 @@ class Model(torch.nn.Module):
             x, lengths, batch_first=True, enforce_sorted=False
         )
         # Pass it to the RNN
-        hidden_packed, _ = self.rnn(x_packed)
+        hidden_packed, (x, _) = self.rnn(x_packed)
         # undo PackedSequence
         hidden, _ = pad_packed_sequence(hidden_packed, batch_first=True)
         # hidden is (B, L, D)

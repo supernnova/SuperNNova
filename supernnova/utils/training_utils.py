@@ -296,73 +296,7 @@ def get_data_batch(list_data, idxs, device):
     return out
 
 
-def train_step(
-    settings,
-    rnn,
-    packed_tensor,
-    target_tensor,
-    criterion,
-    optimizer,
-    batch_size,
-    num_batches,
-):
-    """Full training step : Forward and Backward pass
-
-    Args:
-        settings (ExperimentSettings): controls experiment hyperparameters
-        rnn (torch.nn Model): pytorch model to train
-        packed_tensor (torch PackedSequence): input tensor in packed form
-        target_tensor (torch Tensor): target tensor
-        criterion (torch loss function): loss function to optimize
-        optimizer (torch optim): the gradient descent optimizer
-        batch_size (int): batch size
-        num_batches (int): number of minibatches to scale KL cost in Bayesian
-    """
-
-    # Set NN to train mode (deals with dropout and batchnorm)
-    rnn.train()
-
-    # Zero out the gradients
-    optimizer.zero_grad()
-
-    # Forward pass
-    output = rnn(packed_tensor)
-    loss = criterion(output.squeeze(), target_tensor)
-    # Special case for BayesianRNN, need to use KL loss
-    if isinstance(rnn, bayesian_rnn.BayesianRNN):
-        loss = loss + rnn.kl / (num_batches * batch_size)
-    else:
-        loss = criterion(output.squeeze(), target_tensor)
-
-    # Backward pass
-    loss.backward()
-    optimizer.step()
-
-    return loss
-
-
-def eval_step(rnn, packed_tensor, batch_size):
-    """Eval step: Forward pass only
-
-    Args:
-        rnn (torch.nn Model): pytorch model to train
-        packed_tensor (torch PackedSequence): input tensor in packed form
-        batch_size (int): batch size
-
-    Returns:
-        output (torch Tensor): output of rnn
-    """
-
-    # Set NN to eval mode (deals with dropout and batchnorm)
-    rnn.eval()
-
-    # Forward pass
-    output = rnn(packed_tensor)
-
-    return output
-
-
-def plot_loss(d_train, d_val, epoch, settings):
+def plot_loss(d_train, d_val, save_prefix):
     """Plot loss curves
 
     Plot training and validation logloss
@@ -370,102 +304,38 @@ def plot_loss(d_train, d_val, epoch, settings):
     Args:
         d_train (dict of arrays): training log losses
         d_val (dict of arrays): validation log losses
-        epoch (int): current epoch
         settings (ExperimentSettings): custom class to hold hyperparameters
     """
+
+    Path(save_prefix).parent.mkdir(exist_ok=True, parents=True)
 
     for key in d_train.keys():
 
         plt.figure()
-        plt.plot(d_train["epoch"], d_train[key], label="Train %s" % key.title())
-        plt.plot(d_val["epoch"], d_val[key], label="Val %s" % key.title())
+        plt.plot(d_train["epoch"], d_train[key], label=f"Train {key.title()}")
+        plt.plot(d_val["epoch"], d_val[key], label=f"Val {key.title()}")
         plt.legend(loc="best", fontsize=18)
         plt.xlabel("Step", fontsize=22)
         plt.tight_layout()
-        plt.savefig(
-            Path(settings.models_dir)
-            / f"{settings.pytorch_model_name}"
-            / f"train_and_val_{key}_{settings.pytorch_model_name}.png"
-        )
+        plt.savefig(save_prefix + f"_{key}.png")
         plt.close()
         plt.clf()
 
 
-def get_evaluation_metrics(settings, list_data, model, sample_size=None):
-    """Compute evaluation metrics on a list of data points
+def get_evaluation_metrics(preds, targets, nb_classes=2):
 
-    Args:
-        settings (ExperimentSettings): custom class to hold hyperparameters
-        list_data (list): contains data to evaluate
-        model (torch.nn Model): pytorch model
-        sample_size (int): subset of the data to use for validation. Default: ``None``
-
-    Returns:
-        d_losses (dict) maps metrics to their computed value
-    """
-
-    # Validate
-    list_pred = []
-    list_target = []
-    list_kl = []
-    num_elem = len(list_data)
-    num_batches = num_elem // min(num_elem // 2, settings.batch_size)
-    list_batches = np.array_split(np.arange(num_elem), num_batches)
-
-    # If required, pick a subset of list batches at random
-    if sample_size:
-        batch_idxs = np.random.permutation(len(list_batches))
-        num_batches = sample_size // min(sample_size // 2, settings.batch_size)
-        batch_idxs = batch_idxs[:num_batches]
-        list_batches = [list_batches[batch_idx] for batch_idx in batch_idxs]
-
-    for batch_idxs in list_batches:
-        random_length = settings.random_length
-        settings.random_length = False
-        packed_tensor, X_tensor, target_tensor, idxs_rev_sort = get_data_batch(
-            list_data, batch_idxs, settings
-        )
-        settings.random_length = random_length
-        output = eval_step(model, packed_tensor, X_tensor.size(1))
-
-        if "bayesian" in settings.pytorch_model_name:
-            list_kl.append(model.kl.detach().cpu().item())
-
-        # Apply softmax
-        pred_proba = nn.functional.softmax(output, dim=1)
-
-        # Convert to numpy array
-        pred_proba = pred_proba.data.cpu().numpy()
-        target_numpy = target_tensor.data.cpu().numpy()
-
-        # Revert sort
-        pred_proba = pred_proba[idxs_rev_sort]
-        target_numpy = target_numpy[idxs_rev_sort]
-
-        list_pred.append(pred_proba)
-        list_target.append(target_numpy)
-    targets = np.concatenate(list_target, axis=0)
-    preds = np.concatenate(list_pred, axis=0)
-
-    # Check outputs size
-    assert len(targets.shape) == 1
-    assert len(preds.shape) == 2
-
-    if settings.nb_classes == 2:
+    if nb_classes == 2:
         auc = metrics.roc_auc_score(targets, preds[:, 1])
     else:
         # Can't compute AUC for more than 2 classes
         auc = None
     acc = metrics.accuracy_score(targets, np.argmax(preds, 1))
-    targets_2D = np.zeros((targets.shape[0], settings.nb_classes))
+    targets_2D = np.zeros((targets.shape[0], nb_classes))
     for i in range(targets.shape[0]):
         targets_2D[i, targets[i]] = 1
     log_loss = metrics.log_loss(targets_2D, preds)
 
     d_losses = {"AUC": auc, "Acc": acc, "loss": log_loss}
-
-    if len(list_kl) != 0:
-        d_losses["KL"] = np.mean(list_kl)
 
     return d_losses
 
@@ -497,37 +367,6 @@ def get_loss_string(d_losses_train, d_losses_val):
     )
 
     return loss_str
-
-
-def save_training_results(settings, d_monitor, training_time):
-    """Obtain a loss string to display training progress
-
-    Args:
-        settings (ExperimentSettings): controls experiment hyperparameters
-        d_monitor (dict): maps {metric:value}
-        training_time (float): amount of time training took
-
-    Returns:
-        loss_str (str): the loss string to display
-    """
-
-    d_results = {"training_time": training_time}
-    for key in ["AUC", "Acc"]:
-        if key == "AUC" and settings.nb_classes > 2:
-            d_results[key] = -1
-        else:
-            d_results[key] = max(d_monitor[key])
-    d_results["loss"] = min(d_monitor["loss"])
-
-    try:
-        with open(Path(settings.rnn_dir) / "training_log.json", "r") as f:
-            d_out = json.load(f)
-    except Exception:
-        d_out = {}
-
-    with open(Path(settings.rnn_dir) / "training_log.json", "w") as f:
-        d_out.update({settings.pytorch_model_name: d_results})
-        json.dump(d_out, f)
 
 
 #######################
