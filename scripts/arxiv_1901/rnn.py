@@ -238,8 +238,6 @@ from constants import (
 
 def forward_pass(model, data):
 
-    # Forward pass
-
     X_flux = data["X_flux"]
     X_fluxerr = data["X_fluxerr"]
     X_flt = data["X_flt"]
@@ -249,15 +247,27 @@ def forward_pass(model, data):
 
     X_target = data["X_target"]
 
-    loss = model(X_flux, X_fluxerr, X_flt, X_time, X_mask, x_meta=X_meta)
+    X_pred = model(X_flux, X_fluxerr, X_flt, X_time, X_mask, x_meta=X_meta)
 
-    import ipdb
+    loss = torch.nn.functional.cross_entropy(X_pred, X_target, reduction="none").mean(0)
 
-    ipdb.set_trace()
+    return loss, X_pred, X_target
 
-    # TODO BBB
 
-    # Backward pass
+def get_predictions(model, list_data, list_batches, device):
+
+    list_target = []
+    list_pred = []
+
+    model.eval()
+    with torch.no_grad():
+        for batch_idxs in list_batches:
+            data = tu.get_data_batch(list_data, batch_idxs, device)
+            _, X_pred, X_target = forward_pass(model, data)
+            list_target.append(X_target.cpu().numpy())
+            list_pred.append(X_pred.cpu().numpy())
+
+    return np.concatenate(list_target), np.concatenate(list_pred)
 
 
 def train(config):
@@ -269,6 +279,14 @@ def train(config):
 
     # Data
     list_data_train, list_data_val = tu.load_HDF5(config, SNTYPES, test=False)
+
+    num_elem = len(list_data_train)
+    num_batches = max(1, num_elem // config["batch_size"])
+    list_batches_train = np.array_split(np.arange(num_elem), num_batches)
+
+    num_elem = len(list_data_val)
+    num_batches = max(1, num_elem // config["batch_size"])
+    list_batches_val = np.array_split(np.arange(num_elem), num_batches)
 
     # Model specification
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -301,34 +319,26 @@ def train(config):
             model.fluxerr_norm.data = fluxerr_norm
             model.delta_time_norm.data = delta_time_norm
 
-    # TODO monitoring
-    # # Keep track of losses for plotting
     loss_str = ""
-    # d_monitor_train = {"loss": [], "AUC": [], "Acc": [], "epoch": []}
-    # d_monitor_val = {"loss": [], "AUC": [], "Acc": [], "epoch": []}
-    # if "bayesian" in settings.pytorch_model_name:
-    #     d_monitor_train["KL"] = []
-    #     d_monitor_val["KL"] = []
+    d_monitor_train = {"loss": [], "AUC": [], "Acc": [], "epoch": []}
+    d_monitor_val = {"loss": [], "AUC": [], "Acc": [], "epoch": []}
 
-    # lu.print_green("Starting training")
+    # TODO KL
 
+    # TODO scheduling
     # plateau_accuracy = tu.StopOnPlateau(reduce_lr_on_plateau=True)
 
     best_loss = float("inf")
-
     training_start_time = time()
 
     for epoch in tqdm(range(config["nb_epoch"]), desc="Training", ncols=100):
 
         desc = f"Epoch: {epoch} -- {loss_str}"
 
-        num_elem = len(list_data_train)
-        num_batches = max(1, num_elem // config["batch_size"])
-        list_batches = np.array_split(np.arange(num_elem), num_batches)
-        np.random.shuffle(list_batches)
+        np.random.shuffle(list_batches_train)
 
         for batch_idxs in tqdm(
-            list_batches,
+            list_batches_train,
             desc=desc,
             ncols=100,
             bar_format="{desc} |{bar}| {n_fmt}/{total_fmt} {rate_fmt}{postfix}",
@@ -341,39 +351,47 @@ def train(config):
             optimizer.zero_grad()
 
             # Train step : forward backward pass
-            forward_pass(model, data)
+            loss, *_ = forward_pass(model, data)
 
             loss.backward()
             optimizer.step()
 
-        if (epoch + 1) % settings.monitor_interval == 0:
+        if (epoch + 1) % config["monitor_interval"] == 0:
 
             # Get metrics (subsample training set to same size as validation set for speed)
-            d_losses_train = tu.get_evaluation_metrics(
-                settings, list_data_train, rnn, sample_size=len(list_data_val)
+            X_target_train, X_pred_train = get_predictions(
+                model,
+                list_data_train,
+                list_batches_train[: len(list_batches_val)],
+                device,
             )
-            d_losses_val = tu.get_evaluation_metrics(
-                settings, list_data_val, rnn, sample_size=None
+            X_target_val, X_pred_val = get_predictions(
+                model, list_data_val, list_batches_val, device
             )
 
-            end_condition = plateau_accuracy.step(d_losses_val["Acc"], optimizer)
-            if end_condition is True:
-                break
+            d_losses_train = tu.get_evaluation_metrics(
+                X_pred_train, X_target_train, nb_classes=config["nb_classes"]
+            )
+            d_losses_val = tu.get_evaluation_metrics(
+                X_pred_val, X_target_val, nb_classes=config["nb_classes"]
+            )
 
             # Add current loss avg to list of losses
             for key in d_losses_train.keys():
                 d_monitor_train[key].append(d_losses_train[key])
                 d_monitor_val[key].append(d_losses_val[key])
+
             d_monitor_train["epoch"].append(epoch + 1)
             d_monitor_val["epoch"].append(epoch + 1)
 
             # Prepare loss_str to update progress bar
             loss_str = tu.get_loss_string(d_losses_train, d_losses_val)
 
-            tu.plot_loss(d_monitor_train, d_monitor_val, epoch, settings)
+            save_prefix = f"{config['dump_dir']}/loss"
+            tu.plot_loss(d_monitor_train, d_monitor_val, epoch, save_prefix)
             if d_monitor_val["loss"][-1] < best_loss:
                 best_loss = d_monitor_val["loss"][-1]
-                torch.save(rnn.state_dict(), f"{config['dump_dir']}/net.pt")
+                torch.save(model.state_dict(), f"{config['dump_dir']}/net.pt")
 
     lu.print_green("Finished training")
 

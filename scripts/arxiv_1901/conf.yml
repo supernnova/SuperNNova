@@ -5,9 +5,10 @@ fitopt_file: /home/SuperNNova/tests/fits/FITOPT000.FITRES
 fig_dir: /home/SuperNNova/tests/dump/figures
 dump_dir: /home/SuperNNova/tests/dump/rnn/vanilla_000
 
+monitor_interval: 1
 nb_epoch: 10
 batch_size: 16
-learning_rate: 1.0e-3
+learning_rate: 1.0e-4
 nb_classes: &nb_classes 2
 raw_format: FITS
 seed: 42
@@ -22,7 +23,7 @@ model:
   num_layers: 2
   dropout: 0
   embedding_dim: 16
-  normalize: True
+  normalize: False
 
 metadata_features:
   - HOSTGAL_PHOTOZ
