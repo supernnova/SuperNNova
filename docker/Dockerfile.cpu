@@ -71,7 +71,7 @@ RUN curl -o ~/miniconda.sh -O  https://repo.continuum.io/miniconda/Miniconda3-la
     find . -name 'libmkl*mc*' -type f -delete
 
 # Extra python packages
-RUN /home/miniconda3/bin/pip install seaborn pytest-sugar pytest-cov sphinx-argparse tabulate
+RUN /home/miniconda3/bin/pip install seaborn pytest-sugar pytest-cov sphinx-argparse tabulate tensorboard
 
 ####################################
 # Set up locale to avoid zsh errors

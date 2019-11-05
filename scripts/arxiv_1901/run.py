@@ -172,4 +172,3 @@ if __name__ == "__main__":
             with open(Path(settings.done_file), "w") as the_file:
                 the_file.write("FAILURE\n")
         raise e
-

@@ -78,7 +78,6 @@ def format_mnist():
 
 
 class Dictionary(object):
-
     def __init__(self):
         self.word2idx = {}
         self.idx2word = []
@@ -94,7 +93,6 @@ class Dictionary(object):
 
 
 class Corpus(object):
-
     def __init__(self, path):
         self.dictionary = Dictionary()
         self.train = self.tokenize(os.path.join(path, "train.txt"))

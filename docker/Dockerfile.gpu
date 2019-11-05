@@ -65,7 +65,7 @@ RUN    /home/miniconda3/bin/pip install \
     /home/miniconda3/bin/pip install sphinx sphinx-autobuild sphinxcontrib-napoleon sphinx_rtd_theme tabulate
 
 # Extra python packages
-RUN /home/miniconda3/bin/pip install seaborn pytest-sugar pytest-cov mxnet-cu90
+RUN /home/miniconda3/bin/pip install seaborn pytest-sugar pytest-cov sphinx-argparse tabulate tensorboard
 
 ####################################
 # Set up locale to avoid zsh errors

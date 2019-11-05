@@ -37,25 +37,9 @@ def inverse_log_norm(x, min_clip, mean, std):
 
 
 def fill_data_list(
-    idxs, arr_data, arr_meta, arr_target, arr_SNID, list_features, desc, test=False
+    idxs, arr_data, arr_meta, arr_target, arr_SNID, list_features, desc
 ):
-    """Utility to create a list of data tuples used as inputs to RNN model
-
-    The ``settings`` object specifies which feature are selected
-
-    Args:
-        idxs (np.array or list): idx of data point to select
-        arr_data (np.array): features
-        arr_target (np.array): target
-        arr_SNID (np.array): lightcurve unique ID
-        settings (ExperimentSettings): controls experiment hyperparameters
-        n_features (int): total number of features in arr_data
-        desc (str): message to display while loading
-        test (bool): If True: add more data to the list, as it is required at test time.
-            Default: ``False``
-
-    Returns:
-        (list) the list of data tuples
+    """
     """
 
     list_data = []
@@ -101,7 +85,7 @@ def fill_data_list(
     return list_data
 
 
-def load_HDF5(config, sntypes, test=False):
+def load_HDF5(config, sntypes, all_data=False):
     """Load data from HDF5
 
     Args:
@@ -122,9 +106,6 @@ def load_HDF5(config, sntypes, test=False):
     lu.print_green(f"Loading {file_name}")
 
     with h5py.File(file_name, "r") as hf:
-
-        list_data_train = []
-        list_data_val = []
 
         # Load data
         arr_data = hf["data"][:]
@@ -156,6 +137,17 @@ def load_HDF5(config, sntypes, test=False):
         df_meta["target"] = df_meta["SNTYPE"].map(class_map)
 
         arr_target = df_meta["target"].values
+
+        if all_data is True:
+            return fill_data_list(
+                np.arange(len(arr_target)),
+                arr_data,
+                arr_meta,
+                arr_target,
+                arr_SNID,
+                list_features,
+                "Loading full data set",
+            )
 
         # Subsample with data fraction
         n_samples = int(config.get("data_fraction", 1) * len(df_meta))
@@ -194,39 +186,36 @@ def load_HDF5(config, sntypes, test=False):
         np.random.shuffle(idxs_val)
         np.random.shuffle(idxs_test)
 
-        if test is True:
-            return fill_data_list(
-                idxs_test,
-                arr_data,
-                arr_meta,
-                arr_target,
-                arr_SNID,
-                list_features,
-                "Loading Test Set",
-                test,
-            )
-        else:
+        list_data_train = fill_data_list(
+            idxs_train,
+            arr_data,
+            arr_meta,
+            arr_target,
+            arr_SNID,
+            list_features,
+            "Loading Training Set",
+        )
+        list_data_val = fill_data_list(
+            idxs_val,
+            arr_data,
+            arr_meta,
+            arr_target,
+            arr_SNID,
+            list_features,
+            "Loading Validation Set",
+        )
 
-            list_data_train = fill_data_list(
-                idxs_train,
-                arr_data,
-                arr_meta,
-                arr_target,
-                arr_SNID,
-                list_features,
-                "Loading Training Set",
-            )
-            list_data_val = fill_data_list(
-                idxs_val,
-                arr_data,
-                arr_meta,
-                arr_target,
-                arr_SNID,
-                list_features,
-                "Loading Validation Set",
-            )
+        list_data_test = fill_data_list(
+            idxs_test,
+            arr_data,
+            arr_meta,
+            arr_target,
+            arr_SNID,
+            list_features,
+            "Loading Test Set",
+        )
 
-        return list_data_train, list_data_val
+        return list_data_train, list_data_val, list_data_test
 
 
 def get_data_batch(list_data, idxs, device):
@@ -335,7 +324,7 @@ def get_evaluation_metrics(preds, targets, nb_classes=2):
         targets_2D[i, targets[i]] = 1
     log_loss = metrics.log_loss(targets_2D, preds)
 
-    d_losses = {"AUC": auc, "Acc": acc, "loss": log_loss}
+    d_losses = {"AUC": auc, "Acc": acc, "log_loss": log_loss}
 
     return d_losses
 

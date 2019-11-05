@@ -1,18 +1,21 @@
 import h5py
 import json
 import yaml
+import shutil
 import argparse
 import importlib
 import numpy as np
 from tqdm import tqdm
 from time import time
 from pathlib import Path
+from collections import defaultdict
 
 from supernnova.utils import training_utils as tu
 from supernnova.utils import logging_utils as lu
 
 import torch
 import torch.nn as nn
+from torch.utils.tensorboard import SummaryWriter
 
 from constants import (
     SNTYPES,
@@ -23,218 +26,6 @@ from constants import (
     INVERSE_FILTER_DICT,
     LIST_FILTERS_COMBINATIONS,
 )
-
-
-# def get_lr(settings):
-#     """Select optimal starting learning rate when training with a 1-cycle policy
-
-#     Args:
-#         settings (ExperimentSettings): controls experiment hyperparameters
-#     """
-
-#     # Data
-#     list_data_train, list_data_val = tu.load_HDF5(settings, test=False)
-
-#     num_elem = len(list_data_train)
-#     num_batches = num_elem // min(num_elem // 2, settings.batch_size)
-#     list_batches = np.array_split(np.arange(num_elem), num_batches)
-#     np.random.shuffle(list_batches)
-
-#     lr_init_value = 1e-8
-#     lr = float(lr_init_value)
-#     lr_final_value = 10.0
-#     beta = 0.98
-#     avg_loss = 0.0
-#     best_loss = 0.0
-#     batch_num = 0
-#     list_losses = []
-#     list_lr = []
-#     mult = (lr_final_value / lr_init_value) ** (1 / num_batches)
-
-#     settings.learning_rate = lr_init_value
-
-#     # Model specification
-#     rnn = tu.get_model(settings, len(settings.training_features))
-#     criterion = nn.CrossEntropyLoss()
-#     optimizer = tu.get_optimizer(settings, rnn)
-
-#     # Prepare for GPU if required
-#     if settings.use_cuda:
-#         rnn.cuda()
-#         criterion.cuda()
-
-#     for batch_idxs in tqdm(list_batches, ncols=100):
-
-#         batch_num += 1
-
-#         # Sample a batch in packed sequence form
-#         packed, _, target_tensor, idxs_rev_sort = tu.get_data_batch(
-#             list_data_train, batch_idxs, settings
-#         )
-#         # Train step : forward backward pass
-#         loss = tu.train_step(
-#             settings,
-#             rnn,
-#             packed,
-#             target_tensor,
-#             criterion,
-#             optimizer,
-#             target_tensor.size(0),
-#             len(list_batches),
-#         )
-#         loss = loss.detach().cpu().numpy().item()
-
-#         # Compute the smoothed loss
-#         avg_loss = beta * avg_loss + (1 - beta) * loss
-#         smoothed_loss = avg_loss / (1 - beta ** batch_num)
-#         # Stop if the loss is exploding
-#         if batch_num > 1 and smoothed_loss > 4 * best_loss:
-#             break
-#         # Record the best loss
-#         if smoothed_loss < best_loss or batch_num == 1:
-#             best_loss = smoothed_loss
-#         # Store the values
-#         list_losses.append(smoothed_loss)
-#         list_lr.append(lr)
-#         # Update the lr for the next step
-#         lr *= mult
-
-#         # Set learning rate
-#         for param_group in optimizer.param_groups:
-
-#             param_group["lr"] = lr
-
-#     idx_min = np.argmin(list_losses)
-#     print("Min loss", list_losses[idx_min], "LR", list_lr[idx_min])
-
-#     return list_lr[idx_min]
-
-
-# def train_cyclic(settings):
-#     """Train RNN models with a 1-cycle policy
-
-#     Args:
-#         settings (ExperimentSettings): controls experiment hyperparameters
-#     """
-#     # save training data config
-#     save_normalizations(settings)
-
-#     max_learning_rate = get_lr(settings) / 10
-#     min_learning_rate = max_learning_rate / 10
-#     settings.learning_rate = min_learning_rate
-#     print("Setting learning rate to", min_learning_rate)
-
-#     def one_cycle_sched(epoch, minv, maxv, phases):
-#         if epoch <= phases[0]:
-#             out = minv + (maxv - minv) / (phases[0]) * epoch
-#         elif phases[0] < epoch <= phases[1]:
-#             increment = (minv - maxv) / (phases[1] - phases[0])
-#             out = maxv + increment * (epoch - phases[0])
-#         else:
-#             increment = (minv / 100 - minv) / (phases[2] - phases[1])
-#             out = minv + increment * (epoch - phases[1])
-
-#         return out
-
-#     # Data
-#     list_data_train, list_data_val = tu.load_HDF5(settings, test=False)
-
-#     # Model specification
-#     rnn = tu.get_model(settings, len(settings.training_features))
-#     criterion = nn.CrossEntropyLoss()
-#     optimizer = tu.get_optimizer(settings, rnn)
-
-#     # Prepare for GPU if required
-#     if settings.use_cuda:
-#         rnn.cuda()
-#         criterion.cuda()
-
-#     # Keep track of losses for plotting
-#     loss_str = ""
-#     d_monitor_train = {"loss": [], "AUC": [], "Acc": [], "epoch": []}
-#     d_monitor_val = {"loss": [], "AUC": [], "Acc": [], "epoch": []}
-#     if "bayesian" in settings.pytorch_model_name:
-#         d_monitor_train["KL"] = []
-#         d_monitor_val["KL"] = []
-
-#     lu.print_green("Starting training")
-
-#     best_loss = float("inf")
-
-#     settings.cyclic_phases
-
-#     training_start_time = time()
-
-#     for epoch in tqdm(range(settings.cyclic_phases[-1]), desc="Training", ncols=100):
-
-#         desc = f"Epoch: {epoch} -- {loss_str}"
-
-#         num_elem = len(list_data_train)
-#         num_batches = num_elem // min(num_elem // 2, settings.batch_size)
-#         list_batches = np.array_split(np.arange(num_elem), num_batches)
-#         np.random.shuffle(list_batches)
-#         for batch_idxs in tqdm(
-#             list_batches,
-#             desc=desc,
-#             ncols=100,
-#             bar_format="{desc} |{bar}| {n_fmt}/{total_fmt} {rate_fmt}{postfix}",
-#         ):
-
-#             # Sample a batch in packed sequence form
-#             packed, _, target_tensor, idxs_rev_sort = tu.get_data_batch(
-#                 list_data_train, batch_idxs, settings
-#             )
-#             # Train step : forward backward pass
-#             tu.train_step(
-#                 settings,
-#                 rnn,
-#                 packed,
-#                 target_tensor,
-#                 criterion,
-#                 optimizer,
-#                 target_tensor.size(0),
-#                 len(list_batches),
-#             )
-
-#         for param_group in optimizer.param_groups:
-
-#             param_group["lr"] = one_cycle_sched(
-#                 epoch, min_learning_rate, max_learning_rate, settings.cyclic_phases
-#             )
-
-#         if (epoch + 1) % settings.monitor_interval == 0:
-
-#             # Get metrics (subsample training set to same size as validation set for speed)
-#             d_losses_train = tu.get_evaluation_metrics(
-#                 settings, list_data_train, rnn, sample_size=len(list_data_val)
-#             )
-#             d_losses_val = tu.get_evaluation_metrics(
-#                 settings, list_data_val, rnn, sample_size=None
-#             )
-
-#             # Add current loss avg to list of losses
-#             for key in d_losses_train.keys():
-#                 d_monitor_train[key].append(d_losses_train[key])
-#                 d_monitor_val[key].append(d_losses_val[key])
-#             d_monitor_train["epoch"].append(epoch + 1)
-#             d_monitor_val["epoch"].append(epoch + 1)
-
-#             # Prepare loss_str to update progress bar
-#             loss_str = tu.get_loss_string(d_losses_train, d_losses_val)
-
-#             tu.plot_loss(d_monitor_train, d_monitor_val, epoch, settings)
-#             if d_monitor_val["loss"][-1] < best_loss:
-#                 best_loss = d_monitor_val["loss"][-1]
-#                 torch.save(
-#                     rnn.state_dict(),
-#                     f"{settings.rnn_dir}/{settings.pytorch_model_name}.pt",
-#                 )
-
-#     training_time = time() - training_start_time
-
-#     lu.print_green("Finished training")
-
-#     tu.save_training_results(settings, d_monitor_val, training_time)
 
 
 def forward_pass(model, data):
@@ -311,6 +102,282 @@ def get_predictions(model, list_data, list_batches, device):
     return X_target, X_pred
 
 
+
+def get_test_predictions(model, config, list_data, device):
+
+    prediction_file = f"{config['dump_dir']}/PRED.pickle"
+
+    model.eval()
+
+    num_elem = len(list_batches)
+    num_batches = max(1, num_elem // config["batch_size_test"])
+    list_batches = np.array_split(np.arange(num_elem), num_batches)
+
+    # Prepare output arrays
+    d_pred = {
+        key: np.zeros(
+            (num_elem, settings.num_inference_samples, settings.nb_classes)
+        ).astype(np.float32)
+        for key in [
+            "all",
+            "PEAKMJD-2",
+            "PEAKMJD-1",
+            "PEAKMJD",
+            "PEAKMJD+1",
+            "PEAKMJD+2",
+        ]
+    }
+    for key in ["target", "SNID"]:
+        d_pred[key] = np.zeros((num_elem, settings.num_inference_samples)).astype(
+            np.int64
+        )
+
+    d_pred_MFE = {
+        key: np.zeros((num_elem, 1, settings.nb_classes)).astype(np.float32)
+        for key in ["all"] + [f"all_{OOD}" for OOD in du.OOD_TYPES]
+    }
+    for key in ["target", "SNID"]:
+        d_pred_MFE[key] = np.zeros((num_elem, 1)).astype(np.int64)
+
+    # Fetch SN info
+    df_SNinfo = du.load_HDF5_SNinfo(settings).set_index("SNID")
+
+    # Loop over data and make prediction
+    for batch_idxs in tqdm(
+        list_batches, desc="Computing predictions on test set", ncols=100
+    ):
+
+        start_idx, end_idx = batch_idxs[0], batch_idxs[-1] + 1
+        SNIDs = [data[2] for data in list_data_test[start_idx:end_idx]]
+
+        peak_MJDs = df_SNinfo.loc[SNIDs]["PEAKMJDNORM"].values
+        delta_times = [
+            data[3][:, settings.d_feat_to_idx["delta_time"]]
+            for data in list_data_test[start_idx:end_idx]
+        ]
+        times = [np.cumsum(t) for t in delta_times]
+
+        with torch.no_grad():
+
+            #############################
+            # Full lightcurve prediction
+            #############################
+
+            packed, _, target_tensor, idxs_rev_sort = tu.get_data_batch(
+                list_data_test, batch_idxs, settings
+            )
+
+            for iter_ in tqdm(range(settings.num_inference_samples), ncols=100):
+
+                arr_preds, arr_target = get_batch_predictions(
+                    rnn, packed, target_tensor
+                )
+
+                # Rever sorting that occurs in get_batch_predictions
+                arr_preds = arr_preds[idxs_rev_sort]
+                arr_target = arr_target[idxs_rev_sort]
+
+                d_pred["all"][start_idx:end_idx, iter_] = arr_preds
+                d_pred["target"][start_idx:end_idx, iter_] = arr_target
+                d_pred["SNID"][start_idx:end_idx, iter_] = SNIDs
+
+            # MFE
+            arr_preds, arr_target = get_batch_predictions_MFE(
+                rnn, packed, target_tensor
+            )
+
+            # Rever sorting that occurs in get_batch_predictions
+            arr_preds = arr_preds[idxs_rev_sort]
+            arr_target = arr_target[idxs_rev_sort]
+
+            d_pred_MFE["all"][start_idx:end_idx, 0] = arr_preds
+            d_pred_MFE["target"][start_idx:end_idx, 0] = arr_target
+            d_pred_MFE["SNID"][start_idx:end_idx, 0] = SNIDs
+
+            #############################
+            # Predictions around PEAKMJD
+            #############################
+            for offset in [-2, -1, 0, 1, 2]:
+                slice_idxs = [
+                    find_idx(times[k], peak_MJDs[k] + offset) for k in range(len(times))
+                ]
+                # Split in 2 arrays:
+                # oob_idxs: the slice for early prediction is empty for those indices
+                # inb_idxs: the slice is not empty
+                oob_idxs = np.where(np.array(slice_idxs) < 1)[0]
+                inb_idxs = np.where(np.array(slice_idxs) >= 1)[0]
+
+                if len(inb_idxs) > 0:
+                    # We only carry out prediction for samples in ``inb_idxs``
+                    offset_batch_idxs = [batch_idxs[b] for b in inb_idxs]
+                    max_lengths = [slice_idxs[b] for b in inb_idxs]
+                    packed, _, target_tensor, idxs_rev_sort = tu.get_data_batch(
+                        list_data_test,
+                        offset_batch_idxs,
+                        settings,
+                        max_lengths=max_lengths,
+                    )
+
+                    for iter_ in tqdm(range(settings.num_inference_samples), ncols=100):
+
+                        arr_preds, arr_target = get_batch_predictions(
+                            rnn, packed, target_tensor
+                        )
+
+                        # Rever sorting that occurs in get_batch_predictions
+                        arr_preds = arr_preds[idxs_rev_sort]
+
+                        suffix = str(offset) if offset != 0 else ""
+                        suffix = f"+{suffix}" if offset > 0 else suffix
+                        col = f"PEAKMJD{suffix}"
+
+                        d_pred[col][start_idx + inb_idxs, iter_] = arr_preds
+                        # For oob_idxs, no prediction can be made, fill with nan
+                        d_pred[col][start_idx + oob_idxs, iter_] = np.nan
+
+            #############################
+            # OOD predictions
+            #############################
+
+            for OOD in ["random", "shuffle", "reverse", "sin"]:
+                packed, _, target_tensor, idxs_rev_sort = tu.get_data_batch(
+                    list_data_test, batch_idxs, settings, OOD=OOD
+                )
+
+                for iter_ in tqdm(range(settings.num_inference_samples), ncols=100):
+
+                    arr_preds, arr_target = get_batch_predictions(
+                        rnn, packed, target_tensor
+                    )
+
+                    # Revert sorting that occurs in get_batch_predictions
+                    arr_preds = arr_preds[idxs_rev_sort]
+                    arr_target = arr_target[idxs_rev_sort]
+
+                    d_pred[f"all_{OOD}"][start_idx:end_idx, iter_] = arr_preds
+
+                arr_preds, arr_target = get_batch_predictions_MFE(
+                    rnn, packed, target_tensor
+                )
+
+                # Revert sorting that occurs in get_batch_predictions
+                arr_preds = arr_preds[idxs_rev_sort]
+                arr_target = arr_target[idxs_rev_sort]
+
+                d_pred_MFE[f"all_{OOD}"][start_idx:end_idx, 0] = arr_preds
+
+    # Flatten all arrays and aggregate in dataframe
+    d_series = {}
+    for (key, value) in d_pred.items():
+        value = value.reshape((num_elem * settings.num_inference_samples, -1))
+        value_dim = value.shape[1]
+        if value_dim == 1:
+            d_series[key] = np.ravel(value)
+        else:
+            for i in range(value_dim):
+                d_series[f"{key}_class{i}"] = value[:, i]
+    df_pred = pd.DataFrame.from_dict(d_series)
+
+    # Flatten all arrays and aggregate in dataframe
+    d_series_MFE = {}
+    for (key, value) in d_pred_MFE.items():
+        value = value.reshape((num_elem * 1, -1))
+        value_dim = value.shape[1]
+        if value_dim == 1:
+            d_series_MFE[key] = np.ravel(value)
+        else:
+            for i in range(value_dim):
+                d_series_MFE[f"{key}_class{i}"] = value[:, i]
+    df_pred_MFE = pd.DataFrame.from_dict(d_series_MFE)
+
+    # Save predictions
+    df_pred.to_pickle(prediction_file)
+
+    # Saving aggregated preds for bayesian models
+    if settings.model == "variational" or settings.model == "bayesian":
+        med_pred = df_pred.groupby("SNID").median()
+        med_pred.columns = [str(col) + "_median" for col in med_pred.columns]
+        std_pred = df_pred.groupby("SNID").std()
+        std_pred.columns = [str(col) + "_std" for col in std_pred.columns]
+        df_bayes = pd.merge(med_pred, std_pred, on="SNID")
+        df_bayes["SNID"] = df_bayes.index
+        df_bayes["target"] = df_bayes["target_median"]
+        bay_pred_file = prediction_file.replace(".pickle", "_aggregated.pickle")
+        df_bayes.to_pickle(bay_pred_file)
+
+    g_pred = df_pred.groupby("SNID").median()
+    preds = g_pred[[f"all_class{i}" for i in range(settings.nb_classes)]].values
+    preds = np.argmax(preds, 1)
+    acc = (preds == g_pred.target.values).sum() / len(g_pred)
+
+    # Display accuracy
+    lu.print_green("Full Accuracy", acc)
+    for col in [f"PEAKMJD{s}" for s in du.OFFSETS_STR]:
+
+        preds_target = g_pred[
+            [f"{col}_class{i}" for i in range(settings.nb_classes)] + ["target"]
+        ].dropna()
+        preds = preds_target[
+            [f"{col}_class{i}" for i in range(settings.nb_classes)]
+        ].values
+        target = preds_target["target"].values
+        preds = np.argmax(preds, 1)
+        acc = (preds == target).sum() / len(g_pred)
+
+        lu.print_green(f"{col} Accuracy", acc)
+
+    print()
+    print()
+
+    class_col = [f"all_class{i}" for i in range(settings.nb_classes)]
+    tmp = df_pred[["SNID", "target"] + class_col].groupby("SNID").mean()
+    preds = np.argmax(tmp[class_col].values, 1)
+    acc = (preds == tmp.target.values).sum() / len(tmp)
+    lu.print_green(f"Accuracy MC", acc)
+
+    for OOD in ["random", "reverse", "shuffle", "sin"]:
+        class_col_ood = [f"all_{OOD}_class{i}" for i in range(settings.nb_classes)]
+        entropy_ood = (
+            -(df_pred[class_col_ood].values * np.log(df_pred[class_col_ood].values))
+            .sum(1)
+            .mean()
+        )
+        entropy = (
+            -(df_pred[class_col].values * np.log(df_pred[class_col].values))
+            .sum(1)
+            .mean()
+        )
+        lu.print_green(f"Delta Entropy {OOD} MC", entropy_ood - entropy)
+
+    print()
+    print()
+
+    tmp = df_pred_MFE[["SNID", "target"] + class_col].groupby("SNID").mean()
+    preds = np.argmax(tmp[class_col].values, 1)
+    acc = (preds == tmp.target.values).sum() / len(tmp)
+    lu.print_green(f"Accuracy MFE", acc)
+
+    for OOD in ["random", "reverse", "shuffle", "sin"]:
+        class_col_ood = [f"all_{OOD}_class{i}" for i in range(settings.nb_classes)]
+        entropy_ood = (
+            -(
+                df_pred_MFE[class_col_ood].values
+                * np.log(df_pred_MFE[class_col_ood].values)
+            )
+            .sum(1)
+            .mean()
+        )
+        entropy = (
+            -(df_pred_MFE[class_col].values * np.log(df_pred_MFE[class_col].values))
+            .sum(1)
+            .mean()
+        )
+        lu.print_green(f"Delta Entropy {OOD} MFE", entropy_ood - entropy)
+
+    lu.print_green("Finished getting predictions ")
+
+    return prediction_file
+
 def train(config):
     """Train RNN models with a decay on plateau policy
 
@@ -318,8 +385,13 @@ def train(config):
         settings (ExperimentSettings): controls experiment hyperparameters
     """
 
+    shutil.rmtree(Path(config["dump_dir"]), ignore_errors=True)
+    Path(config["dump_dir"]).mkdir(parents=True)
+
     # Data
-    list_data_train, list_data_val = tu.load_HDF5(config, SNTYPES, test=False)
+    list_data_train, list_data_val, list_data_test = tu.load_HDF5(
+        config, SNTYPES
+    )
 
     num_elem = len(list_data_train)
     num_batches = max(1, num_elem // config["batch_size"])
@@ -359,16 +431,25 @@ def train(config):
             model.delta_time_norm.data = delta_time_norm
 
     loss_str = ""
-    d_monitor_train = {"loss": [], "AUC": [], "Acc": [], "epoch": []}
-    d_monitor_val = {"loss": [], "AUC": [], "Acc": [], "epoch": []}
+    d_monitor_train = defaultdict(list)
+    d_monitor_val = defaultdict(list)
+    log_dir = Path(config["dump_dir"]) / "tensorboard"
+    log_dir.mkdir()
+    writer = SummaryWriter(log_dir=log_dir.as_posix())
 
     # TODO KL
 
-    # TODO scheduling
-    # plateau_accuracy = tu.StopOnPlateau(reduce_lr_on_plateau=True)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer,
+        "min",
+        factor=config["lr_factor"],
+        min_lr=config["min_lr"],
+        patience=config["patience"],
+        verbose=True,
+    )
 
+    batch = 0
     best_loss = float("inf")
-    training_start_time = time()
 
     for epoch in range(config["nb_epoch"]):
 
@@ -395,46 +476,57 @@ def train(config):
             loss.backward()
             optimizer.step()
 
-        if (epoch + 1) % config["monitor_interval"] == 0:
+            batch += 1
 
-            # Get metrics (subsample training set to same size as validation set for speed)
-            X_target_train, X_pred_train = get_predictions(
-                model,
-                list_data_train,
-                list_batches_train[: len(list_batches_val)],
-                device,
+        # Get metrics (subsample training set to same size as validation set for speed)
+        X_target_train, X_pred_train = get_predictions(
+            model, list_data_train, list_batches_train[: len(list_batches_val)], device
+        )
+        X_target_val, X_pred_val = get_predictions(
+            model, list_data_val, list_batches_val, device
+        )
+
+        d_losses_train = tu.get_evaluation_metrics(
+            X_pred_train, X_target_train, nb_classes=config["nb_classes"]
+        )
+        d_losses_val = tu.get_evaluation_metrics(
+            X_pred_val, X_target_val, nb_classes=config["nb_classes"]
+        )
+
+        # Add current loss avg to list of losses
+        for key in d_losses_train.keys():
+            d_monitor_train[key].append(d_losses_train[key])
+            d_monitor_val[key].append(d_losses_val[key])
+
+        d_monitor_train["epoch"].append(epoch + 1)
+        d_monitor_val["epoch"].append(epoch + 1)
+
+        for metric in d_losses_train:
+            writer.add_scalars(
+                f"Metrics/{metric.title()}",
+                {"training": d_losses_train[metric], "valid": d_losses_val[metric]},
+                batch,
             )
-            X_target_val, X_pred_val = get_predictions(
-                model, list_data_val, list_batches_val, device
-            )
 
-            d_losses_train = tu.get_evaluation_metrics(
-                X_pred_train, X_target_train, nb_classes=config["nb_classes"]
-            )
-            d_losses_val = tu.get_evaluation_metrics(
-                X_pred_val, X_target_val, nb_classes=config["nb_classes"]
-            )
+        # Prepare loss_str to update progress bar
+        loss_str = tu.get_loss_string(d_losses_train, d_losses_val)
 
-            # Add current loss avg to list of losses
-            for key in d_losses_train.keys():
-                d_monitor_train[key].append(d_losses_train[key])
-                d_monitor_val[key].append(d_losses_val[key])
+        save_prefix = f"{config['dump_dir']}/loss"
+        tu.plot_loss(d_monitor_train, d_monitor_val, save_prefix)
+        if d_monitor_val["log_loss"][-1] < best_loss:
+            best_loss = d_monitor_val["log_loss"][-1]
+            torch.save(model.state_dict(), f"{config['dump_dir']}/net.pt")
 
-            d_monitor_train["epoch"].append(epoch + 1)
-            d_monitor_val["epoch"].append(epoch + 1)
-
-            # Prepare loss_str to update progress bar
-            loss_str = tu.get_loss_string(d_losses_train, d_losses_val)
-
-            save_prefix = f"{config['dump_dir']}/loss"
-            tu.plot_loss(d_monitor_train, d_monitor_val, save_prefix)
-            if d_monitor_val["loss"][-1] < best_loss:
-                best_loss = d_monitor_val["loss"][-1]
-                torch.save(model.state_dict(), f"{config['dump_dir']}/net.pt")
+        # LR scheduling
+        scheduler.step(d_losses_val["log_loss"])
+        lr_value = next(iter(optimizer.param_groups))["lr"]
+        if lr_value <= config["min_lr"]:
+            print("Minimum LR reached, ending training")
+            break
 
     lu.print_green("Finished training")
 
-    training_time = time() - training_start_time
+    # Start validating on test set
 
 
 def main(config_path):
@@ -449,7 +541,14 @@ def main(config_path):
     # Compute metrics
     get_metrics(config)
 
-    logging_utils.print_blue("Finished rf training, validating and testing")
+    logging_utils.print_blue("Finished rnn training, validating and testing")
+
+    # # Obtain predictions
+    # validate_rnn.get_predictions(settings)
+    # # Compute metrics
+    # metrics.get_metrics_singlemodel(settings, model_type="rnn")
+    # # Plot some lightcurves
+    # early_prediction.make_early_prediction(settings)
 
 
 if __name__ == "__main__":

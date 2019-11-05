@@ -9,9 +9,7 @@ from tests.test_utils import testmanager
 @testmanager()
 def test_rf(redshift):
 
-    cmd = (
-        "python run.py --train_rf --max_depth 1 --max_features 1 --n_estimators 1 --dump_dir tests/dump"
-    )
+    cmd = "python run.py --train_rf --max_depth 1 --max_features 1 --n_estimators 1 --dump_dir tests/dump"
     if redshift is not None:
         cmd += f" --redshift {redshift}"
     call_cmd(cmd)

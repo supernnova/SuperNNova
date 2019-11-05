@@ -6,7 +6,6 @@ from contextlib import ContextDecorator
 
 
 class testmanager(ContextDecorator):
-
     def __enter__(self):
 
         self.dir_path = os.path.dirname(os.path.realpath(__file__))

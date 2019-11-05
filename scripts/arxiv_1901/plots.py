@@ -366,7 +366,7 @@ def multiplot_violin_paper(df, fname, sntypes, fig_dir):
     axes = [ax_00, ax_01, ax_02, ax_03]
 
     hue = "salt" if len(df.salt.unique()) > 1 else None
-    
+
     # Ia vs non Ia
     sns.set_palette(sns.color_palette(BI_COLORS))
     g = sns.violinplot(
@@ -783,7 +783,7 @@ def seaborn_formatting_mag(df, sntypes):
     Returns:
         df (DataFrame): reformatted
     """
-    
+
     df = du.tag_type(df, sntypes, type_column="SNTYPE")
 
     df_skimmed = pd.DataFrame()
@@ -800,7 +800,6 @@ def seaborn_formatting_mag(df, sntypes):
     for f in ["g", "r", "i", "z"]:
         var = "SIM_PEAKMAG_" + f
         df_skimmed = df_skimmed[(df_skimmed[var] > 20) & (df_skimmed[var] < 28)]
-
 
     return df_skimmed
 
@@ -1404,7 +1403,7 @@ def science_plots(settings, onlycnf=False):
 
     # Get extra info from fits (for distance modulus)
     fits = du.load_fitfile(settings)
-    if len(fits) !=0:
+    if len(fits) != 0:
         fits = fits[["SNID", "cERR", "mBERR", "x1ERR"]]
 
         # check if files are there
