@@ -167,7 +167,6 @@ def get_metrics(config):
 
     list_df_metrics = []
 
-    # Metrics shared between RF and RNN
     list_df_metrics.append(metrics.get_calibration_metrics_singlemodel(df))
     list_df_metrics.append(
         metrics.get_randomforest_performance_metrics(df, host_zspe_list, SNTYPES)

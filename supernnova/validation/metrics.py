@@ -141,21 +141,10 @@ def get_metrics_singlemodel(settings, prediction_file=None, model_type="rnn"):
     lu.print_green("Finished getting metrics ")
 
 
-def get_rnn_performance_metrics_singlemodel(settings, df, host_zspe_list):
-    """Compute performance metrics (accuracy, AUC, purity etc) for
-    an RNN model
+def get_rnn_performance_metrics_singlemodel(config, df, sntypes, host_zspe_list):
 
-    - Compute metrics around peak light (i.e. ``PEAKMJD``) and for the full lightcurve.
-    - For bayesian models, compute multiple predictions per lightcurve and then take the median
-
-    Args:
-        settings (ExperimentSettings): custom class to hold hyperparameters
-        df (pandas.DataFrame): dataframe containing a model's predictions
-        host_zspe_list (list): available host galaxy spectroscopic redshifts
-
-    Returns:
-        (pandas.DataFrame) holds the performance metrics for this dataframe
-    """
+    # It's a bayesian model if we have multiple predictions hence a non-NaN std dev
+    is_bayesian = not np.all(np.isnan(df["all_class0_std"].values))
 
     # Compute metrics around peak light, and with full lightcurve
     list_keys = ["-2", "", "+2"] + ["all"]
@@ -168,19 +157,15 @@ def get_rnn_performance_metrics_singlemodel(settings, df, host_zspe_list):
         else:
             format_key = key
         selection = df[~np.isnan(df[f"{format_key}_class1"])]
-        if "bayesian" or "variational" in settings.pytorch_model_name:
-            group_bayesian = True
-        else:
-            group_bayesian = False
         # general metrics
         # TODO refactor
         reformatted_selection = pu.reformat_df(
-            selection, key, group_bayesian=group_bayesian
+            selection, key, group_bayesian=is_bayesian
         )
         accuracy, auc, purity, efficiency, _ = pu.performance_metrics(
             reformatted_selection
         )
-        contamination_df = pu.contamination_by_SNTYPE(reformatted_selection, settings)
+        contamination_df = pu.contamination_by_SNTYPE(reformatted_selection, sntypes)
 
         if key == "":
             savekey = "0"
@@ -198,7 +183,7 @@ def get_rnn_performance_metrics_singlemodel(settings, df, host_zspe_list):
         # Reweighted for SNe with zspe
         zspe_df = selection[selection["SNID"].isin(host_zspe_list)]
         if len(zspe_df) > 0:
-            zspe_df = pu.reformat_df(zspe_df, key, group_bayesian=group_bayesian)
+            zspe_df = pu.reformat_df(zspe_df, key, group_bayesian=is_bayesian)
             accuracy_zspe, auc_zspe, purity_zspe, efficiency_zspe, _ = pu.performance_metrics(
                 zspe_df
             )
@@ -275,22 +260,9 @@ def get_randomforest_performance_metrics(df, host_zspe_list, sntypes):
     return df_perf
 
 
-def get_uncertainty_metrics_singlemodel(df):
-    """For any lightcurve, compute the standard deviation of the model's
-    predictions (this is only valid for bayesian models which yield
-    a distribution of predictions).
+def get_uncertainty_metrics_singlemodel(df, ood_types):
 
-    Then, compute the mean and std dev of this distribution across all lightcurves
-    A higher mean indicates a model which is less confident in its predictions
-
-    Args:
-        df (pandas.DataFrame): dataframe containing a model's predictions
-
-    Returns:
-        (pandas.DataFrame) holds the uncertainty metrics for this dataframe
-    """
-
-    columns = ["SNID", "all_class0"] + [f"all_{OOD}_class0" for OOD in du.OOD_TYPES]
+    columns = ["SNID", "all_class0"] + [f"all_{OOD}_class0" for OOD in ood_types]
 
     g = df[columns].groupby("SNID").std()
 
@@ -318,7 +290,7 @@ def get_uncertainty_metrics_singlemodel(df):
     return df_uncertainty
 
 
-def get_entropy_metrics_singlemodel(df, nb_classes):
+def get_entropy_metrics_singlemodel(df, ood_types, nb_classes):
     """Compute the entropy of the predictions
     Low entropy indicates a model that is very confident of its predictions
 
@@ -330,7 +302,7 @@ def get_entropy_metrics_singlemodel(df, nb_classes):
         (pandas.DataFrame) holds the entropy metrics for this dataframe
     """
 
-    list_prefixes = ["all"] + [f"all_{OOD}" for OOD in du.OOD_TYPES]
+    list_prefixes = ["all"] + [f"all_{OOD}" for OOD in ood_types]
     list_data = []
 
     for prefix in list_prefixes:
@@ -389,18 +361,9 @@ def get_calibration_metrics_singlemodel(df):
     return df_calib_flat
 
 
-def get_classification_stats_singlemodel(df, nb_classes):
-    """Find out how many lightcurves are classified in each class
+def get_classification_stats_singlemodel(df, ood_types, nb_classes):
 
-    Args:
-        df (pandas.DataFrame): dataframe containing a model's predictions
-        nb_classes (int): the number of classes in the classification task
-
-    Returns:
-        (pandas.DataFrame) holds the calibration metrics for this dataframe
-    """
-
-    list_prefixes = ["all"] + [f"all_{OOD}" for OOD in du.OOD_TYPES]
+    list_prefixes = ["all"] + [f"all_{OOD}" for OOD in ood_types]
     list_df = []
 
     for prefix in list_prefixes:

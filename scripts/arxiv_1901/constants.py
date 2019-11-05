@@ -31,5 +31,6 @@ for i, e in enumerate(LIST_FILTERS_COMBINATIONS):
 
 # TODO moved from data utils
 OFFSETS = [-2, -1, 0, 1, 2]
-OOD_TYPES = ["random", "reverse", "shuffle", "sin"]
+# OOD_TYPES = ["random", "reverse", "shuffle", "sin"]
+OOD_TYPES = []
 OFFSETS_STR = ["-2", "-1", "", "+1", "+2"]

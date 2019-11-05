@@ -15,13 +15,17 @@ from collections import defaultdict
 from supernnova.utils import training_utils as tu
 from supernnova.utils import logging_utils as lu
 from supernnova.utils import data_utils as du
+from supernnova.validation import metrics
 
 import torch
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 
+import plots
+
 from constants import (
     SNTYPES,
+    OOD_TYPES,
     LIST_FILTERS,
     OFFSETS,
     OFFSETS_STR,
@@ -254,9 +258,6 @@ def get_test_predictions(model, config, list_data, device):
 
         lu.print_green(f"{col} Accuracy", acc)
 
-    print()
-    print()
-
     class_col = [f"all_class{i}" for i in range(nb_classes)]
     tmp = df_pred[["SNID", "target"] + class_col].groupby("SNID").mean()
     preds = np.argmax(tmp[class_col].values, 1)
@@ -418,6 +419,61 @@ def train(config):
     get_test_predictions(model, config, list_data_test, device)
 
 
+def get_metrics(config):
+    """Launch computation of all evaluation metrics for a given model, specified
+    by the settings object or by a model file
+
+    Save a pickled dataframe (we pickle  because we're saving numpy arrays, which
+    are not easily savable with the ``to_csv`` method).
+
+    Args:
+        settings (ExperimentSettings): custom class to hold hyperparameters
+        prediction_file (str): Path to saved predictions. Default: ``None``
+        model_type (str): Choose ``rnn`` or ``randomforest``
+
+    Returns:
+        (pandas.DataFrame) holds the performance metrics for this dataframe
+    """
+
+    nb_classes = config["nb_classes"]
+    processed_dir = config["processed_dir"]
+    prediction_file = (Path(config["dump_dir"]) / f"PRED.pickle").as_posix()
+    metrics_file = (Path(config["dump_dir"]) / f"METRICS.pickle").as_posix()
+
+    df_SNinfo = du.load_HDF5_SNinfo(config["processed_dir"])
+    host = pd.read_pickle(f"{processed_dir}/hostspe_SNID.pickle")
+    host_zspe_list = host["SNID"].tolist()
+
+    df = pd.read_pickle(prediction_file)
+    df = pd.merge(df, df_SNinfo[["SNID", "SNTYPE"]], on="SNID", how="left")
+
+    list_df_metrics = []
+
+    list_df_metrics.append(metrics.get_calibration_metrics_singlemodel(df))
+    list_df_metrics.append(
+        metrics.get_rnn_performance_metrics_singlemodel(
+            config, df, SNTYPES, host_zspe_list
+        )
+    )
+    if OOD_TYPES:
+        list_df_metrics.append(
+            metrics.get_uncertainty_metrics_singlemodel(df, OOD_TYPES)
+        )
+        list_df_metrics.append(
+            metrics.get_entropy_metrics_singlemodel(df, OOD_TYPES, nb_classes)
+        )
+        list_df_metrics.append(
+            metrics.get_classification_stats_singlemodel(df, OOD_TYPES, nb_classes)
+        )
+
+    df_metrics = pd.concat(list_df_metrics, 1)
+
+    df_metrics["model_name"] = Path(config["dump_dir"]).name
+    # TODO
+    df_metrics["source_data"] = "saltfit"
+    df_metrics.to_pickle(metrics_file)
+
+
 def main(config_path):
 
     config = yaml.load(open(config_path, "r"), Loader=yaml.FullLoader)
@@ -426,16 +482,36 @@ def main(config_path):
     np.random.seed(config["seed"])
 
     # Train and sav predictions
-    train(config)
+    # train(config)
+    lu.print_blue("Finished rnn training, validating and testing")
 
-    logging_utils.print_blue("Finished rnn training, validating and testing")
-
-    # # Obtain predictions
-    # validate_rnn.get_predictions(settings)
     # # Compute metrics
-    # metrics.get_metrics_singlemodel(settings, model_type="rnn")
-    # # Plot some lightcurves
-    # early_prediction.make_early_prediction(settings)
+    # get_metrics(config)
+    lu.print_blue("Finished getting metrics ")
+
+    # Plot some lightcurves
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    config["model"]["num_embeddings"] = len(LIST_FILTERS_COMBINATIONS)
+    Model = importlib.import_module(f"supernnova.modules.{config['module']}").Model
+    model = Model(**config["model"]).to(device)
+    model.load_state_dict(
+        torch.load(
+            Path(config["dump_dir"]) / "net.pt",
+            map_location=lambda storage, loc: storage,
+        )
+    )
+    _, _, list_data_test = tu.load_HDF5(config, SNTYPES)
+    plots.make_early_prediction(
+        model,
+        config,
+        list_data_test,
+        LIST_FILTERS,
+        INVERSE_FILTER_DICT,
+        device,
+        SNTYPES,
+    )
+
+    lu.print_blue("Finished plotting lightcurves and predictions ")
 
 
 if __name__ == "__main__":

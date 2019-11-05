@@ -16,7 +16,7 @@ from . import logging_utils
 LogStandardized = namedtuple("LogStandardized", ["arr_min", "arr_mean", "arr_std"])
 
 
-def sntype_decoded(target, settings):
+def sntype_decoded(target, sntypes, nb_classes):
     """Match the target class (integer in {0, ..., 6} to the name
     of the class, i.e. something like "SN Ia" or "SN CC"
 
@@ -28,27 +28,27 @@ def sntype_decoded(target, settings):
         (str) the name of the class
 
     """
-    if settings.nb_classes > 3:
-        SNtype = list(settings.sntypes.values())[target]
-    elif settings.nb_classes == 3:
+    if nb_classes > 3:
+        SNtype = list(sntypes.values())[target]
+    elif nb_classes == 3:
         if target == 0:
-            SNtype = f"SN {list(settings.sntypes.values())[0]}"
+            SNtype = f"SN {list(sntypes.values())[0]}"
         elif target == 1:
             SNtype = f"SN CC Ix"
         else:
             SNtype = "SN CC IIx"
     else:
-        list_types = list(set([x for x in settings.sntypes.values()]))
+        list_types = list(set([x for x in sntypes.values()]))
         if target == 0:
             if "Ia" in list_types:
                 SNtype = "SN Ia"
             else:
-                SNtype = f"SN {list(settings.sntypes.values())[0]}"
+                SNtype = f"SN {list(sntypes.values())[0]}"
         else:
             if "Ia" in list_types:
-                SNtype = f"SN {'|'.join(set([k for k in settings.sntypes.values() if 'Ia' not in k]))}"
+                SNtype = f"SN {'|'.join(set([k for k in sntypes.values() if 'Ia' not in k]))}"
             else:
-                SNtype = f"SN {'|'.join(list(settings.sntypes.values())[1:])}"
+                SNtype = f"SN {'|'.join(list(sntypes.values())[1:])}"
     return SNtype
 
 
