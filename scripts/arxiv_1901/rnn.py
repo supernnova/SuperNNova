@@ -1,10 +1,12 @@
 import h5py
 import json
 import yaml
+import math
 import shutil
 import argparse
 import importlib
 import numpy as np
+import pandas as pd
 from tqdm import tqdm
 from time import time
 from pathlib import Path
@@ -12,6 +14,7 @@ from collections import defaultdict
 
 from supernnova.utils import training_utils as tu
 from supernnova.utils import logging_utils as lu
+from supernnova.utils import data_utils as du
 
 import torch
 import torch.nn as nn
@@ -26,6 +29,30 @@ from constants import (
     INVERSE_FILTER_DICT,
     LIST_FILTERS_COMBINATIONS,
 )
+
+
+def find_idx(array, value):
+    """Utility to find the index of the element of ``array`` that most closely
+    matches ``value``
+
+    Args:
+        array (np.array): The array in which to search
+        value (float): The value for which we are looking for a match
+
+    Returns:
+        (int) the index of of the element of ``array`` that most closely
+        matches ``value``
+
+    """
+
+    idx = np.searchsorted(array, value, side="left")
+    if idx > 0 and (
+        idx == len(array)
+        or math.fabs(value - array[idx - 1]) < math.fabs(value - array[idx])
+    ):
+        return idx - 1
+    else:
+        return idx
 
 
 def forward_pass(model, data):
@@ -102,174 +129,93 @@ def get_predictions(model, list_data, list_batches, device):
     return X_target, X_pred
 
 
-
 def get_test_predictions(model, config, list_data, device):
 
     prediction_file = f"{config['dump_dir']}/PRED.pickle"
+    nb_classes = config["nb_classes"]
+    nb_inference_samples = config["nb_inference_samples"]
 
+    torch.set_grad_enabled(False)
     model.eval()
 
-    num_elem = len(list_batches)
+    num_elem = len(list_data)
     num_batches = max(1, num_elem // config["batch_size_test"])
     list_batches = np.array_split(np.arange(num_elem), num_batches)
 
     # Prepare output arrays
     d_pred = {
-        key: np.zeros(
-            (num_elem, settings.num_inference_samples, settings.nb_classes)
-        ).astype(np.float32)
-        for key in [
-            "all",
-            "PEAKMJD-2",
-            "PEAKMJD-1",
-            "PEAKMJD",
-            "PEAKMJD+1",
-            "PEAKMJD+2",
-        ]
+        key: np.zeros((num_elem, nb_inference_samples, nb_classes)).astype(np.float32)
+        for key in ["all"] + [f"PEAKMJD{s}" for s in OFFSETS_STR]
     }
     for key in ["target", "SNID"]:
-        d_pred[key] = np.zeros((num_elem, settings.num_inference_samples)).astype(
-            np.int64
-        )
-
-    d_pred_MFE = {
-        key: np.zeros((num_elem, 1, settings.nb_classes)).astype(np.float32)
-        for key in ["all"] + [f"all_{OOD}" for OOD in du.OOD_TYPES]
-    }
-    for key in ["target", "SNID"]:
-        d_pred_MFE[key] = np.zeros((num_elem, 1)).astype(np.int64)
+        d_pred[key] = np.zeros((num_elem, nb_inference_samples)).astype(np.int64)
 
     # Fetch SN info
-    df_SNinfo = du.load_HDF5_SNinfo(settings).set_index("SNID")
+    df_SNinfo = du.load_HDF5_SNinfo(config["processed_dir"]).set_index("SNID")
 
     # Loop over data and make prediction
-    for batch_idxs in tqdm(
-        list_batches, desc="Computing predictions on test set", ncols=100
-    ):
+    for batch_idxs in tqdm(list_batches, ncols=100):
 
         start_idx, end_idx = batch_idxs[0], batch_idxs[-1] + 1
-        SNIDs = [data[2] for data in list_data_test[start_idx:end_idx]]
+        SNIDs = [data["SNID"] for data in list_data[start_idx:end_idx]]
 
         peak_MJDs = df_SNinfo.loc[SNIDs]["PEAKMJDNORM"].values
-        delta_times = [
-            data[3][:, settings.d_feat_to_idx["delta_time"]]
-            for data in list_data_test[start_idx:end_idx]
-        ]
+        delta_times = [data["X_time"] for data in list_data[start_idx:end_idx]]
         times = [np.cumsum(t) for t in delta_times]
 
-        with torch.no_grad():
+        #############################
+        # Full lightcurve prediction
+        #############################
+        data = tu.get_data_batch(list_data, batch_idxs, device)
 
-            #############################
-            # Full lightcurve prediction
-            #############################
+        for iter_ in range(nb_inference_samples):
 
-            packed, _, target_tensor, idxs_rev_sort = tu.get_data_batch(
-                list_data_test, batch_idxs, settings
-            )
+            _, X_pred, X_target = forward_pass(model, data)
+            arr_preds, arr_target = X_pred.cpu().numpy(), X_target.cpu().numpy()
 
-            for iter_ in tqdm(range(settings.num_inference_samples), ncols=100):
+            d_pred["all"][start_idx:end_idx, iter_] = arr_preds
+            d_pred["target"][start_idx:end_idx, iter_] = arr_target
+            d_pred["SNID"][start_idx:end_idx, iter_] = SNIDs
 
-                arr_preds, arr_target = get_batch_predictions(
-                    rnn, packed, target_tensor
+        #############################
+        # Predictions around PEAKMJD
+        #############################
+        for offset in OFFSETS:
+            slice_idxs = [
+                find_idx(times[k], peak_MJDs[k] + offset) for k in range(len(times))
+            ]
+            # Split in 2 arrays:
+            # oob_idxs: the slice for early prediction is empty for those indices
+            # inb_idxs: the slice is not empty
+            oob_idxs = np.where(np.array(slice_idxs) < 1)[0]
+            inb_idxs = np.where(np.array(slice_idxs) >= 1)[0]
+
+            if len(inb_idxs) > 0:
+                # We only carry out prediction for samples in ``inb_idxs``
+                offset_batch_idxs = [batch_idxs[b] for b in inb_idxs]
+                max_lengths = [slice_idxs[b] for b in inb_idxs]
+
+                data = tu.get_data_batch(
+                    list_data, offset_batch_idxs, device, max_lengths=max_lengths
                 )
 
-                # Rever sorting that occurs in get_batch_predictions
-                arr_preds = arr_preds[idxs_rev_sort]
-                arr_target = arr_target[idxs_rev_sort]
+                for iter_ in range(nb_inference_samples):
 
-                d_pred["all"][start_idx:end_idx, iter_] = arr_preds
-                d_pred["target"][start_idx:end_idx, iter_] = arr_target
-                d_pred["SNID"][start_idx:end_idx, iter_] = SNIDs
+                    _, X_pred, X_target = forward_pass(model, data)
+                    arr_preds, arr_target = X_pred.cpu().numpy(), X_target.cpu().numpy()
 
-            # MFE
-            arr_preds, arr_target = get_batch_predictions_MFE(
-                rnn, packed, target_tensor
-            )
+                    suffix = str(offset) if offset != 0 else ""
+                    suffix = f"+{suffix}" if offset > 0 else suffix
+                    col = f"PEAKMJD{suffix}"
 
-            # Rever sorting that occurs in get_batch_predictions
-            arr_preds = arr_preds[idxs_rev_sort]
-            arr_target = arr_target[idxs_rev_sort]
-
-            d_pred_MFE["all"][start_idx:end_idx, 0] = arr_preds
-            d_pred_MFE["target"][start_idx:end_idx, 0] = arr_target
-            d_pred_MFE["SNID"][start_idx:end_idx, 0] = SNIDs
-
-            #############################
-            # Predictions around PEAKMJD
-            #############################
-            for offset in [-2, -1, 0, 1, 2]:
-                slice_idxs = [
-                    find_idx(times[k], peak_MJDs[k] + offset) for k in range(len(times))
-                ]
-                # Split in 2 arrays:
-                # oob_idxs: the slice for early prediction is empty for those indices
-                # inb_idxs: the slice is not empty
-                oob_idxs = np.where(np.array(slice_idxs) < 1)[0]
-                inb_idxs = np.where(np.array(slice_idxs) >= 1)[0]
-
-                if len(inb_idxs) > 0:
-                    # We only carry out prediction for samples in ``inb_idxs``
-                    offset_batch_idxs = [batch_idxs[b] for b in inb_idxs]
-                    max_lengths = [slice_idxs[b] for b in inb_idxs]
-                    packed, _, target_tensor, idxs_rev_sort = tu.get_data_batch(
-                        list_data_test,
-                        offset_batch_idxs,
-                        settings,
-                        max_lengths=max_lengths,
-                    )
-
-                    for iter_ in tqdm(range(settings.num_inference_samples), ncols=100):
-
-                        arr_preds, arr_target = get_batch_predictions(
-                            rnn, packed, target_tensor
-                        )
-
-                        # Rever sorting that occurs in get_batch_predictions
-                        arr_preds = arr_preds[idxs_rev_sort]
-
-                        suffix = str(offset) if offset != 0 else ""
-                        suffix = f"+{suffix}" if offset > 0 else suffix
-                        col = f"PEAKMJD{suffix}"
-
-                        d_pred[col][start_idx + inb_idxs, iter_] = arr_preds
-                        # For oob_idxs, no prediction can be made, fill with nan
-                        d_pred[col][start_idx + oob_idxs, iter_] = np.nan
-
-            #############################
-            # OOD predictions
-            #############################
-
-            for OOD in ["random", "shuffle", "reverse", "sin"]:
-                packed, _, target_tensor, idxs_rev_sort = tu.get_data_batch(
-                    list_data_test, batch_idxs, settings, OOD=OOD
-                )
-
-                for iter_ in tqdm(range(settings.num_inference_samples), ncols=100):
-
-                    arr_preds, arr_target = get_batch_predictions(
-                        rnn, packed, target_tensor
-                    )
-
-                    # Revert sorting that occurs in get_batch_predictions
-                    arr_preds = arr_preds[idxs_rev_sort]
-                    arr_target = arr_target[idxs_rev_sort]
-
-                    d_pred[f"all_{OOD}"][start_idx:end_idx, iter_] = arr_preds
-
-                arr_preds, arr_target = get_batch_predictions_MFE(
-                    rnn, packed, target_tensor
-                )
-
-                # Revert sorting that occurs in get_batch_predictions
-                arr_preds = arr_preds[idxs_rev_sort]
-                arr_target = arr_target[idxs_rev_sort]
-
-                d_pred_MFE[f"all_{OOD}"][start_idx:end_idx, 0] = arr_preds
+                    d_pred[col][start_idx + inb_idxs, iter_] = arr_preds
+                    # For oob_idxs, no prediction can be made, fill with nan
+                    d_pred[col][start_idx + oob_idxs, iter_] = np.nan
 
     # Flatten all arrays and aggregate in dataframe
     d_series = {}
     for (key, value) in d_pred.items():
-        value = value.reshape((num_elem * settings.num_inference_samples, -1))
+        value = value.reshape((num_elem * nb_inference_samples, -1))
         value_dim = value.shape[1]
         if value_dim == 1:
             d_series[key] = np.ravel(value)
@@ -278,48 +224,30 @@ def get_test_predictions(model, config, list_data, device):
                 d_series[f"{key}_class{i}"] = value[:, i]
     df_pred = pd.DataFrame.from_dict(d_series)
 
-    # Flatten all arrays and aggregate in dataframe
-    d_series_MFE = {}
-    for (key, value) in d_pred_MFE.items():
-        value = value.reshape((num_elem * 1, -1))
-        value_dim = value.shape[1]
-        if value_dim == 1:
-            d_series_MFE[key] = np.ravel(value)
-        else:
-            for i in range(value_dim):
-                d_series_MFE[f"{key}_class{i}"] = value[:, i]
-    df_pred_MFE = pd.DataFrame.from_dict(d_series_MFE)
+    # Saving aggregated preds in case multiple predictions were sampled
+    df_median = df_pred.groupby("SNID").median()
+    df_median.columns = [str(col) + "_median" for col in df_median.columns]
+    df_std = df_pred.groupby("SNID").std()
+    df_std.columns = [str(col) + "_std" for col in df_std.columns]
+    df_median = df_median.merge(df_std, on="SNID", how="left")
 
+    df_pred = df_pred.merge(df_median, on="SNID", how="left")
     # Save predictions
     df_pred.to_pickle(prediction_file)
 
-    # Saving aggregated preds for bayesian models
-    if settings.model == "variational" or settings.model == "bayesian":
-        med_pred = df_pred.groupby("SNID").median()
-        med_pred.columns = [str(col) + "_median" for col in med_pred.columns]
-        std_pred = df_pred.groupby("SNID").std()
-        std_pred.columns = [str(col) + "_std" for col in std_pred.columns]
-        df_bayes = pd.merge(med_pred, std_pred, on="SNID")
-        df_bayes["SNID"] = df_bayes.index
-        df_bayes["target"] = df_bayes["target_median"]
-        bay_pred_file = prediction_file.replace(".pickle", "_aggregated.pickle")
-        df_bayes.to_pickle(bay_pred_file)
-
     g_pred = df_pred.groupby("SNID").median()
-    preds = g_pred[[f"all_class{i}" for i in range(settings.nb_classes)]].values
+    preds = g_pred[[f"all_class{i}" for i in range(nb_classes)]].values
     preds = np.argmax(preds, 1)
     acc = (preds == g_pred.target.values).sum() / len(g_pred)
 
     # Display accuracy
-    lu.print_green("Full Accuracy", acc)
-    for col in [f"PEAKMJD{s}" for s in du.OFFSETS_STR]:
+    lu.print_green(f"Accuracy ({nb_inference_samples} inference samples)", acc)
+    for col in [f"PEAKMJD{s}" for s in OFFSETS_STR]:
 
         preds_target = g_pred[
-            [f"{col}_class{i}" for i in range(settings.nb_classes)] + ["target"]
+            [f"{col}_class{i}" for i in range(nb_classes)] + ["target"]
         ].dropna()
-        preds = preds_target[
-            [f"{col}_class{i}" for i in range(settings.nb_classes)]
-        ].values
+        preds = preds_target[[f"{col}_class{i}" for i in range(nb_classes)]].values
         target = preds_target["target"].values
         preds = np.argmax(preds, 1)
         acc = (preds == target).sum() / len(g_pred)
@@ -329,54 +257,16 @@ def get_test_predictions(model, config, list_data, device):
     print()
     print()
 
-    class_col = [f"all_class{i}" for i in range(settings.nb_classes)]
+    class_col = [f"all_class{i}" for i in range(nb_classes)]
     tmp = df_pred[["SNID", "target"] + class_col].groupby("SNID").mean()
     preds = np.argmax(tmp[class_col].values, 1)
     acc = (preds == tmp.target.values).sum() / len(tmp)
-    lu.print_green(f"Accuracy MC", acc)
-
-    for OOD in ["random", "reverse", "shuffle", "sin"]:
-        class_col_ood = [f"all_{OOD}_class{i}" for i in range(settings.nb_classes)]
-        entropy_ood = (
-            -(df_pred[class_col_ood].values * np.log(df_pred[class_col_ood].values))
-            .sum(1)
-            .mean()
-        )
-        entropy = (
-            -(df_pred[class_col].values * np.log(df_pred[class_col].values))
-            .sum(1)
-            .mean()
-        )
-        lu.print_green(f"Delta Entropy {OOD} MC", entropy_ood - entropy)
-
-    print()
-    print()
-
-    tmp = df_pred_MFE[["SNID", "target"] + class_col].groupby("SNID").mean()
-    preds = np.argmax(tmp[class_col].values, 1)
-    acc = (preds == tmp.target.values).sum() / len(tmp)
-    lu.print_green(f"Accuracy MFE", acc)
-
-    for OOD in ["random", "reverse", "shuffle", "sin"]:
-        class_col_ood = [f"all_{OOD}_class{i}" for i in range(settings.nb_classes)]
-        entropy_ood = (
-            -(
-                df_pred_MFE[class_col_ood].values
-                * np.log(df_pred_MFE[class_col_ood].values)
-            )
-            .sum(1)
-            .mean()
-        )
-        entropy = (
-            -(df_pred_MFE[class_col].values * np.log(df_pred_MFE[class_col].values))
-            .sum(1)
-            .mean()
-        )
-        lu.print_green(f"Delta Entropy {OOD} MFE", entropy_ood - entropy)
+    lu.print_green(f"Accuracy (mean predciction)", acc)
 
     lu.print_green("Finished getting predictions ")
 
-    return prediction_file
+    torch.set_grad_enabled(True)
+
 
 def train(config):
     """Train RNN models with a decay on plateau policy
@@ -389,9 +279,7 @@ def train(config):
     Path(config["dump_dir"]).mkdir(parents=True)
 
     # Data
-    list_data_train, list_data_val, list_data_test = tu.load_HDF5(
-        config, SNTYPES
-    )
+    list_data_train, list_data_val, list_data_test = tu.load_HDF5(config, SNTYPES)
 
     num_elem = len(list_data_train)
     num_batches = max(1, num_elem // config["batch_size"])
@@ -527,6 +415,7 @@ def train(config):
     lu.print_green("Finished training")
 
     # Start validating on test set
+    get_test_predictions(model, config, list_data_test, device)
 
 
 def main(config_path):
@@ -538,8 +427,6 @@ def main(config_path):
 
     # Train and sav predictions
     train(config)
-    # Compute metrics
-    get_metrics(config)
 
     logging_utils.print_blue("Finished rnn training, validating and testing")
 

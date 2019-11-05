@@ -36,9 +36,7 @@ def inverse_log_norm(x, min_clip, mean, std):
     return x
 
 
-def fill_data_list(
-    idxs, arr_data, arr_meta, arr_target, arr_SNID, list_features, desc
-):
+def fill_data_list(idxs, arr_data, arr_meta, arr_target, arr_SNID, list_features, desc):
     """
     """
 
@@ -218,7 +216,7 @@ def load_HDF5(config, sntypes, all_data=False):
         return list_data_train, list_data_val, list_data_test
 
 
-def get_data_batch(list_data, idxs, device):
+def get_data_batch(list_data, idxs, device, max_lengths=None):
     """Create a batch in a deterministic way
 
     Args:
@@ -235,7 +233,11 @@ def get_data_batch(list_data, idxs, device):
             - target_tensor (torch Tensor): the target
     """
 
-    list_lengths = [list_data[i]["X_flux"].shape[0] for i in idxs]
+    list_lengths = (
+        [list_data[i]["X_flux"].shape[0] for i in idxs]
+        if max_lengths is None
+        else max_lengths
+    )
     B = len(idxs)
     L = max(list_lengths)
     Dflux = list_data[0]["X_flux"].shape[1]
@@ -257,12 +259,12 @@ def get_data_batch(list_data, idxs, device):
     for pos, idx in enumerate(idxs):
 
         data = list_data[idx]
-        length = data["X_flux"].shape[0]
+        length = list_lengths[pos]
 
-        X_flux[pos, :length, :] = data["X_flux"]
-        X_fluxerr[pos, :length, :] = data["X_fluxerr"]
-        X_time[pos, :length, 0] = data["X_time"]
-        X_flt[pos, :length] = data["X_flt"]
+        X_flux[pos, :length, :] = data["X_flux"][:length]
+        X_fluxerr[pos, :length, :] = data["X_fluxerr"][:length]
+        X_time[pos, :length, 0] = data["X_time"][:length]
+        X_flt[pos, :length] = data["X_flt"][:length]
         X_target[pos] = data["X_target"]
 
         if has_meta:

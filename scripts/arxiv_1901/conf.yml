@@ -5,7 +5,8 @@ fitopt_file: /home/SuperNNova/tests/fits/FITOPT000.FITRES
 fig_dir: /home/SuperNNova/tests/dump/figures
 dump_dir: /home/SuperNNova/tests/dump/rnn/vanilla_000
 
-nb_epoch: 10
+nb_epoch: 1
+nb_inference_samples: 1
 batch_size: 16
 batch_size_test: 16
 learning_rate: 1.0E-3
