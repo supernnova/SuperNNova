@@ -42,7 +42,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.autodoc",
     # "sphinxcontrib.napoleon", # sphinx<=1.2
-    'sphinx.ext.napoleon',
+    "sphinx.ext.napoleon",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
