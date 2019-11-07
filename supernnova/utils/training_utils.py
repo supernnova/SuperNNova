@@ -31,21 +31,30 @@ def normalize_arr(arr, settings):
         (np.array) the normalized array
     """
 
+    
+
     if settings.norm == "none":
         return arr
 
-    arr_min = settings.arr_norm[:, 0]
-    arr_mean = settings.arr_norm[:, 1]
-    arr_std = settings.arr_norm[:, 2]
+    else:
+        arr_min = settings.arr_norm[:, 0]
+        arr_mean = settings.arr_norm[:, 1]
+        arr_std = settings.arr_norm[:, 2]
 
-    arr_to_norm = arr[:, settings.idx_features_to_normalize]
-    # clipping
-    arr_to_norm = np.clip(arr_to_norm, arr_min, np.inf)
+        arr_to_norm = arr[:, settings.idx_features_to_normalize]
+        # clipping
+        arr_to_norm = np.clip(arr_to_norm, arr_min, np.inf)
 
-    arr_normed = np.log(arr_to_norm - arr_min + 1e-5)
-    arr_normed = (arr_normed - arr_mean) / arr_std
+        if settings.norm == 'cosmo':
+            # setting max flux to 1 for all lcs
+            lu.print_yellow('BEWARE: normalization can not be reversed')
+            # TO DO: deal with flux errors since they encode S/N info
+            arr_to_norm = arr_to_norm/arr_to_norm.max()
 
-    arr[:, settings.idx_features_to_normalize] = arr_normed
+        arr_normed = np.log(arr_to_norm - arr_min + 1e-5)
+        arr_normed = (arr_normed - arr_mean) / arr_std
+        arr[:, settings.idx_features_to_normalize] = arr_normed
+
     return arr
 
 
@@ -121,10 +130,12 @@ def fill_data_list(
             X_clip[:, settings.idx_features_to_normalize], settings.arr_norm[:, 0], np.inf)
         X_all[:, settings.idx_features_to_normalize] = X_clip
 
-        X_tmp = unnormalize_arr(normalize_arr(
-            X_all.copy(), settings), settings)
-        assert np.all(
-            np.all(np.isclose(np.ravel(X_all), np.ravel(X_tmp), atol=1e-1)))
+        if settings.norm != 'cosmo':
+            X_tmp = unnormalize_arr(normalize_arr(
+                X_all.copy(), settings), settings)
+            assert np.all(
+                np.all(np.isclose(np.ravel(X_all), np.ravel(X_tmp), atol=1e-1)))
+
         # Normalize features that need to be normalized
         X_normed = X_all.copy()
         X_normed_tmp = normalize_arr(X_normed, settings)

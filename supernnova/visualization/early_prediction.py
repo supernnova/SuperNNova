@@ -258,7 +258,7 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
             # X here has been normalized. We unnormalize X
             X_unnormed = tu.unnormalize_arr(X_normed, settings)
             # Check we do recover X_ori when OOD is None
-            if OOD is None:
+            if OOD is None and settings.norm != 'cosmo':
                 #check if normalization converges
                 # using clipping in case of min<model_min
                 X_clip = X_ori.copy()
