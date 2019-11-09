@@ -9,7 +9,7 @@ import torch.nn as nn
 from tqdm import tqdm
 from pathlib import Path
 
-from supernnova.modules.bayesian_rnn import (
+from supernnova.modules.bayesian_layers import (
     BayesEmbedding,
     BayesLSTM,
     BayesLinear,
@@ -60,14 +60,15 @@ class LanguageModel(nn.Module):
         self.vocab_size = vocab_size
         self.num_layers = num_layers
         self.hidden_size = hidden_size
-
         prior = Prior()
+
         init_recurrent = {
             "mu_lower": -0.05,
             "mu_upper": 0.05,
             "rho_lower": math.log(math.exp(prior.sigma_mix / 4.0) - 1.0),
             "rho_upper": math.log(math.exp(prior.sigma_mix / 2.0) - 1.0),
         }
+
         init_non_recurrent = {
             "mu_lower": -0.05,
             "mu_upper": 0.05,
@@ -80,7 +81,11 @@ class LanguageModel(nn.Module):
             vocab_size, hidden_size, prior, **init_non_recurrent
         )
         self.bayeslstm = BayesLSTM(
-            hidden_size, hidden_size, prior, num_layers=num_layers, **init_recurrent
+            hidden_size,
+            hidden_size,
+            num_layers=num_layers,
+            prior=prior,
+            **init_recurrent,
         )
         self.linear = BayesLinear(hidden_size, vocab_size, prior, **init_non_recurrent)
 
@@ -149,7 +154,9 @@ def train_epoch(model, criterion, corpus, train_data, epoch, lr):
         torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip)
 
         for p in model.parameters():
-            p.data.add_(-lr, p.grad.data)
+            if p.grad is not None:
+                d_p = p.grad.data
+                p.data.add_(-lr, d_p)
 
         if batch % args.log_interval == 0 and batch > 0:
             cur_likelihood_loss = total_likelihood_loss / (
@@ -181,15 +188,14 @@ def run(args):
 
     dir_path = os.path.dirname(os.path.realpath(__file__))
     debug_msg = (
-        "\n\nFirst download the PTB dataset and dump it to sandbox/data/penn"
+        f"\n\nFirst download the PTB dataset and dump it to {dir_path}"
         "\nSee: https://github.com/townie/PTB-dataset-from-Tomas-Mikolov-s-webpage/tree/master/data"
     )
-    assert (Path(dir_path) / "data/penn").exists(), debug_msg
-    for f in ["train.txt", "test.txt", "valid.txt"]:
-        assert (Path(dir_path) / f"data/penn/{f}").exists()
+    for f in ["ptb.train.txt", "ptb.test.txt", "ptb.valid.txt"]:
+        assert (Path(dir_path) / f).exists(), debug_msg
 
     eval_batch_size = 20
-    corpus = Corpus("sandbox/data/penn")
+    corpus = Corpus(dir_path)
     train_data = batchify(corpus.train, args.batch_size, device)
     val_data = batchify(corpus.valid, eval_batch_size, device)
     test_data = batchify(corpus.test, eval_batch_size, device)
@@ -235,7 +241,7 @@ def run(args):
 
         print("=" * 89)
         if val_loss < best_val_loss:
-            torch.save(model.state_dict(), "bayesian_scratch_scaled.pt")
+            torch.save(model.state_dict(), "model.pt")
 
     # Run on test data.
     test_loss, test_entropy = evaluate(

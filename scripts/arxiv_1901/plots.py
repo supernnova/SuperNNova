@@ -1579,7 +1579,6 @@ def plot_predictions(
         ax.plot([peak_MJD, peak_MJD], [0, 1], "k--", label="Peak MJD")
     ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.0)
 
-    
     plt.tight_layout()
     plt.savefig(Path(config["dump_dir"]) / "fig.png")
     plt.clf()
@@ -1637,10 +1636,16 @@ def make_early_prediction(
         d_pred = {"model": {"prob": []}}
         for i in range(1, seq_len + 1):
 
-            X_pred = model(X_flux[:, :i], X_fluxerr[:, :i], X_flt[:, :i], X_time[:, :i], X_mask[:, :i], x_meta=X_meta)
+            X_pred = model(
+                X_flux[:, :i],
+                X_fluxerr[:, :i],
+                X_flt[:, :i],
+                X_time[:, :i],
+                X_mask[:, :i],
+                x_meta=X_meta,
+            )
             X_pred = torch.nn.functional.softmax(X_pred, dim=1).cpu().numpy()
             d_pred["model"]["prob"].append(X_pred)
-
 
         # Stack
         for key in ["model"]:
@@ -1673,9 +1678,7 @@ def make_early_prediction(
                 for t in range(length)
                 if c in inverse_filter_dict[X_flt[t]]
             ]
-            tmp = [
-                time[t] for t in range(length) if c in inverse_filter_dict[X_flt[t]]
-            ]
+            tmp = [time[t] for t in range(length) if c in inverse_filter_dict[X_flt[t]]]
             d_plot[c]["FLUXCAL"] = flux
             d_plot[c]["FLUXCALERR"] = fluxerr
             d_plot[c]["MJD"] = tmp

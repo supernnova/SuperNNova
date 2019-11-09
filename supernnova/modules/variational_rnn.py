@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+import warnings
+
 
 class Model(torch.nn.Module):
     def __init__(self, input_size, settings):
@@ -187,7 +189,7 @@ class EmbeddingDropout(nn.Module):
     def forward(self, x):
         if self.training:
             size = (self.emb.weight.shape[0], 1)
-            mask = dropout_mask(self.emb.weight.data, size, self.embed_p)
+            mask = dropout_mask(self.emb.weight.data, size, self.dropout)
             masked_embed = self.emb.weight * mask
         else:
             masked_embed = self.emb.weight
@@ -204,6 +206,7 @@ class EmbeddingDropout(nn.Module):
 
 class WeightDropout(nn.Module):
     def __init__(self, module, dropout, layer_names):
+        super().__init__()
         self.module = module
         self.dropout = dropout
         self.layer_names = layer_names
@@ -226,7 +229,10 @@ class WeightDropout(nn.Module):
 
     def forward(self, *args):
         self._setweights()
-        return self.module.forward(*args)
+        with warnings.catch_warnings():
+            # To avoid the warning that comes because the weights aren't flattened.
+            warnings.simplefilter("ignore")
+            return self.module.forward(*args)
 
     def reset(self):
         for layer in self.layer_names:
@@ -245,7 +251,7 @@ class RNNDropout(nn.Module):
         self.batch_first = batch_first
 
     def forward(self, x):
-        if not self.training or self.p == 0.0:
+        if not self.training or self.dropout == 0.0:
             return x
 
         mask = (
@@ -254,4 +260,3 @@ class RNNDropout(nn.Module):
             else dropout_mask(x.data, (1, x.shape[1], x.shape[2]), self.dropout)
         )
         return x * mask
-
