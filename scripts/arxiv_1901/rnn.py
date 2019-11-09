@@ -16,6 +16,7 @@ from supernnova.utils import training_utils as tu
 from supernnova.utils import logging_utils as lu
 from supernnova.utils import data_utils as du
 from supernnova.validation import metrics
+from supernnova.data.dataset import HDF5Dataset
 
 import torch
 import torch.nn as nn
@@ -340,12 +341,33 @@ def train(config):
     batch = 0
     best_loss = float("inf")
 
+    dataset = HDF5Dataset(
+        f"{config['processed_dir']}/database.h5",
+        config["metadata_features"],
+        SNTYPES,
+        config["nb_classes"],
+    )
+
     for epoch in range(config["nb_epoch"]):
 
         desc = f"Epoch: {epoch} -- {loss_str}"
 
         np.random.shuffle(list_batches_train)
 
+        for data in dataset.create_iterator("train", config["batch_size"], device):
+
+
+            model.train()
+            optimizer.zero_grad()
+
+            # Train step : forward backward pass
+            loss, *_ = forward_pass(model, data)
+
+            loss.backward()
+            optimizer.step()
+
+            batch += 1
+        
         for batch_idxs in tqdm(
             list_batches_train,
             desc=desc,
@@ -376,10 +398,14 @@ def train(config):
         )
 
         d_losses_train = tu.get_evaluation_metrics(
-            X_pred_train, X_target_train, nb_classes=config["nb_classes"]
+            X_pred_train.detach().cpu().numpy(),
+            X_target_train.detach().cpu().numpy(),
+            nb_classes=config["nb_classes"],
         )
         d_losses_val = tu.get_evaluation_metrics(
-            X_pred_val, X_target_val, nb_classes=config["nb_classes"]
+            X_pred_val.detach().cpu().numpy(),
+            X_target_val.detach().cpu().numpy(),
+            nb_classes=config["nb_classes"],
         )
 
         # Add current loss avg to list of losses
@@ -482,7 +508,7 @@ def main(config_path):
     np.random.seed(config["seed"])
 
     # Train and sav predictions
-    # train(config)
+    train(config)
     lu.print_blue("Finished rnn training, validating and testing")
 
     # # Compute metrics

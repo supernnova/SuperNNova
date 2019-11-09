@@ -378,4 +378,3 @@ def compute_KL(x, mu, sigma, prior):
     log_prior = torch.logsumexp(prior_mix, 0)
 
     return log_posterior - log_prior
-
