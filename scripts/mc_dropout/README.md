@@ -1,4 +1,4 @@
-# Language Modelling with Monte Carlo dropout
+# Language Modelling with Variational Monte Carlo dropout
 
 ## Overview
 
@@ -10,7 +10,7 @@ Specifically, we reproduce the results from Table 1, row `Variational (untied we
 
 From this project's root, call
 
-    YTHONPATH=$PWD:$PYTHONPATH python scripts/mc_dropout/lm_rnn_gal.py  # on CPU, very slow
+    PYTHONPATH=$PWD:$PYTHONPATH python scripts/mc_dropout/lm_rnn_gal.py  # on CPU, very slow
     PYTHONPATH=$PWD:$PYTHONPATH python scripts/mc_dropout/lm_rnn_gal.py --cuda  # if you have a GPU
 
 
