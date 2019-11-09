@@ -1,6 +1,7 @@
 import h5py
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 
 import torch
 
@@ -95,7 +96,7 @@ class HDF5Dataset:
     def __len__(self):
         return len(self.splits["train"])
 
-    def create_iterator(self, split, batch_size, device):
+    def create_iterator(self, split, batch_size, device, tqdm_desc=None):
 
         idxs = self.splits[split]
         np.random.shuffle(idxs)
@@ -129,7 +130,18 @@ class HDF5Dataset:
 
             arr_data = hf["data"]
 
-            for idxs in tqdm(list_idxs):
+            iterator = (
+                tqdm(
+                    list_idxs,
+                    desc=tqdm_desc,
+                    ncols=100,
+                    bar_format="{desc} |{bar}| {n_fmt}/{total_fmt} {rate_fmt}{postfix}",
+                )
+                if tqdm_desc is not None
+                else list_idxs
+            )
+
+            for idxs in iterator:
 
                 tmp_X = arr_data[idxs]
                 X_SNID = arr_SNID[idxs]
@@ -175,4 +187,3 @@ class HDF5Dataset:
                     out["X_meta"] = torch.from_numpy(X_meta).to(device)
 
                 yield out
-
