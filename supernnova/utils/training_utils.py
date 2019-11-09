@@ -13,9 +13,6 @@ import torch
 import torch.nn as nn
 
 from . import logging_utils as lu
-from supernnova.training import bayesian_rnn
-from supernnova.training import variational_rnn
-from supernnova.training import vanilla_rnn
 
 
 plt.switch_backend("agg")

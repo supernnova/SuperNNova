@@ -37,6 +37,8 @@ def train(config):
         n_jobs=-1,
     )
 
+    Path(config["dump_dir"]).mkdir(exist_ok=True, parents=True)
+
     ###################
     # Data
     ###################
@@ -79,9 +81,17 @@ def train(config):
     # 80/10/10 Train/val/test split
     n_train = int(0.8 * n)
     n_val = int(0.9 * n)
-    df_train = sn_df[:n_train]
-    df_val = sn_df[n_train:n_val]
-    df_test = sn_df[n_val:]
+    df_train = sn_df[:n_train].copy()
+    df_val = sn_df[n_train:n_val].copy()
+    df_test = sn_df[n_val:].copy()
+
+    # Save the splits
+    df_train["split"] = "train"
+    df_val["split"] = "val"
+    df_test["split"] = "test"
+    df_splits = pd.concat([df_train, df_val, df_test], 0)[["SNID", "split"]]
+    save_file = (Path(config["dump_dir"]) / f"data_splits.csv").as_posix()
+    df_splits.to_csv(save_file, index=False)
 
     features = config["features"]
 
@@ -116,7 +126,6 @@ def train(config):
     )
     # save the model to disk
     save_file = (Path(config["dump_dir"]) / f"model.pickle").as_posix()
-    Path(save_file).parent.mkdir(exist_ok=True, parents=True)
     training_utils.save_randomforest_model(save_file, clf)
 
     y_pred_proba = clf.predict_proba(X_test)
@@ -136,6 +145,10 @@ def train(config):
     ]
     prediction_file = (Path(config["dump_dir"]) / f"PRED.pickle").as_posix()
     df_test[list_features_save].to_pickle(prediction_file)
+
+    # Save config
+    with open(Path(config["dump_dir"]) / "cf.yml", "w") as f:
+        yaml.dump(config, f)
 
 
 def get_metrics(config):

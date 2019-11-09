@@ -6,10 +6,10 @@ min_samples_split: 10
 criterion: entropy
 max_features: 5
 max_depth: 7
-fitopt_file: /home/SuperNNova/tests/fits/FITOPT000.FITRES
-processed_dir: /home/SuperNNova/tests/dump/processed
-dump_dir: /home/SuperNNova/tests/dump/randomforest/rf_000
-fig_dir: /home/SuperNNova/tests/dump/figures
+fitopt_file: /u/home/SuperNNova/tests/fits/FITOPT000.FITRES
+processed_dir: /u/home/SuperNNova/tests/dump/processed
+dump_dir: /u/home/SuperNNova/tests/dump/randomforest/rf_000
+fig_dir: /u/home/SuperNNova/tests/dump/figures
 data_fraction: 1.
 
 features:
