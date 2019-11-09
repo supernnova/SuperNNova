@@ -9,7 +9,7 @@ import torch.nn as nn
 from tqdm import tqdm
 from pathlib import Path
 
-from supernnova.training.bayesian_rnn import (
+from supernnova.modules.bayesian_rnn import (
     BayesEmbedding,
     BayesLSTM,
     BayesLinear,

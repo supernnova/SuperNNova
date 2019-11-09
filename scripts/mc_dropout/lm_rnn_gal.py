@@ -9,10 +9,10 @@ import torch.nn as nn
 from tqdm import tqdm
 from pathlib import Path
 
-from supernnova.training.variational_rnn import (
-    WeightDrop,
-    VariationalRecurrentDropout,
-    embedded_dropout,
+from supernnova.modules.variational_rnn import (
+    WeightDropout,
+    RNNDropout,
+    EmbeddingDropout,
 )
 
 from data import Corpus, batchify, get_batch, repackage_hidden
@@ -62,8 +62,8 @@ class LanguageModel(nn.Module):
         initrange = 0.1
 
         # Layers
-        self.encoder = nn.Embedding(vocab_size, hidden_size)
-        self.encoder.weight.data.uniform_(-initrange, initrange)
+        self.encoder = EmbeddingDropout(vocab_size, hidden_size, self.edrop)
+        self.encoder.emb.weight.data.uniform_(-initrange, initrange)
 
         # Need to create recurrent layers one by one because we use variational dropout
         rnn1 = nn.LSTM(hidden_size, hidden_size, dropout=0)
@@ -79,10 +79,11 @@ class LanguageModel(nn.Module):
         rnn2.bias_ih_l0.data.zero_()
         rnn2.bias_hh_l0.data.zero_()
 
-        self.rnn1 = WeightDrop(rnn1, ["weight_hh_l0"], dropout=self.hdrop)
-        self.rnn2 = WeightDrop(rnn2, ["weight_hh_l0"], dropout=self.hdrop)
+        self.rnn1 = WeightDropout(rnn1, self.hdrop, ["weight_hh_l0"])
+        self.rnn2 = WeightDropout(rnn2, self.hdrop, ["weight_hh_l0"])
 
-        self.recurrent_dropout_layer = VariationalRecurrentDropout()
+        self.idrop = RNNDropout(self.idrop)
+        self.odrop = RNNDropout(self.odrop)
 
         self.linear = nn.Linear(hidden_size, vocab_size)
         self.linear.weight.data.uniform_(-initrange, initrange)
@@ -101,29 +102,14 @@ class LanguageModel(nn.Module):
             ),
         )
 
-    def forward(self, x, hidden, mean_field_inference=False):
+    def forward(self, x, hidden):
 
-        x = embedded_dropout(
-            self.encoder, x, self.edrop, mean_field_inference=mean_field_inference
-        )
-
-        # apply variational dropout to first rnn layer input
-        x = self.recurrent_dropout_layer(
-            x, self.idrop, mean_field_inference=mean_field_inference
-        )
-
-        x, hidden0 = self.rnn1(x, hidden[0], mean_field_inference=mean_field_inference)
-
-        # apply variational dropout to second rnn layer input
-        x = self.recurrent_dropout_layer(
-            x, self.idrop, mean_field_inference=mean_field_inference
-        )
-        x, hidden1 = self.rnn2(x, hidden[1], mean_field_inference=mean_field_inference)
-
-        # apply dropout to last layer output
-        x = self.recurrent_dropout_layer(
-            x, self.odrop, mean_field_inference=mean_field_inference
-        )
+        x = self.encoder(x)
+        x = self.idrop(x)
+        x, hidden0 = self.rnn1(x, hidden[0])
+        x = self.idrop(x)
+        x, hidden1 = self.rnn2(x, hidden[1])
+        x = self.odrop(x)
         x = self.linear(x)
 
         return x, (hidden0, hidden1)
@@ -187,17 +173,16 @@ def run(args):
 
     dir_path = os.path.dirname(os.path.realpath(__file__))
     debug_msg = (
-        "\n\nFirst download the PTB dataset and dump it to sandbox/data/penn"
+        f"\n\nFirst download the PTB dataset and dump it to {dir_path}"
         "\nSee: https://github.com/townie/PTB-dataset-from-Tomas-Mikolov-s-webpage/tree/master/data"
     )
-    assert (Path(dir_path) / "data/penn").exists(), debug_msg
-    for f in ["train.txt", "test.txt", "valid.txt"]:
-        assert (Path(dir_path) / f"data/penn/{f}").exists()
+    for f in ["ptb.train.txt", "ptb.test.txt", "ptb.valid.txt"]:
+        assert (Path(dir_path) / f).exists(), debug_msg
 
     device = torch.device("cuda" if args.cuda else "cpu")
 
     eval_batch_size = 20
-    corpus = Corpus("sandbox/data/penn")
+    corpus = Corpus(dir_path)
     train_data = batchify(corpus.train, args.batch_size, device)
     val_data = batchify(corpus.valid, eval_batch_size, device)
     test_data = batchify(corpus.test, eval_batch_size, device)

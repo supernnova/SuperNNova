@@ -16,7 +16,7 @@ class Model(torch.nn.Module):
         embedding_dim,
         normalize=False,
     ):
-        super(Model, self).__init__()
+        super().__init__()
 
         self.normalize = normalize
 

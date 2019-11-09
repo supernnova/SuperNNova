@@ -1,10 +1,12 @@
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
 
 
-class VariationalRNN(torch.nn.Module):
+class Model(torch.nn.Module):
     def __init__(self, input_size, settings):
 
-        super(VariationalRNN, self).__init__()
+        super().__init__()
 
         # Params
         self.input_size = input_size
@@ -90,26 +92,9 @@ class VariationalRNN(torch.nn.Module):
                     x, self.dropout, mean_field_inference=mean_field_inference
                 )
 
-        # Output options
-        # Standard: all layers, only end of pass
-        #    - take last pass in all layers (hidden)
-        #    - reshape and apply dropout
-        #    - use h20 to obtain output (h2o input: hidden_size*num_layers*bi)
-        # Mean: last layer, mean on sequence
-        #    - take packed output from last layer (out) that contains all time steps for the last layer
-        #    - find where padding was done and create a mask for those values, apply this mask
-        #    - take a mean for the whole sequence (time_steps)
-        #    - use h2o to obtain output (beware! it is only one layer deep since it is the last one only)
-
         if self.rnn_output_option == "standard":
             # Special case for lstm where hidden = (h, c)
 
-            # In vanilla standard we have: out, hidden = rnn(X)
-            # hidden is built as follows:
-            # for each layer, for each direction, take the last hidden state
-            # concatenate the results. obtain hidden (num_layers * num_directions, B, D)
-            # here, we need to do it manually as the recurrent layers are written one by one
-            # We now carry out the ``concatenate`` operation.
             if self.layer_type == "lstm":
                 hn = torch.cat([h[0] for h in list_hidden], dim=0)
             else:
@@ -188,88 +173,85 @@ class VariationalDropout(torch.nn.Module):
             return torch.nn.functional.dropout(x, dropout, training, inplace)
 
 
-class WeightDrop(torch.nn.Module):
-    """
-    WeightDrop from https://github.com/salesforce/awd-lstm-lm
+def dropout_mask(x, size, dropout):
+    return x.new(*size).bernoulli_(1 - dropout).div_(1 - dropout)
 
-    - Removed the variational input parameter as we will always use WeightDrop in variational mode
 
-    """
+class EmbeddingDropout(nn.Module):
+    def __init__(self, num_embeddings, embedding_dim, dropout):
+        super().__init__()
 
-    def __init__(self, module, weights, dropout):
-        super(WeightDrop, self).__init__()
-        self.module = module
-        self.weights = weights
+        self.emb = nn.Embedding(num_embeddings, embedding_dim)
         self.dropout = dropout
-        self._setup()
 
-    def dummy_function(*args, **kwargs):
-        # We need to replace flatten_parameters with a nothing function
-        # It must be a function rather than a lambda as otherwise pickling explodes
-        return
+    def forward(self, x):
+        if self.training:
+            size = (self.emb.weight.shape[0], 1)
+            mask = dropout_mask(self.emb.weight.data, size, self.embed_p)
+            masked_embed = self.emb.weight * mask
+        else:
+            masked_embed = self.emb.weight
+        return F.embedding(
+            x,
+            masked_embed,
+            self.emb.padding_idx,
+            self.emb.max_norm,
+            self.emb.norm_type,
+            self.emb.scale_grad_by_freq,
+            self.emb.sparse,
+        )
 
-    def _setup(self):
-        # Terrible temporary solution to an issue regarding compacting weights re: CUDNN RNN
-        if issubclass(type(self.module), torch.nn.RNNBase):
-            self.module.flatten_parameters = self.dummy_function
 
-        for name_w in self.weights:
-            print(f"Applying weight drop of {self.dropout} to {name_w}")
-            w = getattr(self.module, name_w)  # take this param of the module
-            del self.module._parameters[name_w]
-            self.module.register_parameter(
-                name_w + "_raw", torch.nn.Parameter(w.data)
-            )  # recreate same data with different name
+class WeightDropout(nn.Module):
+    def __init__(self, module, dropout, layer_names):
+        self.module = module
+        self.dropout = dropout
+        self.layer_names = layer_names
 
-    def _setweights(self, mean_field_inference=False):
-        for name_w in self.weights:
-            raw_w = getattr(self.module, name_w + "_raw")
-            w = None
-            mask = torch.ones(raw_w.size(0), 1)
-            device = raw_w.device
-            mask = mask.to(device)
-            # forcing it to be applied training and validation
-            if mean_field_inference is False:
-                mask = torch.nn.functional.dropout(mask, p=self.dropout, training=True)
-            mask = mask.expand_as(raw_w)
-            # applying same mask to all elements of the batch
-            # h [batch, xdim]
-            w = mask * raw_w
-            setattr(self.module, name_w, w)
+        for layer in self.layer_names:
+            # Makes a copy of the weights of the selected layers.
+            w = getattr(self.module, layer)
+            self.register_parameter(f"{layer}_raw", nn.Parameter(w.data))
+            self.module._parameters[layer] = F.dropout(
+                w, p=self.dropout, training=False
+            )
 
-    def forward(self, *args, mean_field_inference=False):
-        # Apply dropout to weights of module
-        self._setweights(mean_field_inference=mean_field_inference)
+    def _setweights(self):
+        "Apply dropout to the raw weights."
+        for layer in self.layer_names:
+            raw_w = getattr(self, f"{layer}_raw")
+            self.module._parameters[layer] = F.dropout(
+                raw_w, p=self.dropout, training=self.training
+            )
 
+    def forward(self, *args):
+        self._setweights()
         return self.module.forward(*args)
 
+    def reset(self):
+        for layer in self.layer_names:
+            raw_w = getattr(self, f"{layer}_raw")
+            self.module._parameters[layer] = F.dropout(
+                raw_w, p=self.dropout, training=False
+            )
+        if hasattr(self.module, "reset"):
+            self.module.reset()
 
-def embedded_dropout(embed, words, dropout, mean_field_inference=False):
-    """
-    embedded_dropout from https://github.com/salesforce/awd-lstm-lm
-    with some modifications like the mean field inference flag
 
-    """
-    if mean_field_inference:
-        masked_embed_weight = embed.weight
-    else:
-        mask = embed.weight.data.new().resize_((embed.weight.size(0), 1)).bernoulli_(
-            1 - dropout
-        ).expand_as(embed.weight) / (1 - dropout)
-        masked_embed_weight = mask * embed.weight
+class RNNDropout(nn.Module):
+    def __init__(self, dropout, batch_first=False):
+        super().__init__()
+        self.dropout = dropout
+        self.batch_first = batch_first
 
-    padding_idx = embed.padding_idx
-    if padding_idx is None:
-        padding_idx = -1
+    def forward(self, x):
+        if not self.training or self.p == 0.0:
+            return x
 
-    X = torch.nn.functional.embedding(
-        words,
-        masked_embed_weight,
-        padding_idx,
-        embed.max_norm,
-        embed.norm_type,
-        embed.scale_grad_by_freq,
-        embed.sparse,
-    )
+        mask = (
+            dropout_mask(x.data, (x.shape[0], 1, x.shape[2]), self.dropout)
+            if self.batch_first
+            else dropout_mask(x.data, (1, x.shape[1], x.shape[2]), self.dropout)
+        )
+        return x * mask
 
-    return X

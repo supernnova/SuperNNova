@@ -1,74 +1,7 @@
 import os
 from io import open
-import numpy as np
-from pathlib import Path
 
 import torch
-from torchvision import transforms
-from torchvision import datasets
-
-
-def format_mnist():
-
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    mnist_path = Path(dir_path) / "data/mnist"
-
-    try:
-        return np.load(mnist_path / "mnist.npz")
-
-    except Exception:
-
-        train_loader = torch.utils.data.DataLoader(
-            datasets.MNIST(
-                mnist_path,
-                train=True,
-                download=True,
-                transform=transforms.Compose([transforms.ToTensor()]),
-            ),
-            batch_size=128,
-            shuffle=True,
-        )
-
-        test_loader = torch.utils.data.DataLoader(
-            datasets.MNIST(
-                mnist_path,
-                train=False,
-                transform=transforms.Compose([transforms.ToTensor()]),
-            ),
-            batch_size=128,
-            shuffle=True,
-        )
-
-        list_X = []
-        list_Y = []
-
-        for (x, y) in train_loader:
-            list_X.append(x.view(-1, 784).detach().cpu().numpy())
-            list_Y.append(y.detach().cpu().numpy())
-
-        X_train = np.concatenate(list_X, axis=0)
-        Y_train = np.concatenate(list_Y, axis=0)
-
-        list_X = []
-        list_Y = []
-
-        for (x, y) in test_loader:
-            list_X.append(x.view(-1, 784).detach().cpu().numpy())
-            list_Y.append(y.detach().cpu().numpy())
-
-        X_test = np.concatenate(list_X, axis=0)
-        Y_test = np.concatenate(list_Y, axis=0)
-
-        d_data = {
-            "X_train": X_train,
-            "Y_train": Y_train,
-            "X_test": X_test,
-            "Y_test": Y_test,
-        }
-
-        np.savez(mnist_path / "mnist.npz", **d_data)
-
-        return d_data
 
 
 ########################################################
@@ -95,9 +28,9 @@ class Dictionary(object):
 class Corpus(object):
     def __init__(self, path):
         self.dictionary = Dictionary()
-        self.train = self.tokenize(os.path.join(path, "train.txt"))
-        self.valid = self.tokenize(os.path.join(path, "valid.txt"))
-        self.test = self.tokenize(os.path.join(path, "test.txt"))
+        self.train = self.tokenize(os.path.join(path, "ptb.train.txt"))
+        self.valid = self.tokenize(os.path.join(path, "ptb.valid.txt"))
+        self.test = self.tokenize(os.path.join(path, "ptb.test.txt"))
 
     def tokenize(self, path):
         """Tokenizes a text file."""

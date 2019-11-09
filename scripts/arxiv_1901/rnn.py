@@ -262,7 +262,7 @@ def get_test_predictions(model, config, list_data, device):
     tmp = df_pred[["SNID", "target"] + class_col].groupby("SNID").mean()
     preds = np.argmax(tmp[class_col].values, 1)
     acc = (preds == tmp.target.values).sum() / len(tmp)
-    lu.print_green(f"Accuracy (mean predciction)", acc)
+    lu.print_green(f"Accuracy (mean prediction)", acc)
 
     lu.print_green("Finished getting predictions ")
 
