@@ -130,3 +130,16 @@ Please change to branch ``paper``:
 
     cd docs && make clean && make html && cd ..
     firefox docs/_build/html/index.html
+
+
+## Run docker
+
+    docker run -it --rm\
+    -v </path/to/SuperNNova>:/u/home/SuperNNova \
+    -e HOST_USER_ID=$(id -u) \
+    -e HOST_USER_GID=$(id -g) rnn-cpu:latest
+
+    docker run -it  --gpus all --rm\
+    -v </path/to/SuperNNova>:/u/home/SuperNNova \
+    -e HOST_USER_ID=$(id -u) \
+    -e HOST_USER_GID=$(id -g) rnn-gpu:latest

@@ -34,3 +34,5 @@ plots_paper/*
 script.sh
 mnist.npz
 sandbox/data
+scripts/mc_dropout/*.txt
+scripts/bayesian_rnn/*.txt
