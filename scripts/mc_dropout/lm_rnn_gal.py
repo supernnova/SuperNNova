@@ -9,7 +9,7 @@ import torch.nn as nn
 from tqdm import tqdm
 from pathlib import Path
 
-from supernnova.modules.variational_rnn import (
+from supernnova.modules.bayesian_layers import (
     WeightDropout,
     RNNDropout,
     EmbeddingDropout,
@@ -34,7 +34,7 @@ def evaluate(model, criterion, corpus, data_source, eval_batch_size):
     with torch.no_grad():
         for i in range(0, data_source.size(0) - 1, args.bptt):
             data, targets = get_batch(data_source, i, args.bptt)
-            output, hidden = model(data, hidden, mean_field_inference=True)
+            output, hidden = model(data, hidden)
             output_flat = output.view(-1, ntokens)
 
             num_words = output_flat.shape[0]
@@ -143,10 +143,11 @@ def train_epoch(model, criterion, corpus, train_data, epoch, lr):
         # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
         torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip)
         for p in model.parameters():
-            d_p = p.grad.data
-            if args.weight_decay > 0:
-                d_p.add_(args.weight_decay, p.data)
-            p.data.add_(-lr, d_p)
+            if p.grad is not None:
+                d_p = p.grad.data
+                if args.weight_decay > 0:
+                    d_p.add_(args.weight_decay, p.data)
+                p.data.add_(-lr, d_p)
 
         total_loss += loss.item() / seq_len
 
