@@ -36,7 +36,7 @@ def evaluate(model, criterion, corpus, data_source, eval_batch_size):
     with torch.no_grad():
         for i in range(0, data_source.size(0) - 1, args.bptt):
             data, targets = get_batch(data_source, i, args.bptt)
-            output, hidden = model(data, hidden, mean_field_inference=True)
+            output, hidden = model(data, hidden)
             output_flat = output.view(-1, ntokens)
 
             num_words = output_flat.shape[0]
@@ -91,13 +91,11 @@ class LanguageModel(nn.Module):
 
         self.kl = None
 
-    def forward(self, x, hidden, mean_field_inference=False):
+    def forward(self, x, hidden):
 
-        embedding = self.encoder(x, mean_field_inference=mean_field_inference)
-        out, hidden = self.bayeslstm(
-            embedding, hidden, mean_field_inference=mean_field_inference
-        )
-        logits = self.linear(out, mean_field_inference=mean_field_inference)
+        embedding = self.encoder(x)
+        out, hidden = self.bayeslstm(embedding, hidden)
+        logits = self.linear(out)
 
         self.kl = self.encoder.kl + self.linear.kl + self.bayeslstm.kl
 

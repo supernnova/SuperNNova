@@ -142,7 +142,7 @@ class BayesLSTM(nn.Module):
 
             self.module._parameters[name] = mu
 
-    def _setweights(self, mean_field_inference=False):
+    def _setweights(self):
         kl = 0
         for name, _ in self.module.named_parameters():
             mu = getattr(self, f"{name}_mu")
@@ -150,19 +150,19 @@ class BayesLSTM(nn.Module):
 
             sigma = F.softplus(rho) + 1e-5
 
-            if mean_field_inference:
-                w = mu
-            else:
+            if self.training:
                 eps = rho.data.new(rho.size()).normal_(0.0, 1.0)
                 w = mu + sigma * eps
+                kl += compute_KL(w, mu, sigma, self.prior)
+            else:
+                w = mu
 
-            kl += compute_KL(w, mu, sigma, self.prior)
             self.module._parameters[name] = w
 
         self.kl = kl
 
-    def forward(self, *args, mean_field_inference=False):
-        self._setweights(mean_field_inference)
+    def forward(self, *args):
+        self._setweights()
         with warnings.catch_warnings():
             # To avoid the warning that comes because the weights aren't flattened.
             warnings.simplefilter("ignore")
@@ -190,26 +190,22 @@ class BayesLinear(nn.Module):
         self.bias = bias
         self.kl = None
 
-    def forward(self, x, mean_field_inference=False):
+    def forward(self, x):
 
-        # Sample weight
-        mean = self.mu
-        sigma = F.softplus(self.rho) + 1e-5
+        self.kl = 0
 
-        if mean_field_inference:
-            weights = mean
+        mu = self.mu
+
+        if self.training:
+            sigma = F.softplus(self.rho) + 1e-5
+            eps = mu.data.new(mu.size()).normal_(0.0, 1.0)
+            weights = mu + eps * sigma
+            # Compute KL divergence
+            self.kl = compute_KL(weights, mu, sigma, self.prior)
         else:
-            # Sample weights from normal distribution
-            # This way of creating the epsilon variable is faster than
-            # from numpy or torch.randn or FloatTensor.normal_ when mean is already
-            # on the GPU
-            eps = mean.data.new(mean.size()).normal_(0.0, 1.0)
-            weights = mean + eps * sigma
+            weights = mu
 
         logits = F.linear(x, weights, self.bias)
-
-        # Compute KL divergence
-        self.kl = compute_KL(weights, mean, sigma, self.prior)
 
         return logits
 
@@ -222,6 +218,52 @@ class BayesLinear(nn.Module):
             + str(self.out_features)
             + ")"
         )
+
+
+class BayesBiasLinear(nn.Module):
+    def __init__(
+        self, in_features, out_features, prior, mu_lower, mu_upper, rho_lower, rho_upper
+    ):
+        super(BayesBiasLinear, self).__init__()
+        self.in_features = in_features
+        self.out_features = out_features
+        self.prior = prior
+
+        self.W_mu, self.W_rho = get_bbb_variable(
+            (out_features, in_features), mu_lower, mu_upper, rho_lower, rho_upper
+        )
+
+        self.b_mu, self.b_rho = get_bbb_variable(
+            (out_features,), mu_lower, mu_upper, rho_lower, rho_upper
+        )
+
+    def forward(self, x):
+
+        self.kl = 0
+
+        W_mu = self.W_mu
+        b_mu = self.b_mu
+
+        if self.training:
+
+            W_sigma = F.softplus(self.W_rho) + 1e-5
+            W_eps = W_mu.data.new(W_mu.size()).normal_(0.0, 1.0)
+            weights = W_mu + W_eps * W_sigma
+
+            b_sigma = F.softplus(self.b_rho) + 1e-5
+            b_eps = b_mu.data.new(b_mu.size()).normal_(0.0, 1.0)
+            biases = b_mu + b_eps * b_sigma
+
+            # Compute KL divergence
+            self.kl += compute_KL(weights, W_mu, W_sigma, self.prior)
+            self.kl += compute_KL(biases, b_mu, b_sigma, self.prior)
+        else:
+            weights = W_mu
+            biases = b_mu
+
+        logits = F.linear(x, weights, biases)
+
+        return logits
 
 
 class BayesEmbedding(nn.Module):
@@ -254,26 +296,23 @@ class BayesEmbedding(nn.Module):
         self.rho = rho
         self.kl = None
 
-    def forward(self, input, mean_field_inference=False):
+    def forward(self, x):
 
-        # Sample weight
-        mean = self.mu
-        sigma = F.softplus(self.rho) + 1e-5
+        self.kl = 0
 
-        if mean_field_inference:
-            weights = mean
+        mu = self.mu
+
+        if self.training:
+            sigma = F.softplus(self.rho) + 1e-5
+            eps = mu.data.new(mu.size()).normal_(0.0, 1.0)
+            weights = mu + eps * sigma
+            # Compute KL divergence
+            self.kl = compute_KL(weights, mu, sigma, self.prior)
         else:
-            # This way of creating the epsilon variable is faster than
-            # from numpy or torch.randn or FloatTensor.normal_ when mean is already
-            # on the GPU
-            eps = mean.data.new(mean.size()).normal_(0.0, 1.0)
-            weights = mean + eps * sigma
-
-        # Compute KL divergence
-        self.kl = compute_KL(weights, mean, sigma, self.prior)
+            weights = mu
 
         after_embed = F.embedding(
-            input,
+            x,
             weights,
             self.padding_idx,
             self.max_norm,
@@ -330,16 +369,8 @@ def compute_KL(x, mu, sigma, prior):
     posterior = torch.distributions.Normal(mu.view(-1), sigma.view(-1))
     log_posterior = posterior.log_prob(x.view(-1)).sum()
 
-    if x.is_cuda:
-        n1 = torch.distributions.Normal(
-            torch.tensor([0.0]).cuda(), torch.tensor([prior.sigma1]).cuda()
-        )
-        n2 = torch.distributions.Normal(
-            torch.tensor([0.0]).cuda(), torch.tensor([prior.sigma2]).cuda()
-        )
-    else:
-        n1 = torch.distributions.Normal(0.0, prior.sigma1)
-        n2 = torch.distributions.Normal(0.0, prior.sigma2)
+    n1 = torch.distributions.Normal(0.0, prior.sigma1)
+    n2 = torch.distributions.Normal(0.0, prior.sigma2)
 
     mix1 = torch.sum(n1.log_prob(x)) + math.log(prior.pi_mixture)
     mix2 = torch.sum(n2.log_prob(x)) + math.log(1.0 - prior.pi_mixture)
@@ -348,50 +379,3 @@ def compute_KL(x, mu, sigma, prior):
 
     return log_posterior - log_prior
 
-
-class BayesBiasLinear(nn.Module):
-    def __init__(
-        self, in_features, out_features, prior, mu_lower, mu_upper, rho_lower, rho_upper
-    ):
-        super(BayesBiasLinear, self).__init__()
-        self.in_features = in_features
-        self.out_features = out_features
-        self.prior = prior
-
-        self.W_mu, self.W_rho = get_bbb_variable(
-            (out_features, in_features), mu_lower, mu_upper, rho_lower, rho_upper
-        )
-
-        self.b_mu, self.b_rho = get_bbb_variable(
-            (out_features,), mu_lower, mu_upper, rho_lower, rho_upper
-        )
-
-    def forward(self, X, mean_field_inference=False):
-        # Sample weight
-        W_mean = self.W_mu
-        W_sigma = F.softplus(self.W_rho) + 1e-5
-
-        b_mean = self.b_mu
-        b_sigma = F.softplus(self.b_rho) + 1e-5
-
-        if mean_field_inference:
-            weights = W_mean
-            biases = b_mean
-        else:
-            # Sample weights from normal distribution
-            # This way of creating the epsilon variable is faster than
-            # from numpy or torch.randn or FloatTensor.normal_ when mean is already
-            # on the GPU
-            W_eps = W_mean.data.new(W_mean.size()).normal_(0.0, 1.0)
-            weights = W_mean + W_eps * W_sigma
-
-            b_eps = b_mean.data.new(b_mean.size()).normal_(0.0, 1.0)
-            biases = b_mean + b_eps * b_sigma
-
-        logits = F.linear(X, weights, biases)
-
-        # Compute KL divergence
-        self.kl = compute_KL(weights, W_mean, W_sigma, self.prior)
-        self.kl += compute_KL(biases, b_mean, b_sigma, self.prior)
-
-        return logits
