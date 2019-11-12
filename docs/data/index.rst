@@ -93,13 +93,13 @@ Photometric measurements may span over a larger time range than the one desired 
 
 Creating a database with different survey
 ------------------------------
-The default filter set is the one from the Dark Energy Survey Supernova ``g,r,i,z``. If you want to use your own survey, you'll need to specify your filters and the possible combination of them in observations.
+The default filter set is the one from the Dark Energy Survey Supernova ``g,r,i,z``. If you want to use your own survey, you'll need to specify your filters (Beware! as from 12/11/19 the input of possible combination of filters has been deprecated!).
 
 .. code::
 
-    python run.py --dump_dir <path/to/save/database/> --data --raw_dir <path/to/raw/data/>  --list_filters <your/filters> --list_filters_combination <your/filter/combination>
+    python run.py --dump_dir <path/to/save/database/> --data --raw_dir <path/to/raw/data/>  --list_filters <your/filters>
 
-e.g. ``--list_filters g r --list_filters_combination g r gr``. 
+e.g. ``--list_filters g r ``. 
 
 Under the hood
 -------------------------------
