@@ -1,6 +1,7 @@
 import os
 import json
 import h5py
+import itertools
 import numpy as np
 from pathlib import Path
 from collections import OrderedDict
@@ -57,6 +58,14 @@ class ExperimentSettings:
         self.load_normalization()
 
         self.overwrite = not self.no_overwrite
+
+        # filter combination
+        list_filters_combination = []
+        for i in range(1, len(self.list_filters)+1):
+            tmp = [''.join(t) for t in list(
+                itertools.combinations(self.list_filters, i))]
+            list_filters_combination = list_filters_combination + tmp
+        self.list_filters_combination = list_filters_combination
 
     def get_randomforest_features(self):
         """Specify list of features to be used for RandomForest training
@@ -252,7 +261,8 @@ class ExperimentSettings:
                 if f in self.training_features_to_normalize
             ]
 
-            self.d_feat_to_idx = {f: i for i, f in enumerate(self.all_features)}
+            self.d_feat_to_idx = {f: i for i,
+                                  f in enumerate(self.all_features)}
 
             list_norm = []
 
@@ -444,7 +454,8 @@ class PlasticcSettings(object):
                 if f in self.training_features_to_normalize
             ]
 
-            self.d_feat_to_idx = {f: i for i, f in enumerate(self.all_features)}
+            self.d_feat_to_idx = {f: i for i,
+                                  f in enumerate(self.all_features)}
 
             list_norm = []
 

@@ -208,16 +208,6 @@ def get_args():
         default=natsorted(["g", "i", "r", "z"]),
         help="Survey filters"
     )
-    parser.add_argument(
-        "--list_filters_combination",
-        nargs='+',
-        default=natsorted(['g', 'r', 'i', 'z',
-                                 'gr', 'gi', 'gz',
-                                 'ir', 'iz',
-                                 'rz',
-                                 'gir', 'giz', 'grz', 'irz', 'girz']),
-        help="Possible combination of filters"
-    )
 
     ######################
     # RNN  parameters
