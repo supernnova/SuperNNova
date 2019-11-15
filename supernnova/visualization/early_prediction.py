@@ -94,7 +94,7 @@ def plot_predictions(
                 label=f"Filter {flt}",
                 color=FILTER_COLORS[flt],
             )
-
+    ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.0)
     ax.set_ylabel("FLUXCAL")
     ylim = ax.get_ylim()
 
