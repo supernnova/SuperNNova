@@ -143,9 +143,9 @@ def get_args():
     )
     parser.add_argument(
         "--redshift",
-        choices=[None, "zpho", "zspe"],
-        default=None,
-        help="Host redshift used in classification: zpho, zspe",
+        choices=["none", "zpho", "zspe"],
+        default="none",
+        help="Host redshift used in classification: none, zpho, zspe",
     )
     parser.add_argument(
         "--norm",
