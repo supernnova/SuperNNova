@@ -96,15 +96,15 @@ def plot_distributions(settings, list_d_plot):
         if i == 7:
             ax.set_xlabel("days", fontsize=30)
         ylim = ax.get_ylim()
-        plt.yticks(fontsize=22)
-        plt.xticks(fontsize=22)
+        plt.yticks(fontsize=26)
+        plt.xticks(fontsize=26)
 
         SNtype = du.sntype_decoded(target, settings)
         if OOD is not None:
-            ax.set_title(f"OOD {OOD} ID: {SNID}", fontsize=24)
+            ax.set_title(f"OOD {OOD} ID: {SNID}", fontsize=26)
         else:
             ax.set_title(
-                SNtype + f" (ID: {SNID}, redshift: {redshift:.3g})", fontsize=24
+                SNtype + f" (ID: {SNID}, redshift: {redshift:.3g})", fontsize=26
             )
             # Add PEAKMJD
             ax.plot([peak_MJD, peak_MJD], ylim, "k--", label="Peak MJD")
@@ -136,8 +136,8 @@ def plot_distributions(settings, list_d_plot):
                     label=label,
                     bins=bin_edges,
                 )
-        plt.yticks(fontsize=22)
-        plt.xticks(fontsize=22)
+        plt.yticks(fontsize=26)
+        plt.xticks(fontsize=26)
 
         ax.set_yscale("log")
 
@@ -244,7 +244,7 @@ def plot_prediction_distribution(settings):
 
     targets = np.array([o[1] for o in list_data_test])
 
-    for dummy in range(10):
+    for dummy in range(30):
 
         if settings.nb_classes == 2:
             # 2 lightcurves of each type
