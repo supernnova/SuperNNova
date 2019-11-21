@@ -178,10 +178,13 @@ def plot_predictions(
     ax2.plot(arr_time, residuals,
             color=color, linestyle=linestyle)
     # peak vertical line
-    ax2.plot([peak_MJD, peak_MJD], [(residuals).min(), (residuals).max()], "k--", label="Peak MJD")
+    top = residuals.max() if residuals.max()>0 else 0
+    bottom = residuals.min() if residuals.min()< 0 else 0
+    ax2.plot([peak_MJD, peak_MJD], [ bottom, top], "k--", label="Peak MJD")
     # annotate the prediction
     to_print = [int(i) for i in d_pred[key]["peak"]]
-    arr_y = np.tile([residuals.min(), residuals.min()+residuals.max()/2], len(arr_time) // 2 + 1)
+    top = residuals.min()+ abs(residuals.max() - residuals.min())/2
+    arr_y = np.tile([residuals.min(), top], len(arr_time) // 2 + 1)
     for i, txt in enumerate(to_print):
         ax2.annotate(txt, (arr_time[i], arr_y[i]))
     ax2.set_xlabel("Time (MJD)")
