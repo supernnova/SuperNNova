@@ -20,7 +20,8 @@ plt.switch_backend("agg")
 
 def get_predictions(settings, dict_rnn, X, target, OOD=None):
 
-    list_data = [{"X_normed": X.copy(), "target_tuple": target, "peakmask_idx":None}]
+    list_data = [{"X_normed": X.copy(), "target_tuple": target,
+                  "peakmask_idx": None}]
 
     _, X_tensor, *_ = tu.get_data_batch(list_data, [0], settings, OOD=OOD)
 
@@ -50,16 +51,19 @@ def get_predictions(settings, dict_rnn, X, target, OOD=None):
                 ]
                 out = torch.cat(list_out, dim=0)
                 # Apply softmax to obtain a proba
-                pred_proba = nn.functional.softmax(out, dim=-1).data.cpu().numpy()
+                pred_proba = nn.functional.softmax(
+                    out, dim=-1).data.cpu().numpy()
             else:
                 outclass, outpeak, maskpeak = rnn(X_slice.expand(new_size))
                 # Apply softmax to obtain a proba
-                pred_proba = nn.functional.softmax(outclass, dim=-1).data.cpu().numpy()
+                pred_proba = nn.functional.softmax(
+                    outclass, dim=-1).data.cpu().numpy()
 
             # Add to buffer list
             d_pred[model_type]["prob"].append(pred_proba)
             # only last peak
-            d_pred[model_type]["peak"].append(float(outpeak.data.cpu().numpy()[-1]))
+            d_pred[model_type]["peak"].append(
+                float(outpeak.data.cpu().numpy()[-1]))
 
     # Stack
     for key in dict_rnn.keys():
@@ -79,7 +83,7 @@ def plot_predictions(
 ):
 
     plt.figure()
-    gs = gridspec.GridSpec(3, 1)
+    gs = gridspec.GridSpec(3, 1,hspace=0.01, wspace = 0.01)
     # Plot the lightcurve
     ax = plt.subplot(gs[0])
     for flt in d_plot.keys():
@@ -118,8 +122,8 @@ def plot_predictions(
             ax.plot([peak_MJD, peak_MJD], ylim, "k--", label="Peak MJD")
 
     # Plot the classifications
-    ax = plt.subplot(gs[1])
-    ax.set_ylim(0, 1)
+    ax1 = plt.subplot(gs[1],sharex=ax)
+    ax1.set_ylim(0, 1)
 
     for idx, key in enumerate(d_pred.keys()):
 
@@ -131,21 +135,21 @@ def plot_predictions(
             if len(d_pred) > 1:
                 label += f" {key}"
 
-            ax.plot(
+            ax1.plot(
                 arr_time,
                 d_pred[key]["median"][:, class_prob],
                 color=color,
                 linestyle=linestyle,
                 label=label,
             )
-            ax.fill_between(
+            ax1.fill_between(
                 arr_time,
                 d_pred[key]["perc_16"][:, class_prob],
                 d_pred[key]["perc_84"][:, class_prob],
                 color=color,
                 alpha=0.4,
             )
-            ax.fill_between(
+            ax1.fill_between(
                 arr_time,
                 d_pred[key]["perc_2"][:, class_prob],
                 d_pred[key]["perc_98"][:, class_prob],
@@ -153,8 +157,8 @@ def plot_predictions(
                 alpha=0.2,
             )
 
-    ax.set_xlabel("Time (MJD)")
-    ax.set_ylabel("classification probability")
+    ax1.set_xlabel("Time (MJD)")
+    ax1.set_ylabel("class prob")
     # Add PEAKMJD
     if (
         OOD is None
@@ -162,17 +166,26 @@ def plot_predictions(
         and arr_time.min() < peak_MJD
         and peak_MJD > arr_time.max()
     ):
-        ax.plot([peak_MJD, peak_MJD], [0, 1], "k--", label="Peak MJD")
-    ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.0)
+        ax1.plot([peak_MJD, peak_MJD], [0, 1], "k--", label="Peak MJD")
+    # ax1.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.0)
 
-    # plot peak MJD preds
-    ax = plt.subplot(gs[2])
+    # plot peak MJD preds residual with tag
+    ax2 = plt.subplot(gs[2],sharex=ax)
     # truth
-    ax.plot(arr_time, target[1], color="grey", linestyle="dotted")
+    ax2.plot(arr_time, np.zeros(len(arr_time)), color="grey", linestyle="dotted")
     # predicted
-    ax.plot(arr_time, d_pred[key]["peak"], color=color, linestyle=linestyle)
-    ax.set_xlabel("Time (MJD)")
-    ax.set_ylabel("peak prediction")
+    residuals = d_pred[key]["peak"]-target[1]
+    ax2.plot(arr_time, residuals,
+            color=color, linestyle=linestyle)
+    # peak vertical line
+    ax2.plot([peak_MJD, peak_MJD], [(residuals).min(), (residuals).max()], "k--", label="Peak MJD")
+    # annotate the prediction
+    to_print = [int(i) for i in d_pred[key]["peak"]]
+    arr_y = np.tile([1, 10], len(arr_time) // 2 + 1)
+    for i, txt in enumerate(to_print):
+        ax2.annotate(txt, (arr_time[i], arr_y[i]))
+    ax2.set_xlabel("Time (MJD)")
+    ax2.set_ylabel("Delta peak")
 
     prefix = f"OOD_{OOD}_" if OOD is not None else ""
 
@@ -224,16 +237,20 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
         settings.model_files = [f"{settings.rnn_dir}/{settings.pytorch_model_name}.pt"]
     else:
         # check if the model files are there
-        tmp_not_found = [m for m in settings.model_files if not os.path.exists(m)]
+        tmp_not_found = [
+            m for m in settings.model_files if not os.path.exists(m)]
         if len(tmp_not_found) > 0:
             print(lu.str_to_redstr(f"Files not found {tmp_not_found}"))
-            tmp_model_files = [m for m in settings.model_files if os.path.exists(m)]
+            tmp_model_files = [
+                m for m in settings.model_files if os.path.exists(m)]
             settings.model_files = tmp_model_files
 
     # Check that the settings match the model file
     base_files = [Path(f).name for f in settings.model_files]
-    classes = [int(re.search(r"(?<=CLF\_)\d+(?=\_)", f).group()) for f in base_files]
-    redshifts = [re.search(r"(?<=R\_)[A-Za-z]+(?=\_)", f).group() for f in base_files]
+    classes = [int(re.search(r"(?<=CLF\_)\d+(?=\_)", f).group())
+               for f in base_files]
+    redshifts = [re.search(r"(?<=R\_)[A-Za-z]+(?=\_)", f).group()
+                 for f in base_files]
 
     assert len(set(classes)) == 1, lu.str_to_redstr(
         "Can't provide model files with different number of classes"
@@ -258,7 +275,8 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
         if "bayesian" in model_file:
             settings.model = "bayesian"
         rnn = tu.get_model(settings, len(settings.training_features))
-        rnn_state = torch.load(model_file, map_location=lambda storage, loc: storage)
+        rnn_state = torch.load(
+            model_file, map_location=lambda storage, loc: storage)
         rnn.load_state_dict(rnn_state)
         rnn.to(settings.device)
         rnn.eval()
@@ -290,7 +308,8 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
             redshift = SNinfo_df[SNinfo_df["SNID"] == SNID]["SIM_REDSHIFT_CMB"].values[
                 0
             ]
-            peak_MJD = SNinfo_df[SNinfo_df["SNID"] == SNID]["PEAKMJDNORM"].values[0]
+            peak_MJD = SNinfo_df[SNinfo_df["SNID"]
+                                 == SNID]["PEAKMJDNORM"].values[0]
         except Exception:
             redshift = 0.0
             peak_MJD = 0.0
@@ -319,7 +338,8 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
                 )
                 X_ori[:, settings.idx_features_to_normalize] = X_clip
                 assert np.all(
-                    np.all(np.isclose(np.ravel(X_ori), np.ravel(X_unnormed), atol=1e-1))
+                    np.all(np.isclose(np.ravel(X_ori),
+                                      np.ravel(X_unnormed), atol=1e-1))
                 )
 
             # TODO: IMPROVE
@@ -434,8 +454,10 @@ def plot_image_for_gif(
     # Plot the lightcurve
     ax = plt.subplot(gs[0])
     # Used to keep the limits constant
-    flux_max = max(df_plot[[k for k in df_plot.keys() if "FLUXCAL_" in k]].max())
-    flux_min = min(df_plot[[k for k in df_plot.keys() if "FLUXCAL_" in k]].min())
+    flux_max = max(
+        df_plot[[k for k in df_plot.keys() if "FLUXCAL_" in k]].max())
+    flux_min = min(
+        df_plot[[k for k in df_plot.keys() if "FLUXCAL_" in k]].min())
     ax.set_ylim(flux_min - 5, flux_max + 5)
     ax.set_xlim(-0.5, max(arr_time) + 2)
 
@@ -497,7 +519,7 @@ def plot_image_for_gif(
                 color=color,
                 alpha=0.2,
             )
-
+            # anotate peak prediction
             to_print = [int(i) for i in d_pred[key]["peak"]][: len(df_sel)]
             arr_y = np.tile([0.1, 0.2], len(df_sel) // 2 + 1)[: len(df_sel)]
             for i, txt in enumerate(to_print):
