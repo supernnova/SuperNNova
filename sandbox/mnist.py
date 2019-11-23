@@ -248,7 +248,7 @@ def plot_preds(net, X_test, Y_test, device, epoch=None):
                 bins=bin_edges,
                 histtype="step",
                 linewidth=2,
-                label=f"Prob {k}",
+                label=f"{k}",
             )
         ax.set_xlim([-0.1, 1.1])
         ax.set_yscale("log")
@@ -260,11 +260,7 @@ def plot_preds(net, X_test, Y_test, device, epoch=None):
     plt.subplots_adjust(
         left=0, right=0.8, bottom=0.15, top=0.96, wspace=0.0, hspace=0.05
     )
-    title = (
-        f"figmnist/MLP_{args.model}/fig.png"
-        if epoch is None
-        else f"figmnist/MLP_{args.model}/MLP_{args.model}_epoch_{epoch}.png"
-    )
+    title = f"figmnist/MLP_{args.model}/mnist_MLP_{args.model}.png"
     plt.savefig(title)
     plt.clf()
     plt.close()
