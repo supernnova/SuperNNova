@@ -481,8 +481,8 @@ def train(args):
         random_non_pred, test_non_pred, delta_entropy_MC, delta_entropy_MFE = evaluate_random(
             net, X_test, device
         )
-        train_acc.append(np.asscalar(train_accuracy))
-        test_acc.append(np.asscalar(test_accuracy))
+        train_acc.append(train_accuracy.item())
+        test_acc.append(test_accuracy.item())
         desc = (
             "Epoch %s. Loss: %.2g, KL: %.2g, Train_acc %.2g, "
             "Test_acc %.2g, Random non_pred %s/1000, Test non_pred %s/1000 dEntropy MC %.2g dEntropy MFE %.2g"

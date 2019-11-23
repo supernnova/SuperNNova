@@ -21,7 +21,6 @@ from supernnova.training.variational_rnn import VariationalDropout
 
 
 class NN(nn.Module):
-
     def __init__(self, model, dropout, prior, mu_lower, mu_upper, rho_lower, rho_upper):
         super(NN, self).__init__()
 
@@ -78,8 +77,8 @@ class NN(nn.Module):
 
 
 def evaluate_accuracy(X, Y, list_batches, net, device):
-    numerator = 0.
-    denominator = 0.
+    numerator = 0.0
+    denominator = 0.0
 
     with torch.no_grad():
 
@@ -180,19 +179,19 @@ def plot_preds(net, X_test, Y_test, device, epoch=None):
     list_r = [0, 10, 20, 50]
     list_img = [rotate(x_one, r) for r in list_r]
 
-    plt.figure(figsize=(20, 10))
-    gs = gridspec.GridSpec(4, 4, hspace=0.2)
-    for i in range(len(list_img)):
+    plt.figure(figsize=(25, 10))
+    gs = gridspec.GridSpec(3, 4, hspace=0.4, wspace=0.2)
+    for pos, (i, j) in enumerate([(0, 0), (0, 2), (1, 0), (1, 2)]):
 
         # Image
-        ax = plt.subplot(gs[2 * i])
-        ax.imshow(list_img[i], cmap="Greys_r")
+        ax = plt.subplot(gs[i, j])
+        ax.imshow(list_img[pos], cmap="Greys_r")
         ax.set_xticks([])
         ax.set_yticks([])
 
         # Histo
-        ax = plt.subplot(gs[2 * i + 1])
-        x = torch.from_numpy(list_img[i]).to(device).view(1, -1).float() / 256
+        ax = plt.subplot(gs[i, j + 1])
+        x = torch.from_numpy(list_img[pos]).to(device).view(1, -1).float() / 256
         arr_probs = []
         for k in range(200):
 
@@ -208,32 +207,31 @@ def plot_preds(net, X_test, Y_test, device, epoch=None):
                 color=f"C{k}",
                 bins=bin_edges,
                 histtype="step",
-                label=f"Prob {k}",
+                linewidth=2,
+                label=f"{k}",
             )
         ax.set_xlim([-0.1, 1.1])
         ax.set_yscale("log")
         ymin, ymax = ax.get_ylim()
         ax.set_ylim([ymin, 1.5 * np.max(values)])
-        if i == len(list_img) - 1:
-            ax.legend(bbox_to_anchor=(1.4, 1), fontsize=16)
+        if pos == len(list_img) - 1:
+            ax.legend(bbox_to_anchor=(1.7, 2.3), fontsize=40, edgecolor="w")
+        ax.tick_params(axis="both", labelsize=30, which="both")
 
     # Random images
-    list_img = [np.random.uniform(0, 1, (28, 28)).astype(np.float32) for r in range(4)]
+    list_img = [np.random.uniform(0, 1, (28, 28)).astype(np.float32) for r in range(2)]
 
-    for i in range(len(list_img), 2 * len(list_img)):
+    for pos, (i, j) in enumerate([(2, 0), (2, 2)]):
 
         # Image
-        ax = plt.subplot(gs[2 * i])
-        ax.imshow(list_img[i - len(list_img)], cmap="Greys_r")
+        ax = plt.subplot(gs[i, j])
+        ax.imshow(list_img[pos], cmap="Greys_r")
         ax.set_xticks([])
         ax.set_yticks([])
 
         # Histo
-        ax = plt.subplot(gs[2 * i + 1])
-        x = (
-            torch.from_numpy(list_img[i - len(list_img)]).to(device).view(1, -1).float()
-            / 256
-        )
+        ax = plt.subplot(gs[i, j + 1])
+        x = torch.from_numpy(list_img[pos]).to(device).view(1, -1).float() / 256
         arr_probs = []
         for k in range(200):
 
@@ -249,17 +247,18 @@ def plot_preds(net, X_test, Y_test, device, epoch=None):
                 color=f"C{k}",
                 bins=bin_edges,
                 histtype="step",
+                linewidth=2,
                 label=f"Prob {k}",
             )
         ax.set_xlim([-0.1, 1.1])
         ax.set_yscale("log")
         ymin, ymax = ax.get_ylim()
         ax.set_ylim([ymin, 1.5 * np.max(values)])
-        if i >= 2 * len(list_img) - 2:
-            ax.set_xlabel("Predicted Probability", fontsize=16)
+        ax.set_xlabel("Predicted Probability", fontsize=40)
+        ax.tick_params(axis="both", labelsize=30, which="both")
 
     plt.subplots_adjust(
-        left=0, right=0.9, bottom=0.1, top=0.98, wspace=0.0, hspace=0.02
+        left=0, right=0.8, bottom=0.15, top=0.96, wspace=0.0, hspace=0.05
     )
     title = (
         f"figmnist/MLP_{args.model}/fig.png"
@@ -310,7 +309,7 @@ def train(args):
     list_test_batches = np.array_split(np.arange(num_elem), num_test_batches)
 
     weight_decay = args.weight_decay if "variational" in args.model else 0
-    optimizer = torch.optim.Adam(net.parameters(), lr=1E-3, weight_decay=weight_decay)
+    optimizer = torch.optim.Adam(net.parameters(), lr=1e-3, weight_decay=weight_decay)
 
     train_acc = []
     test_acc = []
@@ -362,8 +361,8 @@ def train(args):
         random_non_pred, test_non_pred, delta_entropy_MC, delta_entropy_MFE = evaluate_random(
             net, X_test, device
         )
-        train_acc.append(np.asscalar(train_accuracy))
-        test_acc.append(np.asscalar(test_accuracy))
+        train_acc.append(train_accuracy.item())
+        test_acc.append(test_accuracy.item())
         desc = (
             "Epoch %s. Loss: %.2g, KL: %.2g, Train_acc %.2g, "
             "Test_acc %.2g, Random non_pred %s/1000, Test non_pred %s/1000 dEntropy MC %.2g dEntropy MFE %.2g"
@@ -404,17 +403,17 @@ if __name__ == "__main__":
     )
     parser.add_argument("--pi", type=float, default=0.25, help="prior mixing")
     parser.add_argument(
-        "--log_sigma1", type=float, default=-1., help="prior log sigma1"
+        "--log_sigma1", type=float, default=-1.0, help="prior log sigma1"
     )
     parser.add_argument(
-        "--log_sigma2", type=float, default=-7., help="prior log sigma2"
+        "--log_sigma2", type=float, default=-7.0, help="prior log sigma2"
     )
     parser.add_argument("--mu", type=float, default=0.05, help="init for bayesian locs")
     parser.add_argument(
-        "--scale_lower", type=float, default=4., help="prior scale init lower"
+        "--scale_lower", type=float, default=4.0, help="prior scale init lower"
     )
     parser.add_argument(
-        "--scale_upper", type=float, default=2., help="prior scale init upper"
+        "--scale_upper", type=float, default=2.0, help="prior scale init upper"
     )
     parser.add_argument("--seed", type=int, default=1111, help="random seed")
 
