@@ -92,19 +92,19 @@ def plot_distributions(settings, list_d_plot):
                     color=FILTER_COLORS[flt],
                 )
 
-        ax.set_ylabel("FLUXCAL", fontsize=30)
+        ax.set_ylabel("FLUXCAL", fontsize=34)
         if i == 7:
-            ax.set_xlabel("days", fontsize=30)
+            ax.set_xlabel("days", fontsize=34)
         ylim = ax.get_ylim()
-        plt.yticks(fontsize=26)
-        plt.xticks(fontsize=26)
+        plt.yticks(fontsize=30)
+        plt.xticks(fontsize=30)
 
         SNtype = du.sntype_decoded(target, settings)
         if OOD is not None:
-            ax.set_title(f"OOD {OOD} ID: {SNID}", fontsize=26)
+            ax.set_title(f"OOD {OOD} ID: {SNID}", fontsize=34)
         else:
             ax.set_title(
-                SNtype + f" (ID: {SNID}, redshift: {redshift:.3g})", fontsize=26
+                SNtype + f" (ID: {SNID}, redshift: {redshift:.3g})", fontsize=34
             )
             # Add PEAKMJD
             ax.plot([peak_MJD, peak_MJD], ylim, "k--", label="Peak MJD")
@@ -136,8 +136,8 @@ def plot_distributions(settings, list_d_plot):
                     label=label,
                     bins=bin_edges,
                 )
-        plt.yticks(fontsize=26)
-        plt.xticks(fontsize=26)
+        plt.yticks(fontsize=30)
+        plt.xticks(fontsize=30)
 
         ax.set_yscale("log")
 
@@ -151,7 +151,7 @@ def plot_distributions(settings, list_d_plot):
                 framealpha=0,
             )
         if 2 * i + 1 == 15:
-            ax.set_xlabel("classification probability", fontsize=30)
+            ax.set_xlabel("classification probability", fontsize=34)
 
     plt.subplots_adjust(
         left=0.08, right=0.99, bottom=0.03, top=0.98, wspace=0.0, hspace=0.02
