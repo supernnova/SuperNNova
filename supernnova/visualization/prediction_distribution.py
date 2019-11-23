@@ -244,7 +244,7 @@ def plot_prediction_distribution(settings):
 
     targets = np.array([o[1] for o in list_data_test])
 
-    for dummy in range(30):
+    for dummy in range(100):
 
         if settings.nb_classes == 2:
             # 2 lightcurves of each type
