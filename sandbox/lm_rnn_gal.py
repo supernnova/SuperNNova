@@ -26,9 +26,9 @@ from data import Corpus, batchify, get_batch, repackage_hidden
 def evaluate(model, criterion, corpus, data_source, eval_batch_size):
 
     model.eval()
-    total_loss = 0.
-    total_words = 0.
-    total_entropy = 0.
+    total_loss = 0.0
+    total_words = 0.0
+    total_entropy = 0.0
     ntokens = len(corpus.dictionary)
     hidden = model.init_hidden(eval_batch_size)
     with torch.no_grad():
@@ -52,7 +52,6 @@ def evaluate(model, criterion, corpus, data_source, eval_batch_size):
 
 
 class LanguageModel(nn.Module):
-
     def __init__(self, vocab_size, hidden_size):
         super(LanguageModel, self).__init__()
 
@@ -92,11 +91,14 @@ class LanguageModel(nn.Module):
     def init_hidden(self, batch_size):
         weight = next(self.parameters())
         return (
-            weight.new_zeros(1, batch_size, self.hidden_size),
-            weight.new_zeros(1, batch_size, self.hidden_size),
-        ), (
-            weight.new_zeros(1, batch_size, self.hidden_size),
-            weight.new_zeros(1, batch_size, self.hidden_size),
+            (
+                weight.new_zeros(1, batch_size, self.hidden_size),
+                weight.new_zeros(1, batch_size, self.hidden_size),
+            ),
+            (
+                weight.new_zeros(1, batch_size, self.hidden_size),
+                weight.new_zeros(1, batch_size, self.hidden_size),
+            ),
         )
 
     def forward(self, x, hidden, mean_field_inference=False):
@@ -130,7 +132,7 @@ class LanguageModel(nn.Module):
 def train_epoch(model, criterion, corpus, train_data, epoch, lr):
 
     model.train()
-    total_loss = 0.
+    total_loss = 0.0
 
     start_time = time.time()
     ntokens = len(corpus.dictionary)
@@ -214,7 +216,7 @@ def run(args):
 
     # Loop over epochs.
     lr = args.lr
-    best_val_loss = 1E9
+    best_val_loss = 1e9
 
     # At any point you can hit Ctrl + C to break out of training early.
     for epoch in range(0, args.epochs):
