@@ -62,8 +62,8 @@ def get_predictions(settings, dict_rnn, X, target, OOD=None):
 
 def plot_distributions(settings, list_d_plot):
 
-    plt.figure(figsize=(20, 30))
-    gs = gridspec.GridSpec(8, 2, hspace=0.3, wspace=0.1)
+    plt.figure(figsize=(22, 35))
+    gs = gridspec.GridSpec(8, 2, hspace=0.35, wspace=0.1)
 
     for i in range(len(list_d_plot)):
 
