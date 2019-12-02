@@ -71,7 +71,9 @@ class Model(torch.nn.Module):
         # hidden is (B, L, D)
 
         # Take masked mean
-        x = (hidden * x_mask.unsqueeze(-1).float()).sum(1) / x_mask.unsqueeze(-1).sum(1)
+        x = (hidden * x_mask.unsqueeze(-1).float()).sum(1) / x_mask.float().unsqueeze(
+            -1
+        ).sum(1)
 
         # apply dropout
         x = self.output_dropout_layer(x)

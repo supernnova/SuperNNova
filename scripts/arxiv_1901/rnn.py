@@ -307,6 +307,8 @@ def train(config):
     batch = 0
     best_loss = float("inf")
 
+    get_test_predictions(model, config, dataset, device)
+
     for epoch in range(config["nb_epoch"]):
 
         desc = f"Epoch: {epoch} -- {loss_str}"
