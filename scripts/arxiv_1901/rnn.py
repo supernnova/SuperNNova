@@ -307,86 +307,86 @@ def train(config):
     batch = 0
     best_loss = float("inf")
 
-    # for epoch in range(config["nb_epoch"]):
+    for epoch in range(config["nb_epoch"]):
 
-    #     desc = f"Epoch: {epoch} -- {loss_str}"
+        desc = f"Epoch: {epoch} -- {loss_str}"
 
-    #     list_pred_train = []
-    #     list_target_train = []
+        list_pred_train = []
+        list_target_train = []
 
-    #     for data in dataset.create_iterator(
-    #         "train", config["batch_size"], device, tqdm_desc=desc
-    #     ):
+        for data in dataset.create_iterator(
+            "train", config["batch_size"], device, tqdm_desc=desc
+        ):
 
-    #         model.train()
+            model.train()
 
-    #         # Train step : forward backward pass
-    #         loss, X_pred_train, X_target_train = forward_pass(model, data)
+            # Train step : forward backward pass
+            loss, X_pred_train, X_target_train = forward_pass(model, data)
 
-    #         list_pred_train.append(X_pred_train)
-    #         list_target_train.append(X_target_train)
+            list_pred_train.append(X_pred_train)
+            list_target_train.append(X_target_train)
 
-    #         optimizer.zero_grad()
-    #         loss.backward()
-    #         optimizer.step()
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
 
-    #         batch += 1
+            batch += 1
 
-    #     # Obtain the arrays of targets and predictions
-    #     X_target_train = torch.cat(list_target_train)
-    #     X_pred_train = torch.cat(list_pred_train)
+        # Obtain the arrays of targets and predictions
+        X_target_train = torch.cat(list_target_train)
+        X_pred_train = torch.cat(list_pred_train)
 
-    #     X_target_val, X_pred_val = get_predictions(
-    #         model,
-    #         dataset.create_iterator(
-    #             "val", config["batch_size"], device, tqdm_desc=None
-    #         ),
-    #     )
+        X_target_val, X_pred_val = get_predictions(
+            model,
+            dataset.create_iterator(
+                "val", config["batch_size"], device, tqdm_desc=None
+            ),
+        )
 
-    #     # Actually compute metrics
-    #     d_losses_train = tu.get_evaluation_metrics(
-    #         X_pred_train.detach().cpu().numpy(),
-    #         X_target_train.detach().cpu().numpy(),
-    #         nb_classes=config["nb_classes"],
-    #     )
-    #     d_losses_val = tu.get_evaluation_metrics(
-    #         X_pred_val.detach().cpu().numpy(),
-    #         X_target_val.detach().cpu().numpy(),
-    #         nb_classes=config["nb_classes"],
-    #     )
+        # Actually compute metrics
+        d_losses_train = tu.get_evaluation_metrics(
+            X_pred_train.detach().cpu().numpy(),
+            X_target_train.detach().cpu().numpy(),
+            nb_classes=config["nb_classes"],
+        )
+        d_losses_val = tu.get_evaluation_metrics(
+            X_pred_val.detach().cpu().numpy(),
+            X_target_val.detach().cpu().numpy(),
+            nb_classes=config["nb_classes"],
+        )
 
-    #     # Add current loss avg to list of losses
-    #     for key in d_losses_train.keys():
-    #         d_monitor_train[key].append(d_losses_train[key])
-    #         d_monitor_val[key].append(d_losses_val[key])
+        # Add current loss avg to list of losses
+        for key in d_losses_train.keys():
+            d_monitor_train[key].append(d_losses_train[key])
+            d_monitor_val[key].append(d_losses_val[key])
 
-    #     d_monitor_train["epoch"].append(epoch + 1)
-    #     d_monitor_val["epoch"].append(epoch + 1)
+        d_monitor_train["epoch"].append(epoch + 1)
+        d_monitor_val["epoch"].append(epoch + 1)
 
-    #     for metric in d_losses_train:
-    #         writer.add_scalars(
-    #             f"Metrics/{metric.title()}",
-    #             {"training": d_losses_train[metric], "valid": d_losses_val[metric]},
-    #             batch,
-    #         )
+        for metric in d_losses_train:
+            writer.add_scalars(
+                f"Metrics/{metric.title()}",
+                {"training": d_losses_train[metric], "valid": d_losses_val[metric]},
+                batch,
+            )
 
-    #     # Prepare loss_str to update progress bar
-    #     loss_str = tu.get_loss_string(d_losses_train, d_losses_val)
+        # Prepare loss_str to update progress bar
+        loss_str = tu.get_loss_string(d_losses_train, d_losses_val)
 
-    #     save_prefix = f"{config['dump_dir']}/loss"
-    #     tu.plot_loss(d_monitor_train, d_monitor_val, save_prefix)
-    #     if d_monitor_val["log_loss"][-1] < best_loss:
-    #         best_loss = d_monitor_val["log_loss"][-1]
-    #         torch.save(model.state_dict(), f"{config['dump_dir']}/net.pt")
+        save_prefix = f"{config['dump_dir']}/loss"
+        tu.plot_loss(d_monitor_train, d_monitor_val, save_prefix)
+        if d_monitor_val["log_loss"][-1] < best_loss:
+            best_loss = d_monitor_val["log_loss"][-1]
+            torch.save(model.state_dict(), f"{config['dump_dir']}/net.pt")
 
-    #     # LR scheduling
-    #     scheduler.step(d_losses_val["log_loss"])
-    #     lr_value = next(iter(optimizer.param_groups))["lr"]
-    #     if lr_value <= config["min_lr"]:
-    #         print("Minimum LR reached, ending training")
-    #         break
+        # LR scheduling
+        scheduler.step(d_losses_val["log_loss"])
+        lr_value = next(iter(optimizer.param_groups))["lr"]
+        if lr_value <= config["min_lr"]:
+            print("Minimum LR reached, ending training")
+            break
 
-    # lu.print_green("Finished training")
+    lu.print_green("Finished training")
 
     # Start validating on test set
     get_test_predictions(model, config, dataset, device)
