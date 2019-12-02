@@ -1,7 +1,20 @@
 import torch
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
-from supernnova.utils.training_utils import log_norm
+
+def log_norm(x, min_clip, mean, std, F=torch):
+    """
+    """
+
+    x = (F.log(x - min_clip + 1e-5) - mean) / std
+    return x
+
+
+def inverse_log_norm(x, min_clip, mean, std, F=torch):
+
+    x = F.exp(x * std + mean) + min_clip - 1e-5
+
+    return x
 
 
 class Model(torch.nn.Module):
@@ -42,6 +55,7 @@ class Model(torch.nn.Module):
 
     def forward(self, x_flux, x_fluxerr, x_flt, x_time, x_mask, x_meta=None):
 
+        # TODO constants ?
         x_flux = x_flux.clamp(-100)
         x_fluxerr = x_fluxerr.clamp(-100)
 

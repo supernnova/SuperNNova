@@ -1580,6 +1580,7 @@ def plot_predictions(
     ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.0)
 
     plt.tight_layout()
+    # TODO name
     plt.savefig(Path(config["dump_dir"]) / "fig.png")
     plt.clf()
     plt.close()
@@ -1588,7 +1589,7 @@ def plot_predictions(
 def make_early_prediction(
     model,
     config,
-    list_data,
+    data_iterator,
     list_filters,
     inverse_filter_dict,
     device,
@@ -1601,12 +1602,9 @@ def make_early_prediction(
     # load SN info
     SNinfo_df = du.load_HDF5_SNinfo(config["processed_dir"])
 
-    # Loop over data to plot prediction
-    # randomly select lcs to plot
-    list_entries = np.random.randint(0, high=len(list_data), size=nb_lcs)
-    for idx in tqdm(list_entries, ncols=100):
+    for data in data_iterator:
 
-        SNID = list_data[idx]["SNID"]
+        SNID = data["X_SNID"].item()
 
         try:
             redshift = SNinfo_df[SNinfo_df["SNID"] == SNID]["SIM_REDSHIFT_CMB"].values[
@@ -1621,8 +1619,6 @@ def make_early_prediction(
         d_plot = {
             flt: {"FLUXCAL": [], "FLUXCALERR": [], "MJD": []} for flt in list_filters
         }
-
-        data = tu.get_data_batch(list_data, [idx], device)
 
         X_flux = data["X_flux"]
         X_fluxerr = data["X_fluxerr"]

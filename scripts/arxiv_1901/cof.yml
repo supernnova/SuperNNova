@@ -3,9 +3,9 @@ preprocessed_dir: /home/tmain/Ly rebird/SuperNNova_refactor/tests/dump/preproces
 processed_dir: /home/tmain/Lyrebird/SuperNNova_refactor/tests/dump/processed
 fitopt_file: /home/tmain/Lyrebird/SuperNNova_refactor/tests/fits/FITOPT000.FITRES
 fig_dir: /home/tmain/Lyrebird/SuperNNova_refactor/tests/dump/figures
-dump_dir: /home/tmain/Ly rebird/SuperNNova_refactor/tests/dump/rnn/vanilla_000
+dump_dir: /home/tmain/Lyrebird/SuperNNova_refactor/tests/dump/rnn/vanilla_000
 
-nb_epoch: 10000
+nb_epoch: 1
 nb_inference_samples: 1
 batch_size: 16
 batch_size_test: 16

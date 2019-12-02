@@ -10,6 +10,7 @@ import pandas as pd
 from tqdm import tqdm
 from time import time
 from pathlib import Path
+from copy import deepcopy
 from collections import defaultdict
 
 from supernnova.utils import training_utils as tu
@@ -37,27 +38,10 @@ from constants import (
 
 
 def find_idx(array, value):
-    """Utility to find the index of the element of ``array`` that most closely
-    matches ``value``
-
-    Args:
-        array (np.array): The array in which to search
-        value (float): The value for which we are looking for a match
-
-    Returns:
-        (int) the index of of the element of ``array`` that most closely
-        matches ``value``
-
-    """
 
     idx = np.searchsorted(array, value, side="left")
-    if idx > 0 and (
-        idx == len(array)
-        or math.fabs(value - array[idx - 1]) < math.fabs(value - array[idx])
-    ):
-        return idx - 1
-    else:
-        return idx
+
+    return min(idx, len(array))
 
 
 def forward_pass(model, data):
@@ -133,6 +117,7 @@ def get_test_predictions(model, config, dataset, device):
 
         peak_MJDs = df_SNinfo.loc[SNIDs]["PEAKMJDNORM"].values
         times = [np.cumsum(t) for t in delta_times]
+        batch_size = len(times)
 
         end_idx = start_idx + len(SNIDs)
 
@@ -148,33 +133,37 @@ def get_test_predictions(model, config, dataset, device):
             d_pred["target"][start_idx:end_idx, iter_] = arr_target
             d_pred["SNID"][start_idx:end_idx, iter_] = SNIDs
 
-        # TODO think about best way to do OFFSETS
-
         #############################
         # Predictions around PEAKMJD
         #############################
         for offset in OFFSETS:
-            slice_idxs = [
-                find_idx(times[k], peak_MJDs[k] + offset) for k in range(len(times))
+            lengths = [
+                find_idx(times[k], peak_MJDs[k] + offset) for k in range(batch_size)
             ]
             # Split in 2 arrays:
             # oob_idxs: the slice for early prediction is empty for those indices
             # inb_idxs: the slice is not empty
-            oob_idxs = np.where(np.array(slice_idxs) < 1)[0]
-            inb_idxs = np.where(np.array(slice_idxs) >= 1)[0]
+            oob_idxs = np.where(np.array(lengths) < 1)[0]
+            inb_idxs = np.where(np.array(lengths) >= 1)[0]
 
             if len(inb_idxs) > 0:
-                # We only carry out prediction for samples in ``inb_idxs``
-                offset_batch_idxs = [batch_idxs[b] for b in inb_idxs]
-                max_lengths = [slice_idxs[b] for b in inb_idxs]
+                data_tmp = deepcopy(data)
+                max_length = max(lengths)
 
-                data = tu.get_data_batch(
-                    list_data, offset_batch_idxs, device, max_lengths=max_lengths
-                )
+                for key in ["X_flux", "X_fluxerr", "X_time", "X_flt", "X_mask"]:
+                    data_tmp[key] = data_tmp[key][:, :max_length]
+
+                for idx in range(batch_size):
+                    length = lengths[idx]
+                    for key in ["X_flux", "X_fluxerr", "X_time", "X_flt", "X_mask"]:
+                        if key == "X_mask":
+                            data_tmp[key][idx, length:] = False
+                        else:
+                            data_tmp[key][idx, length:] = 0
 
                 for iter_ in range(nb_inference_samples):
 
-                    _, X_pred, X_target = forward_pass(model, data)
+                    _, X_pred, X_target = forward_pass(model, data_tmp)
                     arr_preds, arr_target = X_pred.cpu().numpy(), X_target.cpu().numpy()
 
                     suffix = str(offset) if offset != 0 else ""
@@ -306,8 +295,6 @@ def train(config):
 
     batch = 0
     best_loss = float("inf")
-
-    get_test_predictions(model, config, dataset, device)
 
     for epoch in range(config["nb_epoch"]):
 
@@ -453,16 +440,16 @@ def main(config_path):
 
     config = yaml.load(open(config_path, "r"), Loader=yaml.FullLoader)
 
-    # setting random seeds
-    np.random.seed(config["seed"])
+    # # setting random seeds
+    # np.random.seed(config["seed"])
 
-    # Train and sav predictions
-    train(config)
-    lu.print_blue("Finished rnn training, validating and testing")
+    # # Train and sav predictions
+    # train(config)
+    # lu.print_blue("Finished rnn training, validating and testing")
 
-    # # Compute metrics
+    # # # Compute metrics
     # get_metrics(config)
-    lu.print_blue("Finished getting metrics ")
+    # lu.print_blue("Finished getting metrics ")
 
     # Plot some lightcurves
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -475,15 +462,19 @@ def main(config_path):
             map_location=lambda storage, loc: storage,
         )
     )
-    _, _, list_data_test = tu.load_HDF5(config, SNTYPES)
-    plots.make_early_prediction(
-        model,
-        config,
-        list_data_test,
-        LIST_FILTERS,
-        INVERSE_FILTER_DICT,
-        device,
+
+    # TODO use same splits as training
+    dataset = HDF5Dataset(
+        f"{config['processed_dir']}/database.h5",
+        config["metadata_features"],
         SNTYPES,
+        config["nb_classes"],
+    )
+
+    data_iterator = dataset.create_iterator("test", 1, device, tqdm_desc=None)
+
+    plots.make_early_prediction(
+        model, config, data_iterator, LIST_FILTERS, INVERSE_FILTER_DICT, device, SNTYPES
     )
 
     lu.print_blue("Finished plotting lightcurves and predictions ")

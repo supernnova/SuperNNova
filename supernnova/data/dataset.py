@@ -152,7 +152,6 @@ class HDF5Dataset:
                 B = len(idxs)
                 L = max(list_lengths)
 
-                # TODO handle max lengths
                 X_flux = np.zeros((B, L, Dflux), dtype=np.float32)
                 X_fluxerr = np.zeros((B, L, Dfluxerr), dtype=np.float32)
                 X_time = np.zeros((B, L, 1), dtype=np.float32)

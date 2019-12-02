@@ -36,7 +36,8 @@ pip install seaborn pytest-sugar pytest-cov sphinx-argparse tabulate tensorboard
 - data_utils list_training_features to normalize in config
 - implement different normalizations
 - SNID, SNTYPE in metadata
-- load all data previous --data_testing)
+- load all data previous --data_testing
+- single function to compute loss
 
 ## tests
 - runs without salt fit
