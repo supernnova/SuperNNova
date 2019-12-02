@@ -4,7 +4,28 @@
 ### How to
 install pyyaml
 PYTHONPATH=$PWD:$PYTHONPATH python scripts/peak/data.py scripts/peak/conf.yml
+PYTHONPATH=$PWD:$PYTHONPATH python scripts/peak/rnn.py scripts/peak/conf.yml
 
+# env
+conda update -y conda
+conda install pytorch torchvision -c pytorch
+conda config --add channels conda-forge
+conda clean -ya
+pip install \
+    h5py \
+    matplotlib \
+    colorama \
+    tqdm \
+    scipy \
+    natsort \
+    pandas \
+    astropy \
+    ipdb \
+    scikit-learn \
+    pytest \
+    unidecode 
+pip install sphinx sphinx-autobuild sphinxcontrib-napoleon sphinx_rtd_theme
+pip install seaborn pytest-sugar pytest-cov sphinx-argparse tabulate tensorboard
 
 ### TO DO
 - save constants in dump folder?
@@ -14,12 +35,16 @@ PYTHONPATH=$PWD:$PYTHONPATH python scripts/peak/data.py scripts/peak/conf.yml
 - eliminate physics-analysis only features in group_features_list
 - data_utils list_training_features to normalize in config
 - implement different normalizations
+- SNID, SNTYPE in metadata
+- load all data previous --data_testing)
 
 ## tests
 - runs without salt fit
 - can use a photometric time window
 - can deal with incomplete type dictionaries
 - can deal with two different sntypes for type Ia
+
+
 
 ### Read the documentation
 For the main branch:
