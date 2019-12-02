@@ -349,7 +349,9 @@ def save_to_HDF5(
         start_idxs = [i[0] for i in list_start_end]
         arr_metadata = df[list_metadata_features].values[start_idxs].astype(np.float32)
         hf.create_dataset("metadata", data=arr_metadata)
-        hf["metadata"].attrs["columns"] = list_metadata_features
+        hf["metadata"].attrs["columns"] = np.array(
+            list_metadata_features, dtype=h5py.special_dtype(vlen=str)
+        )
         hf.create_dataset("SNID", data=ID[start_idxs].astype(np.int64))
         hf.create_dataset(
             "SNTYPE", data=df["SNTYPE"].values[start_idxs].astype(np.int64)
@@ -379,7 +381,9 @@ def save_to_HDF5(
         df["FLT"] = df["FLT"].map(filter_dict).astype(np.float32)
 
         list_training_features += ["FLT"]
-        hf["data"].attrs["columns"] = list_training_features
+        hf["data"].attrs["columns"] = np.array(
+            list_training_features, dtype=h5py.special_dtype(vlen=str)
+        )
         hf["data"].attrs["n_features"] = len(list_training_features)
 
         # Save training features to hdf5

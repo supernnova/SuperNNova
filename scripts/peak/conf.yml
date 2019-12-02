@@ -1,0 +1,34 @@
+raw_dir: /Users/anaismoller/Desktop/SuperNNova/tests/raw
+preprocessed_dir: /Users/anaismoller/Desktop/SuperNNova/tests/dump/preprocessed
+processed_dir: /Users/anaismoller/Desktop/SuperNNova/tests/dump/processed
+fitopt_file: /Users/anaismoller/Desktop/SuperNNova/tests/fits/FITOPT000.FITRES
+fig_dir: /Users/anaismoller/Desktop/SuperNNova/tests/dump/figures
+dump_dir: /Users/anaismoller/Desktop/SuperNNova/tests/dump/rnn/vanilla_000
+
+nb_epoch: 10
+nb_inference_samples: 1
+batch_size: 16
+batch_size_test: 16
+learning_rate: 1.0E-3
+min_lr: 1.0E-5
+lr_factor: 0.1
+patience: 1
+nb_classes: &nb_classes 2
+raw_format: FITS
+seed: 42
+dataset: "saltfit"
+overwrite: True
+
+module: vanilla_rnn
+model:
+  input_size: 11
+  hidden_size: 16
+  output_size: *nb_classes
+  num_layers: 2
+  dropout: 0
+  embedding_dim: 16
+  normalize: False
+
+metadata_features:
+  - HOSTGAL_PHOTOZ
+  - HOSTGAL_PHOTOZ_ERR

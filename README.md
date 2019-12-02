@@ -1,11 +1,30 @@
 
 ![Logo](docs/SuperNNova.png)
 
+### How to
+install pyyaml
+PYTHONPATH=$PWD:$PYTHONPATH python scripts/peak/data.py scripts/peak/conf.yml
+
+
+### TO DO
+- save constants in dump folder?
+- min_dt in constants.py
+- input size computation (not hardcoded)
+- input file format conversion in SNN or apart?
+- eliminate physics-analysis only features in group_features_list
+- data_utils list_training_features to normalize in config
+- implement different normalizations
+
+## tests
+- runs without salt fit
+- can use a photometric time window
+- can deal with incomplete type dictionaries
+- can deal with two different sntypes for type Ia
+
 ### Read the documentation
 For the main branch:
 [https://supernnova.readthedocs.io](https://supernnova.readthedocs.io/en/latest/)
 
-The paper branch differs slightly from the master. Take a look to "changelog_paper_to_new_branch" or [Build the docs for this branch](#docs).
 
 ### Installation
 Clone this repository (preferred)
