@@ -5,83 +5,10 @@ from pathlib import Path
 from sklearn import metrics
 import matplotlib.pyplot as plt
 
-import torch
-
 from . import logging_utils as lu
 
 
 plt.switch_backend("agg")
-
-
-def get_data_batch(list_data, idxs, device, max_lengths=None):
-    """Create a batch in a deterministic way
-
-    Args:
-        list_data: (list) tuples of (X, target, lightcurve_ID)
-        idxs: (array / list) indices of batch element in list_data
-        settings (ExperimentSettings): controls experiment hyperparameters
-        max_length (int): Maximum light curve length to be used Default: ``None``.
-        OOD (str): Whether to modify data to create out of distribution data to be used Default: ``None``.
-
-    Returns:
-        Tuple containing
-            - packed_tensor (torch PackedSequence): the packed features
-            - X_tensor (torch Tensor): the features
-            - target_tensor (torch Tensor): the target
-    """
-
-    list_lengths = (
-        [list_data[i]["X_flux"].shape[0] for i in idxs]
-        if max_lengths is None
-        else max_lengths
-    )
-    B = len(idxs)
-    L = max(list_lengths)
-    Dflux = list_data[0]["X_flux"].shape[1]
-    Dfluxerr = list_data[0]["X_fluxerr"].shape[1]
-
-    if "X_meta" in list_data[0]:
-        has_meta = True
-        Dmeta = list_data[0]["X_meta"].shape[0]
-
-    X_flux = np.zeros((B, L, Dflux), dtype=np.float32)
-    X_fluxerr = np.zeros((B, L, Dfluxerr), dtype=np.float32)
-    X_time = np.zeros((B, L, 1), dtype=np.float32)
-    X_meta = np.zeros((B, Dmeta), dtype=np.float32) if has_meta else None
-    X_flt = np.zeros((B, L), dtype=np.int64)
-    X_target = np.zeros((B,), dtype=np.int64)
-
-    arr_lengths = np.array(list_lengths).astype(np.int64)
-
-    for pos, idx in enumerate(idxs):
-
-        data = list_data[idx]
-        length = list_lengths[pos]
-
-        X_flux[pos, :length, :] = data["X_flux"][:length]
-        X_fluxerr[pos, :length, :] = data["X_fluxerr"][:length]
-        X_time[pos, :length, 0] = data["X_time"][:length]
-        X_flt[pos, :length] = data["X_flt"][:length]
-        X_target[pos] = data["X_target"]
-
-        if has_meta:
-            X_meta[pos] = data["X_meta"]
-
-    X_mask = (arr_lengths.reshape(-1, 1) > np.arange(L).reshape(1, -1)).astype(np.bool)
-
-    out = {
-        "X_flux": torch.from_numpy(X_flux).to(device),
-        "X_fluxerr": torch.from_numpy(X_fluxerr).to(device),
-        "X_time": torch.from_numpy(X_time).to(device),
-        "X_flt": torch.from_numpy(X_flt).to(device),
-        "X_target": torch.from_numpy(X_target).to(device),
-        "X_mask": torch.from_numpy(X_mask).to(device),
-    }
-
-    if has_meta:
-        out["X_meta"] = torch.from_numpy(X_meta).to(device)
-
-    return out
 
 
 def plot_loss(d_train, d_val, save_prefix):
