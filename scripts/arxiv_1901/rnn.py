@@ -283,6 +283,23 @@ def train(config):
     log_dir.mkdir()
     writer = SummaryWriter(log_dir=log_dir.as_posix())
 
+    # Save config
+    with open(Path(config["dump_dir"]) / "cf.yml", "w") as f:
+        yaml.dump(config, f)
+
+    # Save the dataset splits splits
+    df_train = pd.DataFrame(dataset.SNID_train.reshape(-1, 1), columns=["SNID"])
+    df_val = pd.DataFrame(dataset.SNID_val.reshape(-1, 1), columns=["SNID"])
+    df_test = pd.DataFrame(dataset.SNID_test.reshape(-1, 1), columns=["SNID"])
+
+    df_train["split"] = "train"
+    df_val["split"] = "val"
+    df_test["split"] = "test"
+
+    df_splits = pd.concat([df_train, df_val, df_test], 0)
+    save_file = (Path(config["dump_dir"]) / f"data_splits.csv").as_posix()
+    df_splits.to_csv(save_file, index=False)
+
     # TODO KL
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
@@ -440,16 +457,16 @@ def main(config_path):
 
     config = yaml.load(open(config_path, "r"), Loader=yaml.FullLoader)
 
-    # # setting random seeds
-    # np.random.seed(config["seed"])
+    # setting random seeds
+    np.random.seed(config["seed"])
 
-    # # Train and sav predictions
-    # train(config)
-    # lu.print_blue("Finished rnn training, validating and testing")
+    # Train and sav predictions
+    train(config)
+    lu.print_blue("Finished rnn training, validating and testing")
 
-    # # # Compute metrics
-    # get_metrics(config)
-    # lu.print_blue("Finished getting metrics ")
+    # # Compute metrics
+    get_metrics(config)
+    lu.print_blue("Finished getting metrics ")
 
     # Plot some lightcurves
     device = "cuda" if torch.cuda.is_available() else "cpu"
