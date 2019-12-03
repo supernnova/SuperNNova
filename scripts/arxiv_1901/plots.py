@@ -1602,6 +1602,8 @@ def make_early_prediction(
     # load SN info
     SNinfo_df = du.load_HDF5_SNinfo(config["processed_dir"])
 
+    counter = 0
+
     for data in data_iterator:
 
         SNID = data["X_SNID"].item()
@@ -1691,5 +1693,10 @@ def make_early_prediction(
             sntypes,
             config["nb_classes"],
         )
+
+        counter +=1
+
+        if counter > nb_lcs:
+            break
 
     torch.set_grad_enabled(True)
