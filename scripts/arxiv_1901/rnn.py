@@ -44,7 +44,7 @@ def find_idx(array, value):
     return min(idx, len(array))
 
 
-def forward_pass(model, data):
+def forward_pass(model, data, num_batches):
 
     X_flux = data["X_flux"]
     X_fluxerr = data["X_fluxerr"]
@@ -59,10 +59,15 @@ def forward_pass(model, data):
 
     loss = torch.nn.functional.cross_entropy(X_pred, X_target, reduction="none").mean(0)
 
+    if hasattr(model, "kl"):
+        batch_size = X_target.shape[0]
+        kl = model.kl / (batch_size * num_batches)
+        loss = loss + kl
+
     return loss, X_pred, X_target
 
 
-def eval_pass(model, data_iterator):
+def eval_pass(model, data_iterator, n_batches):
 
     list_target = []
     list_pred = []
@@ -70,7 +75,7 @@ def eval_pass(model, data_iterator):
     model.eval()
     with torch.no_grad():
         for data in data_iterator:
-            _, X_pred, X_target = forward_pass(model, data)
+            _, X_pred, X_target = forward_pass(model, data, n_batches)
             list_target.append(X_target)
             list_pred.append(X_pred)
 
@@ -175,7 +180,6 @@ def train(config):
     save_file = (Path(config["dump_dir"]) / f"data_splits.csv").as_posix()
     df_splits.to_csv(save_file, index=False)
 
-    # TODO KL
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
         "min",
@@ -184,6 +188,9 @@ def train(config):
         patience=config["patience"],
         verbose=True,
     )
+
+    n_train_batches = dataset.get_length("train", config["batch_size"])
+    n_val_batches = dataset.get_length("val", config["batch_size"])
 
     batch = 0
     best_loss = float("inf")
@@ -202,7 +209,9 @@ def train(config):
             model.train()
 
             # Train step : forward backward pass
-            loss, X_pred_train, X_target_train = forward_pass(model, data)
+            loss, X_pred_train, X_target_train = forward_pass(
+                model, data, n_train_batches
+            )
 
             list_pred_train.append(X_pred_train)
             list_target_train.append(X_target_train)
@@ -222,6 +231,7 @@ def train(config):
             dataset.create_iterator(
                 "val", config["batch_size"], device, tqdm_desc=None
             ),
+            n_val_batches,
         )
 
         # Actually compute metrics
@@ -289,6 +299,7 @@ def get_predictions(dump_dir):
     nb_classes = config["nb_classes"]
     nb_inference_samples = config["nb_inference_samples"]
 
+    n_test_batches = dataset.get_length("test", config["batch_size"])
     data_iterator = dataset.create_iterator(
         "test", config["batch_size"], device, tqdm_desc=None
     )
@@ -327,7 +338,7 @@ def get_predictions(dump_dir):
         #############################
         for iter_ in range(nb_inference_samples):
 
-            _, X_pred, X_target = forward_pass(model, data)
+            _, X_pred, X_target = forward_pass(model, data, n_test_batches)
             arr_preds, arr_target = X_pred.cpu().numpy(), X_target.cpu().numpy()
 
             d_pred["all"][start_idx:end_idx, iter_] = arr_preds
@@ -364,7 +375,7 @@ def get_predictions(dump_dir):
 
                 for iter_ in range(nb_inference_samples):
 
-                    _, X_pred, X_target = forward_pass(model, data_tmp)
+                    _, X_pred, X_target = forward_pass(model, data_tmp, n_test_batches)
                     arr_preds, arr_target = X_pred.cpu().numpy(), X_target.cpu().numpy()
 
                     suffix = str(offset) if offset != 0 else ""

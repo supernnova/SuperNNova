@@ -106,6 +106,16 @@ class HDF5Dataset:
         else:
             return len(self.splits["train"])
 
+    def get_length(self, split, batch_size):
+        idxs = self.splits[split]
+
+        # Create a list of batches
+        list_idxs = [
+            sorted(idxs[i : i + batch_size].tolist())
+            for i in range(0, len(idxs), batch_size)
+        ]
+        return len(list_idxs)
+
     def create_iterator(self, split, batch_size, device, tqdm_desc=None):
 
         idxs = self.splits[split]
