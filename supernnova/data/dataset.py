@@ -25,13 +25,11 @@ class HDF5Dataset:
 
         # Load dataset information
         hf = h5py.File(hdf5_file, "r")
-        self.arr_SNID = hf["SNID"][:]
-        self.arr_SNTYPE = hf["SNTYPE"][:]
         arr_meta = hf["metadata"][:]
         columns = hf["metadata"].attrs["columns"]
         df_meta = pd.DataFrame(arr_meta, columns=columns)
-        df_meta["SNID"] = self.arr_SNID
-        df_meta["SNTYPE"] = self.arr_SNTYPE
+        self.arr_SNID = df_meta["SNID"].values
+        self.arr_SNTYPE = df_meta["SNTYPE"].values
         self.list_features = hf["data"].attrs["columns"].tolist()
         hf.close()
 

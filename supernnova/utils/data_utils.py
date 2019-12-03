@@ -232,8 +232,8 @@ def load_HDF5_SNinfo(processed_dir):
         columns = hf["metadata"].attrs["columns"]
 
         df_SNinfo = pd.DataFrame(data, columns=columns)
-        df_SNinfo["SNID"] = hf["SNID"][:]
-        df_SNinfo["SNTYPE"] = hf["SNTYPE"][:]
+        df_SNinfo["SNID"] = df_SNinfo["SNID"].astype(int)
+        df_SNinfo["SNTYPE"] = df_SNinfo["SNTYPE"].astype(int)
 
     return df_SNinfo
 
@@ -259,9 +259,7 @@ def log_standardization(arr):
     return [arr_min, arr_mean, arr_std]
 
 
-def save_to_HDF5(
-    df, hdf5_file, sntypes, list_filters, offsets, offsets_str, filter_dict
-):
+def save_to_HDF5(df, hdf5_file, list_filters, offsets, offsets_str, filter_dict):
     """Saved processed dataframe to HDF5
 
     Args:
@@ -303,11 +301,10 @@ def save_to_HDF5(
     list_training_features = [f"FLUXCAL_{f}" for f in list_filters]
     list_training_features += [f"FLUXCALERR_{f}" for f in list_filters]
     list_training_features += ["delta_time"]
-    list_features_to_normalize = [f for f in list_training_features if "FLUX" in f] + [
-        "delta_time"
-    ]
 
     list_metadata_features = [
+        "SNID",
+        "SNTYPE",
         "mB",
         "c",
         "x1",
@@ -334,7 +331,7 @@ def save_to_HDF5(
     np.random.shuffle(list_start_end)
 
     # Drop features we no longer need
-    df.drop(columns=["time", "SNID"], inplace=True)
+    df.drop(columns=["time"], inplace=True)
 
     # Save hdf5 file
     with h5py.File(hdf5_file, "w") as hf:
@@ -348,13 +345,7 @@ def save_to_HDF5(
         hf["metadata"].attrs["columns"] = np.array(
             list_metadata_features, dtype=h5py.special_dtype(vlen=str)
         )
-        hf.create_dataset("SNID", data=ID[start_idxs].astype(np.int64))
-        hf.create_dataset(
-            "SNTYPE", data=df["SNTYPE"].values[start_idxs].astype(np.int64)
-        )
-
         df = df.drop(columns=list_metadata_features)
-        df = df.drop(columns=["SNTYPE"])
 
         ####################################
         # Save the rest of the data to hdf5
