@@ -17,6 +17,7 @@ class HDF5Dataset:
         SNID_train=None,
         SNID_val=None,
         SNID_test=None,
+        load_all=False,
     ):
         super().__init__()
 
@@ -49,52 +50,61 @@ class HDF5Dataset:
 
         self.arr_target = df_meta["target"].values
 
-        # TODO option to load all data
+        if load_all:
+            self.splits = {"all": np.arange(self.arr_target.shape[0])}
 
-        # Subsample with data fraction
-        n_samples = int(data_fraction * len(df_meta))
-        idxs = np.random.choice(len(df_meta), n_samples, replace=False)
-        df_meta = df_meta.iloc[idxs].reset_index(drop=True)
+        else:
+            # Subsample with data fraction
+            n_samples = int(data_fraction * len(df_meta))
+            idxs = np.random.choice(len(df_meta), n_samples, replace=False)
+            df_meta = df_meta.iloc[idxs].reset_index(drop=True)
 
-        # Pandas magic to downample each class down to lowest cardinality class
-        df_meta = df_meta.groupby("target")
-        df_meta = (
-            df_meta.apply(lambda x: x.sample(df_meta.size().min()))
-            .reset_index(drop=True)
-            .sample(frac=1)
-        ).reset_index(drop=True)
+            # Pandas magic to downample each class down to lowest cardinality class
+            df_meta = df_meta.groupby("target")
+            df_meta = (
+                df_meta.apply(lambda x: x.sample(df_meta.size().min()))
+                .reset_index(drop=True)
+                .sample(frac=1)
+            ).reset_index(drop=True)
 
-        n_samples = len(df_meta)
+            n_samples = len(df_meta)
 
-        for t in range(nb_classes):
-            n = len(df_meta[df_meta.target == t])
-            print(
-                f"{n} ({100 * n / n_samples:.2f} %) class {t} samples after balancing"
-            )
+            for t in range(nb_classes):
+                n = len(df_meta[df_meta.target == t])
+                print(
+                    f"{n} ({100 * n / n_samples:.2f} %) class {t} samples after balancing"
+                )
 
-        # 80/10/10 Train/val/test split
-        n_train = int(0.8 * n)
-        n_val = int(0.9 * n)
-        if SNID_train is None:
-            SNID_train = df_meta["SNID"].values[:n_train]
-        if SNID_val is None:
-            SNID_val = df_meta["SNID"].values[n_train:n_val]
-        if SNID_test is None:
-            SNID_test = df_meta["SNID"].values[n_val:]
+            # 80/10/10 Train/val/test split
+            n_train = int(0.8 * n)
+            n_val = int(0.9 * n)
+            if SNID_train is None:
+                SNID_train = df_meta["SNID"].values[:n_train]
+            if SNID_val is None:
+                SNID_val = df_meta["SNID"].values[n_train:n_val]
+            if SNID_test is None:
+                SNID_test = df_meta["SNID"].values[n_val:]
 
-        train_indices = np.where(np.in1d(self.arr_SNID, SNID_train))[0]
-        val_indices = np.where(np.in1d(self.arr_SNID, SNID_val))[0]
-        test_indices = np.where(np.in1d(self.arr_SNID, SNID_test))[0]
+            train_indices = np.where(np.in1d(self.arr_SNID, SNID_train))[0]
+            val_indices = np.where(np.in1d(self.arr_SNID, SNID_val))[0]
+            test_indices = np.where(np.in1d(self.arr_SNID, SNID_test))[0]
 
-        # Shuffle for good measure
-        np.random.shuffle(train_indices)
-        np.random.shuffle(val_indices)
-        np.random.shuffle(test_indices)
+            # Shuffle for good measure
+            np.random.shuffle(train_indices)
+            np.random.shuffle(val_indices)
+            np.random.shuffle(test_indices)
 
-        self.splits = {"train": train_indices, "val": val_indices, "test": test_indices}
+            self.splits = {
+                "train": train_indices,
+                "val": val_indices,
+                "test": test_indices,
+            }
 
     def __len__(self):
-        return len(self.splits["train"])
+        if "all" in self.splits:
+            return len(self.split["all"])
+        else:
+            return len(self.splits["train"])
 
     def create_iterator(self, split, batch_size, device, tqdm_desc=None):
 
