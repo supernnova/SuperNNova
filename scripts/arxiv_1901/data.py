@@ -258,7 +258,7 @@ def pivot_dataframe_batch(list_files, config):
     )
 
     # Loop over chunks of files
-    for idx in tqdm(range(0, n_files, chunk_size), desc="Preprocess", ncols=100):
+    for idx in tqdm(range(0, n_files, chunk_size), desc="Pivot", ncols=100):
         # Process each file in the chunk in parallel
         pool.map(process_fn, list_files[idx : idx + chunk_size])
 

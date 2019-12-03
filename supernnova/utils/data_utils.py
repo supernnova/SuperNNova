@@ -228,10 +228,6 @@ def load_HDF5_SNinfo(processed_dir):
 
     with h5py.File(file_name, "r") as hf:
 
-        print("WARNING COL TO KEEP")
-        print("WARNING COL TO KEEP")
-        print("WARNING COL TO KEEP")
-
         data = hf["metadata"][:]
         columns = hf["metadata"].attrs["columns"]
 
