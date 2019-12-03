@@ -311,7 +311,7 @@ def get_predictions(dump_dir):
     start_idx = 0
 
     # Loop over data and make prediction
-    for data in tqdm(data_iterator, ncols=100):
+    for data in data_iterator:
 
         SNIDs = data["X_SNID"]
         delta_times = data["X_time"].detach().cpu().numpy()

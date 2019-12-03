@@ -54,39 +54,37 @@ class HDF5Dataset:
             self.splits = {"all": np.arange(self.arr_target.shape[0])}
 
         else:
-            # Subsample with data fraction
-            n_samples = int(data_fraction * len(df_meta))
-            idxs = np.random.choice(len(df_meta), n_samples, replace=False)
-            df_meta = df_meta.iloc[idxs].reset_index(drop=True)
-
-            # Pandas magic to downample each class down to lowest cardinality class
-            df_meta = df_meta.groupby("target")
-            df_meta = (
-                df_meta.apply(lambda x: x.sample(df_meta.size().min()))
-                .reset_index(drop=True)
-                .sample(frac=1)
-            ).reset_index(drop=True)
-
-            n_samples = len(df_meta)
-
-            for t in range(nb_classes):
-                n = len(df_meta[df_meta.target == t])
-                print(
-                    f"{n} ({100 * n / n_samples:.2f} %) class {t} samples after balancing"
-                )
-
             self.SNID_train = SNID_train
             self.SNID_val = SNID_val
             self.SNID_test = SNID_test
 
-            # 80/10/10 Train/val/test split
-            n_train = int(0.8 * n)
-            n_val = int(0.9 * n)
             if self.SNID_train is None:
+                # Subsample with data fraction
+                n_samples = int(data_fraction * len(df_meta))
+                idxs = np.random.choice(len(df_meta), n_samples, replace=False)
+                df_meta = df_meta.iloc[idxs].reset_index(drop=True)
+
+                # Pandas magic to downample each class down to lowest cardinality class
+                df_meta = df_meta.groupby("target")
+                df_meta = (
+                    df_meta.apply(lambda x: x.sample(df_meta.size().min()))
+                    .reset_index(drop=True)
+                    .sample(frac=1)
+                ).reset_index(drop=True)
+
+                n_samples = len(df_meta)
+
+                for t in range(nb_classes):
+                    n = len(df_meta[df_meta.target == t])
+                    print(
+                        f"{n} ({100 * n / n_samples:.2f} %) class {t} samples after balancing"
+                    )
+
+                # 80/10/10 Train/val/test split
+                n_train = int(0.8 * n)
+                n_val = int(0.9 * n)
                 self.SNID_train = df_meta["SNID"].values[:n_train]
-            if self.SNID_val is None:
                 self.SNID_val = df_meta["SNID"].values[n_train:n_val]
-            if self.SNID_test is None:
                 self.SNID_test = df_meta["SNID"].values[n_val:]
 
             train_indices = np.where(np.in1d(self.arr_SNID, self.SNID_train))[0]
