@@ -1,4 +1,4 @@
-raw_dir: /u/home/SuperNNova/tests/raw
+raw_dir: /u/home/SuperNNova/raw
 preprocessed_dir: /u/home/SuperNNova/tests/dump/preprocessed
 processed_dir: /u/home/SuperNNova/tests/dump/processed
 fitopt_file: /u/home/SuperNNova/tests/fits/FITOPT000.FITRES
