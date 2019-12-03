@@ -448,6 +448,8 @@ def get_metrics(config):
 
 
 def main(config_path):
+    """
+    """
 
     config = yaml.load(open(config_path, "r"), Loader=yaml.FullLoader)
 
@@ -489,7 +491,7 @@ def main(config_path):
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description="Dataset building")
+    parser = argparse.ArgumentParser(description="Run RNN")
     parser.add_argument("config_path", help="Path to yml config gile")
 
     args = parser.parse_args()

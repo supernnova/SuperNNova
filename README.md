@@ -2,15 +2,19 @@
 ![Logo](docs/SuperNNova.png)
 
 ### How to
-install pyyaml
 PYTHONPATH=$PWD:$PYTHONPATH python scripts/peak/data.py scripts/peak/conf.yml
 PYTHONPATH=$PWD:$PYTHONPATH python scripts/peak/rnn.py scripts/peak/conf.yml
 
 # env
 conda update -y conda
+# mac os
 conda install pytorch torchvision -c pytorch
+# linux
+conda install pytorch torchvision cudatoolkit=10.1 -c pytorch
+
+# all
+pip install pyyaml
 conda config --add channels conda-forge
-conda clean -ya
 pip install \
     h5py \
     matplotlib \
@@ -26,6 +30,9 @@ pip install \
     unidecode 
 pip install sphinx sphinx-autobuild sphinxcontrib-napoleon sphinx_rtd_theme
 pip install seaborn pytest-sugar pytest-cov sphinx-argparse tabulate tensorboard
+
+# cleaning up
+conda clean -ya
 
 ### TO DO
 - save constants in dump folder?
