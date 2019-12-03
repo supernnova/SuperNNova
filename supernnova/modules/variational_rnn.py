@@ -1,5 +1,8 @@
 import torch
+import torch.nn as nn
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
+
+from supernnova.modules.bayesian_layers import RNNDropout, WeightDropout
 
 
 def log_norm(x, min_clip, mean, std, F=torch):
@@ -17,7 +20,7 @@ def inverse_log_norm(x, min_clip, mean, std, F=torch):
     return x
 
 
-class Model(torch.nn.Module):
+class Model(nn.Module):
     def __init__(
         self,
         input_size,
@@ -32,21 +35,42 @@ class Model(torch.nn.Module):
         super().__init__()
 
         self.normalize = normalize
+        self.num_layers = num_layers
 
-        self.embedding = torch.nn.Embedding(num_embeddings, embedding_dim)
+        self.embedding = nn.Embedding(num_embeddings, embedding_dim)
+
+        self.drop = RNNDropout(dropout)
 
         # Define layers
-        self.rnn = torch.nn.LSTM(
-            input_size + embedding_dim,
-            hidden_size,
-            num_layers=num_layers,
-            dropout=dropout,
-            bidirectional=True,
-            batch_first=True,
-            bias=True,
-        )
-        self.output_dropout_layer = torch.nn.Dropout(dropout)
-        self.output_layer = torch.nn.Linear(hidden_size * 2, output_size)
+        list_rnn = [
+            nn.LSTM(
+                input_size + embedding_dim,
+                hidden_size,
+                num_layers=1,
+                dropout=0,
+                bidirectional=True,
+                batch_first=True,
+                bias=True,
+            )
+        ]
+        for _ in range(1, num_layers):
+            list_rnn.append(
+                nn.LSTM(
+                    hidden_size * 2,  # because bidir is True
+                    hidden_size,
+                    num_layers=1,
+                    dropout=0,
+                    bidirectional=True,
+                    batch_first=True,
+                    bias=True,
+                )
+            )
+
+        for i in range(num_layers):
+            rnn = WeightDropout(list_rnn[i], dropout, ["weight_hh_l0"])
+            setattr(self, f"rnn{i}", rnn)
+
+        self.output_layer = nn.Linear(hidden_size * 2, output_size)
 
         if self.normalize:
             self.register_buffer("flux_norm", torch.zeros(3))
@@ -74,23 +98,33 @@ class Model(torch.nn.Module):
             x_meta = x_meta.unsqueeze(1).expand(B, L, -1)
             x = torch.cat([x, x_meta], dim=-1)
 
+        # Input dropout
+        x = self.drop(x)
+
         lengths = x_mask.sum(dim=-1).long()
         x_packed = pack_padded_sequence(
             x, lengths, batch_first=True, enforce_sorted=False
         )
-        # Pass it to the RNN
-        hidden_packed, (x, _) = self.rnn(x_packed)
-        # undo PackedSequence
-        hidden, _ = pad_packed_sequence(hidden_packed, batch_first=True)
-        # hidden is (B, L, D)
+        # Pass it to the RNNs
+        for i in range(self.num_layers):
+            rnn = getattr(self, f"rnn{i}")
+            hidden_packed, _ = rnn(x_packed)
+            # Unpack
+            hidden, _ = pad_packed_sequence(hidden_packed, batch_first=True)
+            # Apply dropout
+            hidden = self.drop(hidden)
+            if i < self.num_layers - 1:
+                # Repack
+                hidden_packed = pack_padded_sequence(
+                    hidden, lengths, batch_first=True, enforce_sorted=False
+                )
+                x_packed = hidden_packed
 
         # Take masked mean
         x = (hidden * x_mask.unsqueeze(-1).float()).sum(1) / x_mask.float().unsqueeze(
             -1
         ).sum(1)
 
-        # apply dropout
-        x = self.output_dropout_layer(x)
         # Final projection layer
         output = self.output_layer(x)
 
