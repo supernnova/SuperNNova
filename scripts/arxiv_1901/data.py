@@ -15,7 +15,7 @@ from supernnova.utils import data_utils
 from supernnova.utils import logging_utils
 from plots import datasets_plots
 
-from constants import SNTYPES, LIST_FILTERS, OFFSETS, OFFSETS_STR, FILTER_DICT
+from constants import SNTYPES, LIST_FILTERS, OFFSETS, OFFSETS_STR, FILTER_DICT, MIN_DT
 
 
 def process_phot_file(file_path, preprocessed_dir, list_filters):
@@ -140,7 +140,7 @@ def pivot_dataframe_single(filename, list_filters, df_salt, sntypes):
     # Loop over times to create grouped MJD:
     # if filters are acquired within less than 0.33 MJD (~8 hours) of each other
     # they get assigned the same time
-    min_dt = 0.33
+    min_dt = MIN_DT
     time_last_change = 0
     arr_grouped_MJD = np.zeros_like(arr_MJD)
     for i in range(len(df)):
@@ -294,7 +294,7 @@ def make_dataset(config_path):
 
     # Save to HDF5
     data_utils.save_to_HDF5(
-        df, hdf5_file, SNTYPES, LIST_FILTERS, OFFSETS, OFFSETS_STR, FILTER_DICT
+        df, hdf5_file, LIST_FILTERS, OFFSETS, OFFSETS_STR, FILTER_DICT
     )
 
     # Save plots to visualize the distribution of some of the data features

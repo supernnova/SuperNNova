@@ -35,16 +35,13 @@ pip install seaborn pytest-sugar pytest-cov sphinx-argparse tabulate tensorboard
 conda clean -ya
 
 ### TO DO
-- save constants in dump folder?
-- min_dt in constants.py
-- input size computation (not hardcoded)
-- input file format conversion in SNN or apart?
-- eliminate physics-analysis only features in group_features_list
-- data_utils list_training_features to normalize in config
-- implement different normalizations
-- SNID, SNTYPE in metadata
-- load all data previous --data_testing
 - single function to compute loss
+- input size computation (not hardcoded)
+- data_utils list_training_features to normalize in config
+- save constants in dump folder?
+- input file format conversion in SNN or apart?
+- implement different normalizations
+- eliminate physics-analysis only features in group_features_list
 
 ## tests
 - runs without salt fit
