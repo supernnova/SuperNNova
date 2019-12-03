@@ -1580,8 +1580,10 @@ def plot_predictions(
     ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.0)
 
     plt.tight_layout()
-    # TODO name
-    plt.savefig(Path(config["dump_dir"]) / "fig.png")
+    plt.savefig(
+        Path(config["dump_dir"])
+        / f"lightcurve_{SNID}_class_{SNtype.replace(' ', '_').replace('|', '-')}.png"
+    )
     plt.clf()
     plt.close()
 
@@ -1694,7 +1696,7 @@ def make_early_prediction(
             config["nb_classes"],
         )
 
-        counter +=1
+        counter += 1
 
         if counter > nb_lcs:
             break

@@ -156,4 +156,3 @@ def train_and_evaluate_randomforest_model(clf, X_train, y_train, X_val, y_val):
     )
 
     return clf
-
