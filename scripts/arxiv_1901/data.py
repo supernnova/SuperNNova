@@ -262,6 +262,8 @@ def pivot_dataframe_batch(list_files, config):
         # Process each file in the chunk in parallel
         pool.map(process_fn, list_files[idx : idx + chunk_size])
 
+    pool.close()
+
     logging_utils.print_green("Finished pivot")
 
 

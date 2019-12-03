@@ -35,6 +35,8 @@ pip install seaborn pytest-sugar pytest-cov sphinx-argparse tabulate tensorboard
 conda clean -ya
 
 ### TO DO
+
+- check MC dropout and Bayes behaviour, in particular, check that sampling multiple predictions for same lightcurve works
 - single function to compute loss
 - save constants in dump folder?
 - input file format conversion in SNN or apart?

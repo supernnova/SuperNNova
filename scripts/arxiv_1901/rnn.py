@@ -367,6 +367,9 @@ def get_predictions(dump_dir):
 
                 for idx in range(batch_size):
                     length = lengths[idx]
+                    # To avoid errors when length is 0, we clamp it at 1
+                    # This works because later on, we fill such samples with nans
+                    length = max(1, length)
                     for key in ["X_flux", "X_fluxerr", "X_time", "X_flt", "X_mask"]:
                         if key == "X_mask":
                             data_tmp[key][idx, length:] = False
@@ -382,7 +385,7 @@ def get_predictions(dump_dir):
                     suffix = f"+{suffix}" if offset > 0 else suffix
                     col = f"PEAKMJD{suffix}"
 
-                    d_pred[col][start_idx + inb_idxs, iter_] = arr_preds
+                    d_pred[col][start_idx + inb_idxs, iter_] = arr_preds[inb_idxs]
                     # For oob_idxs, no prediction can be made, fill with nan
                     d_pred[col][start_idx + oob_idxs, iter_] = np.nan
 

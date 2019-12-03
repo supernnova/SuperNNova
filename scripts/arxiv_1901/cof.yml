@@ -19,7 +19,7 @@ seed: 42
 dataset: "saltfit"
 overwrite: True
 
-module: variational_rnn
+module: vanilla_rnn
 model:
   input_size: 11
   hidden_size: 16

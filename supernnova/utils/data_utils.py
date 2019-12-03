@@ -270,6 +270,7 @@ def save_to_HDF5(df, hdf5_file, list_filters, offsets, offsets_str, filter_dict)
 
     # Compute how many unique nights of data taking existed around PEAKMJD
     df["time"] = df[["SNID", "delta_time"]].groupby("SNID").cumsum()
+    list_df_night = []
     for offset, suffix in zip(offsets, offsets_str):
         new_column = f"PEAKMJD{suffix}_unique_nights"
         df_night = (
@@ -279,9 +280,10 @@ def save_to_HDF5(df, hdf5_file, list_filters, offsets, offsets_str, filter_dict)
             .rename(columns={f"PEAKMJDNORM": new_column})
             .reset_index()
         )
-        df = df.merge(df_night, how="left", on="SNID")
+        list_df_night.append(df_night)
 
     # Compute how many occurences of a specific filter around PEAKMJD
+    list_df_flt = []
     for flt in list_filters:
         # Check presence / absence of the filter at all time steps
         df[f"has_{flt}"] = df.FLT.str.contains(flt).astype(int)
@@ -295,7 +297,8 @@ def save_to_HDF5(df, hdf5_file, list_filters, offsets, offsets_str, filter_dict)
                 .rename(columns={f"has_{flt}": new_column})
                 .reset_index()
             )
-            df = df.merge(df_flt, how="left", on="SNID")
+            list_df_flt.append(df_flt)
+
         df.drop(columns=f"has_{flt}", inplace=True)
 
     list_training_features = [f"FLUXCAL_{f}" for f in list_filters]
@@ -340,12 +343,19 @@ def save_to_HDF5(df, hdf5_file, list_filters, offsets, offsets_str, filter_dict)
 
         # Fill metadata
         start_idxs = [i[0] for i in list_start_end]
-        arr_metadata = df[list_metadata_features].values[start_idxs].astype(np.float32)
-        hf.create_dataset("metadata", data=arr_metadata)
+
+        df_meta = df[list_metadata_features].iloc[start_idxs]
+        df = df.drop(columns=list_metadata_features)
+
+        for df_tmp in list_df_flt + list_df_night:
+            df_meta = df_meta.merge(df_tmp, how="left", on="SNID")
+
+        list_metadata_features = df_meta.columns.tolist()
+        arr_meta = df_meta.values.astype(np.float32)
+        hf.create_dataset("metadata", data=arr_meta)
         hf["metadata"].attrs["columns"] = np.array(
             list_metadata_features, dtype=h5py.special_dtype(vlen=str)
         )
-        df = df.drop(columns=list_metadata_features)
 
         ####################################
         # Save the rest of the data to hdf5
