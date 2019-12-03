@@ -64,6 +64,8 @@ def forward_pass(model, data, num_batches):
         kl = model.kl / (batch_size * num_batches)
         loss = loss + kl
 
+    X_pred = torch.nn.functional.softmax(X_pred, dim=-1)
+
     return loss, X_pred, X_target
 
 
@@ -107,6 +109,7 @@ def load_dataset(config, SNID_train=None, SNID_val=None, SNID_test=None):
         config["metadata_features"],
         SNTYPES,
         config["nb_classes"],
+        data_fraction=config.get("data_fraction", 1.0),
         SNID_train=SNID_train,
         SNID_val=SNID_val,
         SNID_test=SNID_test,
