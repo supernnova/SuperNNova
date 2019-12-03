@@ -35,32 +35,30 @@ class Model(torch.nn.Module):
         num_embeddings,
         embedding_dim,
         normalize=False,
-        pi=0.75,
-        log_sigma1=-1.0,
-        log_sigma2=-7.0,
     ):
         super().__init__()
 
         self.normalize = normalize
 
-        self.prior = Prior(pi, log_sigma1, log_sigma2)
+        self.prior_recurrent = Prior(0.75, -1.0, -7.0)
+        self.prior = Prior(0.75, -0.5, -0.1)
 
         init_recurrent = {
             "mu_lower": -0.05,
             "mu_upper": 0.05,
-            "rho_lower": math.log(math.exp(self.prior.sigma_mix / 4.0) - 1.0),
+            "rho_lower": math.log(math.exp(self.prior_recurrent.sigma_mix / 4.0) - 1.0),
+            "rho_upper": math.log(math.exp(self.prior_recurrent.sigma_mix / 3.0) - 1.0),
+        }
+
+        init = {
+            "mu_lower": -0.05,
+            "mu_upper": 0.05,
+            "rho_lower": math.log(math.exp(self.prior.sigma_mix / 3.0) - 1.0),
             "rho_upper": math.log(math.exp(self.prior.sigma_mix / 2.0) - 1.0),
         }
 
-        init_non_recurrent = {
-            "mu_lower": -0.05,
-            "mu_upper": 0.05,
-            "rho_lower": math.log(math.exp(self.prior.sigma_mix / 2.0) - 1.0),
-            "rho_upper": math.log(math.exp(self.prior.sigma_mix / 1.0) - 1.0),
-        }
-
         self.embedding = BayesEmbedding(
-            num_embeddings, embedding_dim, self.prior, **init_non_recurrent
+            num_embeddings, embedding_dim, self.prior, **init
         )
 
         # Define layers
@@ -72,11 +70,11 @@ class Model(torch.nn.Module):
             bidirectional=True,
             batch_first=True,
             bias=True,
-            prior=self.prior,
+            prior=self.prior_recurrent,
             **init_recurrent
         )
         self.output_layer = BayesBiasLinear(
-            hidden_size * 2, output_size, self.prior, **init_non_recurrent
+            hidden_size * 2, output_size, self.prior, **init
         )
 
         if self.normalize:

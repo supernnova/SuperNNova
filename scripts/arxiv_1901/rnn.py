@@ -159,6 +159,8 @@ def train(config):
             model.fluxerr_norm.data = fluxerr_norm
             model.delta_time_norm.data = delta_time_norm
 
+    print(model)
+
     loss_str = ""
     d_monitor_train = defaultdict(list)
     d_monitor_val = defaultdict(list)
