@@ -75,19 +75,23 @@ class HDF5Dataset:
                     f"{n} ({100 * n / n_samples:.2f} %) class {t} samples after balancing"
                 )
 
+            self.SNID_train = SNID_train
+            self.SNID_val = SNID_val
+            self.SNID_test = SNID_test
+
             # 80/10/10 Train/val/test split
             n_train = int(0.8 * n)
             n_val = int(0.9 * n)
-            if SNID_train is None:
-                SNID_train = df_meta["SNID"].values[:n_train]
-            if SNID_val is None:
-                SNID_val = df_meta["SNID"].values[n_train:n_val]
-            if SNID_test is None:
-                SNID_test = df_meta["SNID"].values[n_val:]
+            if self.SNID_train is None:
+                self.SNID_train = df_meta["SNID"].values[:n_train]
+            if self.SNID_val is None:
+                self.SNID_val = df_meta["SNID"].values[n_train:n_val]
+            if self.SNID_test is None:
+                self.SNID_test = df_meta["SNID"].values[n_val:]
 
-            train_indices = np.where(np.in1d(self.arr_SNID, SNID_train))[0]
-            val_indices = np.where(np.in1d(self.arr_SNID, SNID_val))[0]
-            test_indices = np.where(np.in1d(self.arr_SNID, SNID_test))[0]
+            train_indices = np.where(np.in1d(self.arr_SNID, self.SNID_train))[0]
+            val_indices = np.where(np.in1d(self.arr_SNID, self.SNID_val))[0]
+            test_indices = np.where(np.in1d(self.arr_SNID, self.SNID_test))[0]
 
             # Shuffle for good measure
             np.random.shuffle(train_indices)
