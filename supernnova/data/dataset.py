@@ -46,10 +46,11 @@ class HDF5Dataset:
                 class_map[int(key)] = i
         df_meta["target"] = df_meta["SNTYPE"].map(class_map)
 
-        self.arr_target = df_meta["target"].values
+        self.arr_target_class = df_meta["target"].values
+        self.arr_target_peak = df_meta["PEAKMJDNORM"].values
 
         if load_all:
-            self.splits = {"all": np.arange(self.arr_target.shape[0])}
+            self.splits = {"all": np.arange(self.arr_target_class.shape[0])}
 
         else:
             self.SNID_train = SNID_train
@@ -138,7 +139,8 @@ class HDF5Dataset:
         time_idxs = self.list_features.index("delta_time")
         flt_idxs = self.list_features.index("FLT")
 
-        arr_target = self.arr_target
+        arr_target_class = self.arr_target_class
+        arr_target_peak = self.arr_target_peak
         arr_meta = self.arr_meta
         arr_SNID = self.arr_SNID
         has_meta = arr_meta is not None
@@ -165,7 +167,8 @@ class HDF5Dataset:
 
                 tmp_X = arr_data[idxs]
                 X_SNID = arr_SNID[idxs]
-                X_target = arr_target[idxs]
+                X_target_class = arr_target_class[idxs]
+                X_target_peak_tmp = arr_target_peak[idxs]
                 X_meta = arr_meta[idxs] if has_meta else None
 
                 list_lengths = [X.shape[0] // n_features for X in tmp_X]
@@ -176,6 +179,7 @@ class HDF5Dataset:
                 X_fluxerr = np.zeros((B, L, Dfluxerr), dtype=np.float32)
                 X_time = np.zeros((B, L, 1), dtype=np.float32)
                 X_flt = np.zeros((B, L), dtype=np.int64)
+                X_target_peak = np.zeros((B, L, 1), dtype=np.float32)
 
                 for i in range(B):
 
@@ -185,6 +189,10 @@ class HDF5Dataset:
                     X_flux[i, :length, :] = X[:length, flux_features_idxs]
                     X_fluxerr[i, :length, :] = X[:length, fluxerr_features_idxs]
                     X_time[i, :length, 0] = X[:length, time_idxs]
+                    # target peak is the delta(peak-time)
+                    X_target_peak[i, :length, 0] = (
+                        X_target_peak_tmp[i] - X[:length, time_idxs].cumsum()
+                    )
                     X_flt[i, :length] = X[:length, flt_idxs]
 
                 arr_lengths = np.array(list_lengths)
@@ -197,7 +205,8 @@ class HDF5Dataset:
                     "X_fluxerr": torch.from_numpy(X_fluxerr).to(device),
                     "X_time": torch.from_numpy(X_time).to(device),
                     "X_flt": torch.from_numpy(X_flt).to(device),
-                    "X_target": torch.from_numpy(X_target).to(device),
+                    "X_target_class": torch.from_numpy(X_target_class).to(device),
+                    "X_target_peak": torch.from_numpy(X_target_peak).to(device),
                     "X_mask": torch.from_numpy(X_mask).to(device),
                     "X_SNID": X_SNID,
                 }

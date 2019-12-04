@@ -53,7 +53,7 @@ def forward_pass(model, data, num_batches):
     X_mask = data["X_mask"]
     X_meta = data.get("X_meta", None)
 
-    X_target = data["X_target"]
+    X_target = data["X_target_class"]
 
     X_pred = model(X_flux, X_fluxerr, X_flt, X_time, X_mask, x_meta=X_meta)
 
@@ -278,9 +278,9 @@ def train(config):
         # LR scheduling
         scheduler.step(d_losses_val["log_loss"])
         lr_value = next(iter(optimizer.param_groups))["lr"]
-        # if lr_value <= config["min_lr"]:
-        #     print("Minimum LR reached, ending training")
-        #     break
+        if lr_value <= config["min_lr"]:
+            print("Minimum LR reached, ending training")
+            break
 
 
 def get_predictions(dump_dir):

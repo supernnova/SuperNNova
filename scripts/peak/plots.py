@@ -1630,7 +1630,7 @@ def make_early_prediction(
         X_time = data["X_time"]
         X_mask = data["X_mask"]
         X_meta = data.get("X_meta", None)
-        X_target = data["X_target"]
+        X_target_class = data["X_target_class"]
 
         seq_len = X_mask.squeeze(0).long().sum().item()
         d_pred = {"model": {"prob": []}}
@@ -1662,7 +1662,7 @@ def make_early_prediction(
         X_flt = X_flt.cpu().numpy().squeeze(0)
         X_time = X_time.cpu().numpy().squeeze(0)
         X_mask = X_mask.cpu().numpy().squeeze(0)
-        X_target = X_target.cpu().numpy().squeeze(0)
+        X_target_class = X_target_class.cpu().numpy().squeeze(0)
 
         time = X_time.cumsum()
         length = X_mask.astype(int).sum()
@@ -1689,7 +1689,7 @@ def make_early_prediction(
             SNID,
             redshift,
             peak_MJD,
-            X_target,
+            X_target_class,
             time,
             d_pred,
             sntypes,
