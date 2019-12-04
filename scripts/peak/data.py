@@ -15,7 +15,7 @@ from supernnova.utils import data_utils
 from supernnova.utils import logging_utils
 from plots import datasets_plots
 
-from constants import SNTYPES, LIST_FILTERS, OFFSETS, OFFSETS_STR, FILTER_DICT
+from constants import SNTYPES, LIST_FILTERS, OFFSETS, OFFSETS_STR, FILTER_DICT, MIN_DT
 
 
 def process_phot_file(file_path, preprocessed_dir, list_filters):
@@ -110,6 +110,11 @@ def preprocess_data(config):
 
     # Get the list of FITS files
     list_files = natsorted(map(str, Path(raw_dir).glob(f"*PHOT.{raw_format}*")))
+    list_Ia = [f for f in list_files if "_Ia" in f]
+    list_nonIa = [f for f in list_files if "_NONIa" in f]
+
+    list_files = list_Ia[:2] + list_nonIa[:2]
+
     process_fn = partial(
         process_phot_file, preprocessed_dir=preprocessed_dir, list_filters=LIST_FILTERS
     )
@@ -140,7 +145,7 @@ def pivot_dataframe_single(filename, list_filters, df_salt, sntypes):
     # Loop over times to create grouped MJD:
     # if filters are acquired within less than 0.33 MJD (~8 hours) of each other
     # they get assigned the same time
-    min_dt = 0.33
+    min_dt = MIN_DT
     time_last_change = 0
     arr_grouped_MJD = np.zeros_like(arr_MJD)
     for i in range(len(df)):
@@ -258,9 +263,11 @@ def pivot_dataframe_batch(list_files, config):
     )
 
     # Loop over chunks of files
-    for idx in tqdm(range(0, n_files, chunk_size), desc="Preprocess", ncols=100):
+    for idx in tqdm(range(0, n_files, chunk_size), desc="Pivot", ncols=100):
         # Process each file in the chunk in parallel
         pool.map(process_fn, list_files[idx : idx + chunk_size])
+
+    pool.close()
 
     logging_utils.print_green("Finished pivot")
 
@@ -294,7 +301,7 @@ def make_dataset(config_path):
 
     # Save to HDF5
     data_utils.save_to_HDF5(
-        df, hdf5_file, SNTYPES, LIST_FILTERS, OFFSETS, OFFSETS_STR, FILTER_DICT
+        df, hdf5_file, LIST_FILTERS, OFFSETS, OFFSETS_STR, FILTER_DICT
     )
 
     # Save plots to visualize the distribution of some of the data features

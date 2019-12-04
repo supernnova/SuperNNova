@@ -2,8 +2,10 @@ from collections import OrderedDict
 import natsort
 from itertools import combinations
 
+# If observations are taken within 0.33 days of each other, they get assigned the same time
+MIN_DT = 0.33
+
 # Ia should always be first
-# TODO can sntypes change ?
 SNTYPES = OrderedDict(
     {
         "101": "Ia",
@@ -29,7 +31,6 @@ for i, e in enumerate(LIST_FILTERS_COMBINATIONS):
     FILTER_DICT[e] = i
     INVERSE_FILTER_DICT[i] = e
 
-# TODO moved from data utils
 OFFSETS = [-2, -1, 0, 1, 2]
 # OOD_TYPES = ["random", "reverse", "shuffle", "sin"]
 OOD_TYPES = []
