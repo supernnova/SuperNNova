@@ -53,20 +53,21 @@ def forward_pass(model, data, num_batches):
     X_mask = data["X_mask"]
     X_meta = data.get("X_meta", None)
 
-    X_target = data["X_target_class"]
+    X_target_class = data["X_target_class"]
+    X_target_peak = data["X_target_peak"]
 
-    X_pred = model(X_flux, X_fluxerr, X_flt, X_time, X_mask, x_meta=X_meta)
+    X_pred_class = model(X_flux, X_fluxerr, X_flt, X_time, X_mask, x_meta=X_meta)
 
-    loss = torch.nn.functional.cross_entropy(X_pred, X_target, reduction="none").mean(0)
+    loss = torch.nn.functional.cross_entropy(X_pred_class, X_target_class, reduction="none").mean(0)
 
     if hasattr(model, "kl"):
-        batch_size = X_target.shape[0]
+        batch_size = X_target_class.shape[0]
         kl = model.kl / (batch_size * num_batches)
         loss = loss + kl
 
-    X_pred = torch.nn.functional.softmax(X_pred, dim=-1)
+    X_pred_class = torch.nn.functional.softmax(X_pred_class, dim=-1)
 
-    return loss, X_pred, X_target
+    return loss, X_pred_class, X_target_class
 
 
 def eval_pass(model, data_iterator, n_batches):
@@ -77,16 +78,16 @@ def eval_pass(model, data_iterator, n_batches):
     model.eval()
     with torch.no_grad():
         for data in data_iterator:
-            _, X_pred, X_target = forward_pass(model, data, n_batches)
-            list_target.append(X_target)
-            list_pred.append(X_pred)
+            _, X_pred_class, X_target_class = forward_pass(model, data, n_batches)
+            list_target.append(X_target_class)
+            list_pred.append(X_pred_class)
 
-    X_pred = torch.cat(list_pred, dim=0)
-    X_target = torch.cat(list_target, dim=0)
+    X_pred_class = torch.cat(list_pred, dim=0)
+    X_target_class = torch.cat(list_target, dim=0)
 
-    X_pred = torch.nn.functional.softmax(X_pred, dim=-1)
+    X_pred_class = torch.nn.functional.softmax(X_pred_class, dim=-1)
 
-    return X_target, X_pred
+    return X_target_class, X_pred_class
 
 
 def load_model(config, device, weights_file=None):
@@ -214,12 +215,12 @@ def train(config):
             model.train()
 
             # Train step : forward backward pass
-            loss, X_pred_train, X_target_train = forward_pass(
+            loss, X_pred_class_train, X_target_class_train = forward_pass(
                 model, data, n_train_batches
             )
 
-            list_pred_train.append(X_pred_train)
-            list_target_train.append(X_target_train)
+            list_pred_train.append(X_pred_class_train)
+            list_target_train.append(X_target_class_train)
 
             optimizer.zero_grad()
             loss.backward()
@@ -228,8 +229,8 @@ def train(config):
             batch += 1
 
         # Obtain the arrays of targets and predictions
-        X_target_train = torch.cat(list_target_train)
-        X_pred_train = torch.cat(list_pred_train)
+        X_target_class_train = torch.cat(list_target_train)
+        X_pred_class_train = torch.cat(list_pred_train)
 
         X_target_val, X_pred_val = eval_pass(
             model,
@@ -241,8 +242,8 @@ def train(config):
 
         # Actually compute metrics
         d_losses_train = tu.get_evaluation_metrics(
-            X_pred_train.detach().cpu().numpy(),
-            X_target_train.detach().cpu().numpy(),
+            X_pred_class_train.detach().cpu().numpy(),
+            X_target_class_train.detach().cpu().numpy(),
             nb_classes=config["nb_classes"],
         )
         d_losses_val = tu.get_evaluation_metrics(
