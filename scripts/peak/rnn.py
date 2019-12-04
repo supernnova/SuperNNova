@@ -79,6 +79,7 @@ def forward_pass(model, data, num_batches):
         ).size(0)
     except Exception:
         # the issue is that my target_peak is padded and my pred is not
+        # also that i need to mask the target for computing the loss!
         tmp = torch.zeros(X_target_peak.size())
         tmp[:,:X_pred_peak.size(1)] = X_pred_peak
         import ipdb; ipdb.set_trace()
