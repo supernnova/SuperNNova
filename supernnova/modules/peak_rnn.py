@@ -87,9 +87,9 @@ class Model(torch.nn.Module):
 
         # Classification
         # Take masked mean (mean pooling)
-        x_meanpool = (hidden * x_mask.unsqueeze(-1).float()).sum(1) / x_mask.float().unsqueeze(
-            -1
-        ).sum(1)
+        x_meanpool = (hidden * x_mask.unsqueeze(-1).float()).sum(
+            1
+        ) / x_mask.float().unsqueeze(-1).sum(1)
         # apply dropout
         x_meanpool = self.output_dropout_layer(x_meanpool)
         # Final projection layer
@@ -98,6 +98,6 @@ class Model(torch.nn.Module):
         # Regression (peak)
         output_peak_tmp = self.output_peak_layer(hidden)
         # apply mask
-        output_peak = output_peak_tmp.squeeze(-1) * x_mask
+        output_peak = output_peak_tmp.squeeze(-1) * x_mask.float()
 
         return output_class, output_peak

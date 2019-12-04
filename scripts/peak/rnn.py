@@ -73,18 +73,18 @@ def forward_pass(model, data, num_batches):
 
     # peak
     X_target_peak = X_target_peak.squeeze(-1)
-    try:
-        loss_peak = (X_pred_peak - X_target_peak).pow(2).sum() / torch.nonzero(
-            X_pred_peak.data
-        ).size(0)
-    except Exception:
-        # the issue is that my target_peak is padded and my pred is not
-        # also that i need to mask the target for computing the loss!
-        tmp = torch.zeros(X_target_peak.size())
-        tmp[:,:X_pred_peak.size(1)] = X_pred_peak
-        import ipdb; ipdb.set_trace()
+    loss_peak = (X_pred_peak - X_target_peak).pow(2).sum() / torch.nonzero(
+        X_pred_peak.data
+    ).size(0)
 
-    return loss_class,loss_peak, X_pred_class, X_target_class, X_pred_peak, X_target_peak
+    return (
+        loss_class,
+        loss_peak,
+        X_pred_class,
+        X_target_class,
+        X_pred_peak,
+        X_target_peak,
+    )
 
 
 def eval_pass(model, data_iterator, n_batches):
@@ -412,7 +412,14 @@ def get_predictions(dump_dir):
                 data_tmp = deepcopy(data)
                 max_length = max(lengths)
 
-                for key in ["X_flux", "X_fluxerr", "X_time", "X_flt", "X_mask"]:
+                for key in [
+                    "X_flux",
+                    "X_fluxerr",
+                    "X_time",
+                    "X_flt",
+                    "X_mask",
+                    "X_target_peak",
+                ]:
                     data_tmp[key] = data_tmp[key][:, :max_length]
 
                 for idx in range(batch_size):
@@ -420,7 +427,14 @@ def get_predictions(dump_dir):
                     # To avoid errors when length is 0, we clamp it at 1
                     # This works because later on, we fill such samples with nans
                     length = max(1, length)
-                    for key in ["X_flux", "X_fluxerr", "X_time", "X_flt", "X_mask"]:
+                    for key in [
+                        "X_flux",
+                        "X_fluxerr",
+                        "X_time",
+                        "X_flt",
+                        "X_mask",
+                        "X_target_peak",
+                    ]:
                         if key == "X_mask":
                             data_tmp[key][idx, length:] = False
                         else:
@@ -428,6 +442,7 @@ def get_predictions(dump_dir):
 
                 for iter_ in range(nb_inference_samples):
                     (
+                        _,
                         _,
                         X_class_pred,
                         X_class_target,
