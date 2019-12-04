@@ -5,7 +5,7 @@ fitopt_file: /Users/anaismoller/Desktop/SuperNNova/tests/fits/FITOPT000.FITRES
 fig_dir: /Users/anaismoller/Desktop/SuperNNova/tests/dump/figures
 dump_dir: /Users/anaismoller/Desktop/SuperNNova/tests/dump/rnn/vanilla_000
 
-nb_epoch: 100
+nb_epoch: 2
 nb_inference_samples: 1
 batch_size: 128
 batch_size_test: 16
@@ -20,7 +20,7 @@ seed: 42
 dataset: "saltfit"
 overwrite: True
 
-module: vanilla_rnn
+module: peak_rnn
 model:
   input_size: 11
   hidden_size: 16

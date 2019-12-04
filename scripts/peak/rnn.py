@@ -56,38 +56,63 @@ def forward_pass(model, data, num_batches):
     X_target_class = data["X_target_class"]
     X_target_peak = data["X_target_peak"]
 
-    X_pred_class = model(X_flux, X_fluxerr, X_flt, X_time, X_mask, x_meta=X_meta)
+    X_pred_class, X_pred_peak = model(
+        X_flux, X_fluxerr, X_flt, X_time, X_mask, x_meta=X_meta
+    )
 
-    loss = torch.nn.functional.cross_entropy(X_pred_class, X_target_class, reduction="none").mean(0)
+    loss_class = torch.nn.functional.cross_entropy(
+        X_pred_class, X_target_class, reduction="none"
+    ).mean(0)
 
     if hasattr(model, "kl"):
         batch_size = X_target_class.shape[0]
         kl = model.kl / (batch_size * num_batches)
-        loss = loss + kl
+        loss_class = loss_class + kl
 
     X_pred_class = torch.nn.functional.softmax(X_pred_class, dim=-1)
 
-    return loss, X_pred_class, X_target_class
+    # peak
+    X_target_peak = X_target_peak.squeeze(-1)
+    try:
+        loss_peak = (X_pred_peak - X_target_peak).pow(2).sum() / torch.nonzero(
+            X_pred_peak.data
+        ).size(0)
+    except Exception:
+        # the issue is that my target_peak is padded and my pred is not
+        tmp = torch.zeros(X_target_peak.size())
+        tmp[:,:X_pred_peak.size(1)] = X_pred_peak
+        import ipdb; ipdb.set_trace()
+
+    return loss_class,loss_peak, X_pred_class, X_target_class, X_pred_peak, X_target_peak
 
 
 def eval_pass(model, data_iterator, n_batches):
 
-    list_target = []
-    list_pred = []
+    list_target_class = []
+    list_pred_class = []
+    list_target_peak = []
+    list_pred_peak = []
 
     model.eval()
     with torch.no_grad():
         for data in data_iterator:
-            _, X_pred_class, X_target_class = forward_pass(model, data, n_batches)
-            list_target.append(X_target_class)
-            list_pred.append(X_pred_class)
+            _, _, X_pred_class, X_target_class, X_pred_peak, X_target_peak = forward_pass(
+                model, data, n_batches
+            )
+            list_target_class.append(X_target_class)
+            list_pred_class.append(X_pred_class)
+            list_target_peak.append(X_target_peak)
+            list_pred_peak.append(X_pred_peak)
 
-    X_pred_class = torch.cat(list_pred, dim=0)
-    X_target_class = torch.cat(list_target, dim=0)
+    X_pred_class = torch.cat(list_pred_class, dim=0)
+    X_target_class = torch.cat(list_target_class, dim=0)
+
+    X_pred_peak = torch.cat(list_pred_peak, dim=0)
+    X_target_peak = torch.cat(list_target_peak, dim=0)
 
     X_pred_class = torch.nn.functional.softmax(X_pred_class, dim=-1)
 
-    return X_target_class, X_pred_class
+    return X_target_class, X_pred_class, X_target_peak.squeeze(-1), X_pred_peak
 
 
 def load_model(config, device, weights_file=None):
@@ -215,14 +240,22 @@ def train(config):
             model.train()
 
             # Train step : forward backward pass
-            loss, X_pred_class_train, X_target_class_train = forward_pass(
-                model, data, n_train_batches
-            )
+            (
+                loss_class,
+                loss_pred,
+                X_pred_class_train,
+                X_target_class_train,
+                X_pred_peak_train,
+                X_target_peak_train,
+            ) = forward_pass(model, data, n_train_batches)
 
             list_pred_train.append(X_pred_class_train)
             list_target_train.append(X_target_class_train)
 
             optimizer.zero_grad()
+
+            loss = loss_class + loss_pred
+
             loss.backward()
             optimizer.step()
 
@@ -232,7 +265,12 @@ def train(config):
         X_target_class_train = torch.cat(list_target_train)
         X_pred_class_train = torch.cat(list_pred_train)
 
-        X_target_val, X_pred_val = eval_pass(
+        (
+            X_target_class_val,
+            X_pred_class_val,
+            X_target_peak_val,
+            X_pred_peak_val,
+        ) = eval_pass(
             model,
             dataset.create_iterator(
                 "val", config["batch_size"], device, tqdm_desc=None
@@ -247,8 +285,8 @@ def train(config):
             nb_classes=config["nb_classes"],
         )
         d_losses_val = tu.get_evaluation_metrics(
-            X_pred_val.detach().cpu().numpy(),
-            X_target_val.detach().cpu().numpy(),
+            X_pred_class_val.detach().cpu().numpy(),
+            X_target_class_val.detach().cpu().numpy(),
             nb_classes=config["nb_classes"],
         )
 
@@ -343,13 +381,18 @@ def get_predictions(dump_dir):
         # Full lightcurve prediction
         #############################
         for iter_ in range(nb_inference_samples):
-
-            _, X_pred, X_target = forward_pass(model, data, n_test_batches)
-            arr_preds, arr_target = X_pred.cpu().numpy(), X_target.cpu().numpy()
-
-            d_pred["all"][start_idx:end_idx, iter_] = arr_preds
-            d_pred["target"][start_idx:end_idx, iter_] = arr_target
+            _, _, X_class_pred, X_class_target, X_peak_pred, X_peak_target = forward_pass(
+                model, data, n_test_batches
+            )
+            arr_class_preds, arr_class_target = (
+                X_class_pred.cpu().numpy(),
+                X_class_target.cpu().numpy(),
+            )
+            d_pred["all"][start_idx:end_idx, iter_] = arr_class_preds
+            d_pred["target"][start_idx:end_idx, iter_] = arr_class_target
             d_pred["SNID"][start_idx:end_idx, iter_] = SNIDs
+
+            # TODO implement peak preds
 
         #############################
         # Predictions around PEAKMJD
@@ -383,15 +426,22 @@ def get_predictions(dump_dir):
                             data_tmp[key][idx, length:] = 0
 
                 for iter_ in range(nb_inference_samples):
-
-                    _, X_pred, X_target = forward_pass(model, data_tmp, n_test_batches)
-                    arr_preds, arr_target = X_pred.cpu().numpy(), X_target.cpu().numpy()
-
+                    (
+                        _,
+                        X_class_pred,
+                        X_class_target,
+                        X_peak_pred,
+                        X_peak_target,
+                    ) = forward_pass(model, data_tmp, n_test_batches)
+                    arr_class_preds, arr_class_target = (
+                        X_class_pred.cpu().numpy(),
+                        X_class_target.cpu().numpy(),
+                    )
                     suffix = str(offset) if offset != 0 else ""
                     suffix = f"+{suffix}" if offset > 0 else suffix
                     col = f"PEAKMJD{suffix}"
 
-                    d_pred[col][start_idx + inb_idxs, iter_] = arr_preds[inb_idxs]
+                    d_pred[col][start_idx + inb_idxs, iter_] = arr_class_preds[inb_idxs]
                     # For oob_idxs, no prediction can be made, fill with nan
                     d_pred[col][start_idx + oob_idxs, iter_] = np.nan
 

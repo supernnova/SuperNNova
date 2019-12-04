@@ -1631,12 +1631,13 @@ def make_early_prediction(
         X_mask = data["X_mask"]
         X_meta = data.get("X_meta", None)
         X_target_class = data["X_target_class"]
+        X_target_peak = data["X_target_peak"]
 
         seq_len = X_mask.squeeze(0).long().sum().item()
-        d_pred = {"model": {"prob": []}}
+        d_pred = {"model": {"prob": [], "peak": []}}
         for i in range(1, seq_len + 1):
 
-            X_pred = model(
+            X_pred_class, X_pred_peak = model(
                 X_flux[:, :i],
                 X_fluxerr[:, :i],
                 X_flt[:, :i],
@@ -1644,8 +1645,12 @@ def make_early_prediction(
                 X_mask[:, :i],
                 x_meta=X_meta,
             )
-            X_pred = torch.nn.functional.softmax(X_pred, dim=1).cpu().numpy()
-            d_pred["model"]["prob"].append(X_pred)
+            X_pred_class = (
+                torch.nn.functional.softmax(X_pred_class, dim=1).cpu().numpy()
+            )
+            d_pred["model"]["prob"].append(X_pred_class)
+            # save only last peak pred
+            d_pred["model"]["peak"].append(X_pred_peak[-1][-1].cpu().numpy())
 
         # Stack
         for key in ["model"]:
