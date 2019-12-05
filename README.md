@@ -42,9 +42,11 @@ conda clean -ya
 - input file format conversion in SNN or apart?
 - implement different normalizations
 - eliminate physics-analysis only features in group_features_list
+- dsupport aliases in conf.yml
 
 - input size computation (not hardcoded)  --> will keep hardcoded for now
 - data_utils list_training_features to normalize in config --> will keep hardcoded for now
+
 
 ## tests
 - runs without salt fit

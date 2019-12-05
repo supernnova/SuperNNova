@@ -1,9 +1,9 @@
-raw_dir: /Users/anaismoller/Desktop/SuperNNova/tests/raw
-preprocessed_dir: /Users/anaismoller/Desktop/SuperNNova/tests/dump/preprocessed
-processed_dir: /Users/anaismoller/Desktop/SuperNNova/tests/dump/processed
-fitopt_file: /Users/anaismoller/Desktop/SuperNNova/tests/fits/FITOPT000.FITRES
-fig_dir: /Users/anaismoller/Desktop/SuperNNova/tests/dump/figures
-dump_dir: /Users/anaismoller/Desktop/SuperNNova/tests/dump/rnn/vanilla_000
+raw_dir: /Users/anaismoller/Science/SuperNNova_general/SuperNNova_refactor/tests/raw
+preprocessed_dir: /Users/anaismoller/Science/SuperNNova_general/SuperNNova_refactor/tests/dump/preprocessed
+processed_dir: /Users/anaismoller/Science/SuperNNova_general/SuperNNova_refactor/tests/dump/processed
+fitopt_file: /Users/anaismoller/Science/SuperNNova_general/SuperNNova_refactor/tests/fits/FITOPT000.FITRES
+fig_dir: /Users/anaismoller/Science/SuperNNova_general/SuperNNova_refactor/tests/dump/figures
+dump_dir: /Users/anaismoller/Science/SuperNNova_general/SuperNNova_refactor/tests/dump/rnn/vanilla_000
 
 nb_epoch: 2
 nb_inference_samples: 1

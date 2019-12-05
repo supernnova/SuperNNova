@@ -97,9 +97,14 @@ def eval_pass(model, data_iterator, n_batches):
     model.eval()
     with torch.no_grad():
         for data in data_iterator:
-            _, _, X_pred_class, X_target_class, X_pred_peak, X_target_peak = forward_pass(
-                model, data, n_batches
-            )
+            (
+                _,
+                _,
+                X_pred_class,
+                X_target_class,
+                X_pred_peak,
+                X_target_peak,
+            ) = forward_pass(model, data, n_batches)
             list_target_class.append(X_target_class)
             list_pred_class.append(X_pred_class)
             list_target_peak.append(X_target_peak)
@@ -361,6 +366,9 @@ def get_predictions(dump_dir):
     for key in ["target", "SNID"]:
         d_pred[key] = np.zeros((num_elem, nb_inference_samples)).astype(np.int64)
 
+    for key in ["target_peak","all_peak"]+[f"PEAKMJD{s}_peak" for s in OFFSETS_STR]:
+        d_pred[key] = np.zeros((num_elem, nb_inference_samples)).astype(np.float32)
+
     # Fetch SN info
     df_SNinfo = du.load_HDF5_SNinfo(config["processed_dir"]).set_index("SNID")
 
@@ -382,9 +390,15 @@ def get_predictions(dump_dir):
         # Full lightcurve prediction
         #############################
         for iter_ in range(nb_inference_samples):
-            _, _, X_class_pred, X_class_target, X_peak_pred, X_peak_target = forward_pass(
-                model, data, n_test_batches
-            )
+            (
+                _,
+                _,
+                X_class_pred,
+                X_class_target,
+                X_peak_pred,
+                X_peak_target,
+            ) = forward_pass(model, data, n_test_batches)
+
             arr_class_preds, arr_class_target = (
                 X_class_pred.cpu().numpy(),
                 X_class_target.cpu().numpy(),
@@ -392,8 +406,20 @@ def get_predictions(dump_dir):
             d_pred["all"][start_idx:end_idx, iter_] = arr_class_preds
             d_pred["target"][start_idx:end_idx, iter_] = arr_class_target
             d_pred["SNID"][start_idx:end_idx, iter_] = SNIDs
+            # select the last peak pred
+            last_time_length = data["X_mask"].sum(1) - 1
+            last_peak_preds = torch.gather(
+                X_peak_pred, 1, (last_time_length).view(-1, 1)
+            ).squeeze(-1)
+            arr_peak_preds = last_peak_preds.cpu().numpy()
 
-            # TODO implement peak preds
+            last_peak_target = torch.gather(
+                X_peak_target, 1, (last_time_length).view(-1, 1)
+            ).squeeze(-1)
+            arr_peak_target = last_peak_target.cpu().numpy()
+
+            d_pred["all_peak"][start_idx:end_idx, iter_] = arr_peak_preds
+            d_pred["target_peak"][start_idx:end_idx, iter_] = arr_peak_target
 
         #############################
         # Predictions around PEAKMJD
@@ -449,6 +475,7 @@ def get_predictions(dump_dir):
                         X_peak_pred,
                         X_peak_target,
                     ) = forward_pass(model, data_tmp, n_test_batches)
+
                     arr_class_preds, arr_class_target = (
                         X_class_pred.cpu().numpy(),
                         X_class_target.cpu().numpy(),
@@ -460,6 +487,18 @@ def get_predictions(dump_dir):
                     d_pred[col][start_idx + inb_idxs, iter_] = arr_class_preds[inb_idxs]
                     # For oob_idxs, no prediction can be made, fill with nan
                     d_pred[col][start_idx + oob_idxs, iter_] = np.nan
+
+                    # select the last peak pred
+                    last_time_length = (X_peak_target!=0).sum(1) - 1
+                    last_peak_preds = torch.gather(
+                        X_peak_pred, 1, (last_time_length).view(-1, 1)
+                    ).squeeze(-1)
+                    arr_peak_preds = last_peak_preds.cpu().numpy()
+
+                    last_peak_target = torch.gather(
+                        X_peak_target, 1, (last_time_length).view(-1, 1)
+                    ).squeeze(-1)
+                    arr_peak_target = last_peak_target.cpu().numpy()
 
         start_idx = end_idx
 
