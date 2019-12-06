@@ -1,6 +1,9 @@
 
 ![Logo](docs/SuperNNova.png)
 
+[![Build Status](https://travis-ci.org/supernnova/SuperNNova.svg?branch=master)](https://travis-ci.org/supernnova/SuperNNova)
+
+
 ### Read the documentation
 For the main branch:
 [https://supernnova.readthedocs.io](https://supernnova.readthedocs.io/en/latest/)
