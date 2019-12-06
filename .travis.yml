@@ -2,7 +2,8 @@ sudo: required
 dist: xenial
 
 script:
-  - make cpu
+  - cd env && make cpu && cd ..
+  - ./ci/ci.sh
 
 after_success:
   - echo "Push Supernnova image to Docker Hub"
