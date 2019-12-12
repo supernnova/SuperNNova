@@ -20,8 +20,9 @@ or install pip module (check versioning)
 pip install supernnova
 ```
 
-### Read the paper preprint
+### Read the paper 
 
+[Paper in MNRAS](https://academic.oup.com/mnras/advance-article-abstract/doi/10.1093/mnras/stz3312/5651173)
 [Paper in ArXiv](https://arxiv.org/abs/1901.06384)
 The paper was produced using the branch "paper".
 

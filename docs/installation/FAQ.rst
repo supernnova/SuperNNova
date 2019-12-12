@@ -11,7 +11,7 @@ SuperNNova is a framework for lightcurve classification which uses supervised le
 
 - **Do you have a paper describing SuperNNova? How can I cite you?**
 
-We just submitted the paper to the journal. But a copy of the paper can be found here `ArXiv`_. 
+The paper has been acccepted by `MNRAS`_. A copy of the paper can be found here `ArXiv`_. 
 
 - **How can I install it?**
 
@@ -73,6 +73,7 @@ You can give add to your terminal command ``--dump_dir foldername``. This folder
 Yes, you need to call ``python run.py --performance``. It will be created in ``{dump_dir}/stats`` as ``summary_stats.csv``. It will compute various metrics which can be averaged over multiple random seeds. By default, this command will also generate all statistics (latex tables as well printout stats) and plots featured in our SuperNNova paper. To deactivate this, just comment in ``run.py`` the two lines below ``# Stats and plots in paper``.
 
 .. _ArXiv: https://arxiv.org/abs/1901.06384
+.. _MNRAS: https://academic.oup.com/mnras/advance-article-abstract/doi/10.1093/mnras/stz3312/5651173
 .. _SuperNNovaSimulations: https://zenodo.org/record/3265189#.XRo2mS2B1TY
 .. _Fortunato et al 2017: https://arxiv.org/abs/1704.02798
 .. _Gal et Ghahramani 2015: https://arxiv.org/abs/1506.02142
