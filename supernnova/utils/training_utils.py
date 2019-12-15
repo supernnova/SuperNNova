@@ -37,24 +37,6 @@ def plot_loss(d_train, d_val, save_prefix):
         plt.clf()
 
 
-def get_evaluation_metrics(preds, targets, nb_classes=2):
-
-    if nb_classes == 2:
-        auc = metrics.roc_auc_score(targets, preds[:, 1])
-    else:
-        # Can't compute AUC for more than 2 classes
-        auc = None
-    acc = metrics.accuracy_score(targets, np.argmax(preds, 1))
-    targets_2D = np.zeros((targets.shape[0], nb_classes))
-    for i in range(targets.shape[0]):
-        targets_2D[i, targets[i]] = 1
-    log_loss = metrics.log_loss(targets_2D, preds)
-
-    d_losses = {"AUC": auc, "Acc": acc, "log_loss": log_loss}
-
-    return d_losses
-
-
 def get_loss_string(d_losses_train, d_losses_val):
     """Obtain a loss string to display training progress
 

@@ -1,14 +1,10 @@
 import h5py
-import json
 import yaml
-import math
 import shutil
 import argparse
 import importlib
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
-from time import time
 from pathlib import Path
 from copy import deepcopy
 from collections import defaultdict
@@ -44,6 +40,21 @@ def find_idx(array, value):
     return min(idx, len(array))
 
 
+def get_mse_loss(pred, target, mask):
+
+    return ((pred - target).pow(2) * mask).sum() / mask.sum()
+
+
+def get_cross_entropy_loss(pred, target):
+
+    return torch.nn.functional.cross_entropy(pred, target, reduction="none").mean(0)
+
+
+def get_accuracy_loss(pred, target):
+
+    return (target == pred.argmax(1)).sum().float() / pred.shape[0]
+
+
 def forward_pass(model, data, num_batches):
 
     X_flux = data["X_flux"]
@@ -60,65 +71,38 @@ def forward_pass(model, data, num_batches):
         X_flux, X_fluxerr, X_flt, X_time, X_mask, x_meta=X_meta
     )
 
-    loss_class = torch.nn.functional.cross_entropy(
-        X_pred_class, X_target_class, reduction="none"
-    ).mean(0)
+    d_losses = {}
 
+    # peak prediction loss
+    d_losses["peak_loss"] = get_mse_loss(X_pred_peak, X_target_peak.squeeze(-1), X_mask)
+    # classification loss
+    d_losses["clf_loss"] = get_cross_entropy_loss(X_pred_class, X_target_class)
+    # Accuracy metric
+    d_losses["accuracy"] = get_accuracy_loss(X_pred_class, X_target_class)
+
+    # Optional KL loss
     if hasattr(model, "kl"):
         batch_size = X_target_class.shape[0]
         kl = model.kl / (batch_size * num_batches)
-        loss_class = loss_class + kl
+        d_losses["kl"] = kl
 
-    X_pred_class = torch.nn.functional.softmax(X_pred_class, dim=-1)
-
-    # peak
-    X_target_peak = X_target_peak.squeeze(-1)
-    loss_peak = (X_pred_peak - X_target_peak).pow(2).sum() / torch.nonzero(
-        X_pred_peak.data
-    ).size(0)
-
-    return (
-        loss_class,
-        loss_peak,
-        X_pred_class,
-        X_target_class,
-        X_pred_peak,
-        X_target_peak,
-    )
+    return d_losses
 
 
 def eval_pass(model, data_iterator, n_batches):
 
-    list_target_class = []
-    list_pred_class = []
-    list_target_peak = []
-    list_pred_peak = []
+    d_losses = defaultdict(list)
 
     model.eval()
     with torch.no_grad():
         for data in data_iterator:
-            (
-                _,
-                _,
-                X_pred_class,
-                X_target_class,
-                X_pred_peak,
-                X_target_peak,
-            ) = forward_pass(model, data, n_batches)
-            list_target_class.append(X_target_class)
-            list_pred_class.append(X_pred_class)
-            list_target_peak.append(X_target_peak)
-            list_pred_peak.append(X_pred_peak)
+            losses = forward_pass(model, data, n_batches)
 
-    X_pred_class = torch.cat(list_pred_class, dim=0)
-    X_target_class = torch.cat(list_target_class, dim=0)
+            for key, val in losses.items():
 
-    X_pred_peak = torch.cat(list_pred_peak, dim=0)
-    X_target_peak = torch.cat(list_target_peak, dim=0)
+                d_losses[key].append(val.item())
 
-    X_pred_class = torch.nn.functional.softmax(X_pred_class, dim=-1)
-
-    return X_target_class, X_pred_class, X_target_peak.squeeze(-1), X_pred_peak
+    return d_losses
 
 
 def load_model(config, device, weights_file=None):
@@ -236,8 +220,7 @@ def train(config):
 
         desc = f"Epoch: {epoch} -- {loss_str}"
 
-        list_pred_train = []
-        list_target_train = []
+        d_losses_train = defaultdict(list)
 
         for data in dataset.create_iterator(
             "train", config["batch_size"], device, tqdm_desc=desc
@@ -246,82 +229,67 @@ def train(config):
             model.train()
 
             # Train step : forward backward pass
-            (
-                loss_class,
-                loss_pred,
-                X_pred_class_train,
-                X_target_class_train,
-                X_pred_peak_train,
-                X_target_peak_train,
-            ) = forward_pass(model, data, n_train_batches)
+            losses_train = forward_pass(model, data, n_train_batches)
 
-            list_pred_train.append(X_pred_class_train)
-            list_target_train.append(X_target_class_train)
+            loss = (
+                losses_train["clf_loss"]
+                + losses_train.get("kl", 0.0)
+                + losses_train["peak_loss"]
+            )
+
+            for key, val in losses_train.items():
+                d_losses_train[key].append(val.item())
 
             optimizer.zero_grad()
-
-            loss = loss_class + loss_pred
 
             loss.backward()
             optimizer.step()
 
             batch += 1
 
-        # Obtain the arrays of targets and predictions
-        X_target_class_train = torch.cat(list_target_train)
-        X_pred_class_train = torch.cat(list_pred_train)
-
-        (
-            X_target_class_val,
-            X_pred_class_val,
-            X_target_peak_val,
-            X_pred_peak_val,
-        ) = eval_pass(
-            model,
-            dataset.create_iterator(
-                "val", config["batch_size"], device, tqdm_desc=None
-            ),
-            n_val_batches,
+        val_iterator = dataset.create_iterator(
+            "val", config["batch_size"], device, tqdm_desc=None
         )
+        d_losses_val = eval_pass(model, val_iterator, n_val_batches)
 
-        # Actually compute metrics
-        d_losses_train = tu.get_evaluation_metrics(
-            X_pred_class_train.detach().cpu().numpy(),
-            X_target_class_train.detach().cpu().numpy(),
-            nb_classes=config["nb_classes"],
-        )
-        d_losses_val = tu.get_evaluation_metrics(
-            X_pred_class_val.detach().cpu().numpy(),
-            X_target_class_val.detach().cpu().numpy(),
-            nb_classes=config["nb_classes"],
-        )
-
-        # Add current loss avg to list of losses
+        # Monitor losses in dict + tensorboard
+        d_monitor_train["epoch"].append(epoch + 1)
+        d_monitor_val["epoch"].append(epoch + 1)
         for key in d_losses_train.keys():
+
+            d_losses_train[key] = np.mean(d_losses_train[key])
+            d_losses_val[key] = np.mean(d_losses_val[key])
+            
             d_monitor_train[key].append(d_losses_train[key])
             d_monitor_val[key].append(d_losses_val[key])
 
-        d_monitor_train["epoch"].append(epoch + 1)
-        d_monitor_val["epoch"].append(epoch + 1)
-
-        for metric in d_losses_train:
             writer.add_scalars(
-                f"Metrics/{metric.title()}",
-                {"training": d_losses_train[metric], "valid": d_losses_val[metric]},
+                f"Metrics/{key.title()}",
+                {
+                    "training": d_losses_train[key],
+                    "valid": d_losses_val[key],
+                },
                 batch,
             )
 
         # Prepare loss_str to update progress bar
         loss_str = tu.get_loss_string(d_losses_train, d_losses_val)
 
+        # Plot losses
         save_prefix = f"{config['dump_dir']}/loss"
         tu.plot_loss(d_monitor_train, d_monitor_val, save_prefix)
-        if d_monitor_val["log_loss"][-1] < best_loss:
-            best_loss = d_monitor_val["log_loss"][-1]
+        
+        # Save on progress
+        candidate_loss = (
+                d_losses_val["clf_loss"]
+                + d_losses_val["peak_loss"]
+            )
+        if candidate_loss < best_loss:
+            best_loss = candidate_loss
             torch.save(model.state_dict(), f"{config['dump_dir']}/net.pt")
 
         # LR scheduling
-        scheduler.step(d_losses_val["log_loss"])
+        scheduler.step(candidate_loss)
         lr_value = next(iter(optimizer.param_groups))["lr"]
         if lr_value <= config["min_lr"]:
             print("Minimum LR reached, ending training")
@@ -366,7 +334,7 @@ def get_predictions(dump_dir):
     for key in ["target", "SNID"]:
         d_pred[key] = np.zeros((num_elem, nb_inference_samples)).astype(np.int64)
 
-    for key in ["target_peak","all_peak"]+[f"PEAKMJD{s}_peak" for s in OFFSETS_STR]:
+    for key in ["target_peak", "all_peak"] + [f"PEAKMJD{s}_peak" for s in OFFSETS_STR]:
         d_pred[key] = np.zeros((num_elem, nb_inference_samples)).astype(np.float32)
 
     # Fetch SN info
@@ -489,7 +457,7 @@ def get_predictions(dump_dir):
                     d_pred[col][start_idx + oob_idxs, iter_] = np.nan
 
                     # select the last peak pred
-                    last_time_length = (X_peak_target!=0).sum(1) - 1
+                    last_time_length = (X_peak_target != 0).sum(1) - 1
                     last_peak_preds = torch.gather(
                         X_peak_pred, 1, (last_time_length).view(-1, 1)
                     ).squeeze(-1)
