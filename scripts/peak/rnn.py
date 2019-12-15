@@ -55,7 +55,7 @@ def get_accuracy_loss(pred, target):
     return (target == pred.argmax(1)).sum().float() / pred.shape[0]
 
 
-def forward_pass(model, data, num_batches):
+def forward_pass(model, data, num_batches, return_preds):
 
     X_flux = data["X_flux"]
     X_fluxerr = data["X_fluxerr"]
@@ -70,6 +70,9 @@ def forward_pass(model, data, num_batches):
     X_pred_class, X_pred_peak = model(
         X_flux, X_fluxerr, X_flt, X_time, X_mask, x_meta=X_meta
     )
+
+    if return_preds:
+        return X_pred_class, X_target_class, X_pred_peak, X_target_peak
 
     d_losses = {}
 
@@ -259,16 +262,13 @@ def train(config):
 
             d_losses_train[key] = np.mean(d_losses_train[key])
             d_losses_val[key] = np.mean(d_losses_val[key])
-            
+
             d_monitor_train[key].append(d_losses_train[key])
             d_monitor_val[key].append(d_losses_val[key])
 
             writer.add_scalars(
                 f"Metrics/{key.title()}",
-                {
-                    "training": d_losses_train[key],
-                    "valid": d_losses_val[key],
-                },
+                {"training": d_losses_train[key], "valid": d_losses_val[key]},
                 batch,
             )
 
@@ -278,12 +278,9 @@ def train(config):
         # Plot losses
         save_prefix = f"{config['dump_dir']}/loss"
         tu.plot_loss(d_monitor_train, d_monitor_val, save_prefix)
-        
+
         # Save on progress
-        candidate_loss = (
-                d_losses_val["clf_loss"]
-                + d_losses_val["peak_loss"]
-            )
+        candidate_loss = d_losses_val["clf_loss"] + d_losses_val["peak_loss"]
         if candidate_loss < best_loss:
             best_loss = candidate_loss
             torch.save(model.state_dict(), f"{config['dump_dir']}/net.pt")
@@ -358,18 +355,13 @@ def get_predictions(dump_dir):
         # Full lightcurve prediction
         #############################
         for iter_ in range(nb_inference_samples):
-            (
-                _,
-                _,
-                X_class_pred,
-                X_class_target,
-                X_peak_pred,
-                X_peak_target,
-            ) = forward_pass(model, data, n_test_batches)
+            X_pred_class, X_target_class, X_pred_peak, X_target_peak = forward_pass(
+                model, data, n_test_batches, return_preds=True
+            )
 
             arr_class_preds, arr_class_target = (
-                X_class_pred.cpu().numpy(),
-                X_class_target.cpu().numpy(),
+                X_pred_class.cpu().numpy(),
+                X_target_class.cpu().numpy(),
             )
             d_pred["all"][start_idx:end_idx, iter_] = arr_class_preds
             d_pred["target"][start_idx:end_idx, iter_] = arr_class_target
@@ -377,12 +369,12 @@ def get_predictions(dump_dir):
             # select the last peak pred
             last_time_length = data["X_mask"].sum(1) - 1
             last_peak_preds = torch.gather(
-                X_peak_pred, 1, (last_time_length).view(-1, 1)
+                X_pred_peak, 1, (last_time_length).view(-1, 1)
             ).squeeze(-1)
             arr_peak_preds = last_peak_preds.cpu().numpy()
 
             last_peak_target = torch.gather(
-                X_peak_target, 1, (last_time_length).view(-1, 1)
+                X_target_peak, 1, (last_time_length).view(-1, 1)
             ).squeeze(-1)
             arr_peak_target = last_peak_target.cpu().numpy()
 
@@ -435,18 +427,13 @@ def get_predictions(dump_dir):
                             data_tmp[key][idx, length:] = 0
 
                 for iter_ in range(nb_inference_samples):
-                    (
-                        _,
-                        _,
-                        X_class_pred,
-                        X_class_target,
-                        X_peak_pred,
-                        X_peak_target,
-                    ) = forward_pass(model, data_tmp, n_test_batches)
+                    X_pred_class, X_target_class, X_pred_peak, X_target_peak = forward_pass(
+                        model, data_tmp, n_test_batches, return_preds=True
+                    )
 
                     arr_class_preds, arr_class_target = (
-                        X_class_pred.cpu().numpy(),
-                        X_class_target.cpu().numpy(),
+                        X_pred_class.cpu().numpy(),
+                        X_target_class.cpu().numpy(),
                     )
                     suffix = str(offset) if offset != 0 else ""
                     suffix = f"+{suffix}" if offset > 0 else suffix
@@ -457,14 +444,14 @@ def get_predictions(dump_dir):
                     d_pred[col][start_idx + oob_idxs, iter_] = np.nan
 
                     # select the last peak pred
-                    last_time_length = (X_peak_target != 0).sum(1) - 1
+                    last_time_length = (X_target_peak != 0).sum(1) - 1
                     last_peak_preds = torch.gather(
-                        X_peak_pred, 1, (last_time_length).view(-1, 1)
+                        X_pred_peak, 1, (last_time_length).view(-1, 1)
                     ).squeeze(-1)
                     arr_peak_preds = last_peak_preds.cpu().numpy()
 
                     last_peak_target = torch.gather(
-                        X_peak_target, 1, (last_time_length).view(-1, 1)
+                        X_target_peak, 1, (last_time_length).view(-1, 1)
                     ).squeeze(-1)
                     arr_peak_target = last_peak_target.cpu().numpy()
 
