@@ -1,11 +1,18 @@
-raw_dir: /u/home/SuperNNova/tests/raw
-preprocessed_dir: /u/home/SuperNNova/tests/dump/preprocessed
-processed_dir: /u/home/SuperNNova/tests/dump/processed
-fitopt_file: /u/home/SuperNNova/tests/fits/FITOPT000.FITRES
-fig_dir: /u/home/SuperNNova/tests/dump/figures
-dump_dir: /u/home/SuperNNova/tests/dump/rnn/vanilla_000
+# raw_dir: /u/home/SuperNNova/tests/raw
+# preprocessed_dir: /u/home/SuperNNova/tests/dump/preprocessed
+# processed_dir: /u/home/SuperNNova/tests/dump/processed
+# fitopt_file: /u/home/SuperNNova/tests/fits/FITOPT000.FITRES
+# fig_dir: /u/home/SuperNNova/tests/dump/figures
+# dump_dir: /u/home/SuperNNova/tests/dump/rnn/vanilla_000
 
-nb_epoch: 2
+raw_dir: /u/home/SuperNNova/raw
+preprocessed_dir: /u/home/SuperNNova/data/dump/preprocessed
+processed_dir: /u/home/SuperNNova/data/dump/processed
+fitopt_file: /u/home/SuperNNova/data/fits/FITOPT000.FITRES
+fig_dir: /u/home/SuperNNova/data/dump/figures
+dump_dir: /u/home/SuperNNova/data/dump/rnn/vanilla_000
+
+nb_epoch: 1
 nb_inference_samples: 1
 batch_size: 128
 batch_size_test: 16
@@ -13,7 +20,7 @@ learning_rate: 1.0E-3
 min_lr: 1.0E-5
 lr_factor: 0.5
 patience: 1
-data_fraction: 1.0
+data_fraction: 0.01
 nb_classes: &nb_classes 2
 raw_format: FITS
 seed: 42

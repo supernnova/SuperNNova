@@ -343,10 +343,11 @@ def get_predictions(dump_dir):
     for data in data_iterator:
 
         SNIDs = data["X_SNID"]
-        delta_times = data["X_time"].detach().cpu().numpy()
+        delta_times = data["X_time"].squeeze(-1).detach().cpu().numpy()
+        full_lengths = data["X_mask"].sum(1).long().detach().cpu().numpy()
 
         peak_MJDs = df_SNinfo.loc[SNIDs]["PEAKMJDNORM"].values
-        times = [np.cumsum(t) for t in delta_times]
+        times = [np.cumsum(t[:length]) for (t, length) in zip(delta_times, full_lengths)]
         batch_size = len(times)
 
         end_idx = start_idx + len(SNIDs)
@@ -427,9 +428,13 @@ def get_predictions(dump_dir):
                             data_tmp[key][idx, length:] = 0
 
                 for iter_ in range(nb_inference_samples):
-                    X_pred_class, X_target_class, X_pred_peak, X_target_peak = forward_pass(
-                        model, data_tmp, n_test_batches, return_preds=True
-                    )
+                    try:
+                        X_pred_class, X_target_class, X_pred_peak, X_target_peak = forward_pass(
+                            model, data_tmp, n_test_batches, return_preds=True
+                        )
+                    except Exception:
+                        import ipdb
+                        ipdb.set_trace()
 
                     arr_class_preds, arr_class_target = (
                         X_pred_class.cpu().numpy(),
