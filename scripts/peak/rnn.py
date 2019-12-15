@@ -55,7 +55,7 @@ def get_accuracy_loss(pred, target):
     return (target == pred.argmax(1)).sum().float() / pred.shape[0]
 
 
-def forward_pass(model, data, num_batches, return_preds):
+def forward_pass(model, data, num_batches, return_preds=False):
 
     X_flux = data["X_flux"]
     X_fluxerr = data["X_fluxerr"]
@@ -65,7 +65,7 @@ def forward_pass(model, data, num_batches, return_preds):
     X_meta = data.get("X_meta", None)
 
     X_target_class = data["X_target_class"]
-    X_target_peak = data["X_target_peak"]
+    X_target_peak = data["X_target_peak"].squeeze(-1)
 
     X_pred_class, X_pred_peak = model(
         X_flux, X_fluxerr, X_flt, X_time, X_mask, x_meta=X_meta
@@ -77,7 +77,7 @@ def forward_pass(model, data, num_batches, return_preds):
     d_losses = {}
 
     # peak prediction loss
-    d_losses["peak_loss"] = get_mse_loss(X_pred_peak, X_target_peak.squeeze(-1), X_mask)
+    d_losses["peak_loss"] = get_mse_loss(X_pred_peak, X_target_peak, X_mask)
     # classification loss
     d_losses["clf_loss"] = get_cross_entropy_loss(X_pred_class, X_target_class)
     # Accuracy metric
