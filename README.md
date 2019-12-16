@@ -70,10 +70,8 @@ conda clean -ya
 
     docker run -it --rm\
     -v </path/to/SuperNNova>:/u/home/SuperNNova \
+    -p 8080:8080 \
     -e HOST_USER_ID=$(id -u) \
     -e HOST_USER_GID=$(id -g) rnn-cpu:latest
 
-    docker run -it  --gpus all --rm\
-    -v </path/to/SuperNNova>:/u/home/SuperNNova \
-    -e HOST_USER_ID=$(id -u) \
-    -e HOST_USER_GID=$(id -g) rnn-gpu:latest
+    docker run -it  --gpus all --rm -p 8080:8080 -v /home/tmain/SuperNNova_refactor:/u/home/SuperNNova -e HOST_USER_ID=$(id -u) -e HOST_USER_GID=$(id -g) rnn-gpu:latest
