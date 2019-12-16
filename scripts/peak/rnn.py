@@ -235,9 +235,9 @@ def train(config):
             losses_train = forward_pass(model, data, n_train_batches)
 
             loss = (
-                losses_train["clf_loss"]
+                losses_train["clf_loss"] * config.get("clf_weight", 1.0)
                 + losses_train.get("kl", 0.0)
-                + losses_train["peak_loss"]
+                + losses_train["peak_loss"] * config.get("peak_weight", 1.0)
             )
 
             for key, val in losses_train.items():
