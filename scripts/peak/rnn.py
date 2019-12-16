@@ -9,6 +9,11 @@ from pathlib import Path
 from copy import deepcopy
 from collections import defaultdict
 
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
 from supernnova.utils import training_utils as tu
 from supernnova.utils import logging_utils as lu
 from supernnova.utils import data_utils as du
@@ -279,6 +284,25 @@ def train(config):
         save_prefix = f"{config['dump_dir']}/loss"
         tu.plot_loss(d_monitor_train, d_monitor_val, save_prefix)
 
+        # Make some lightcurve plots to check predictions
+        data_iterator = dataset.create_iterator("test", 1, device, tqdm_desc=None)
+        figs = plots.make_early_prediction(
+            model,
+            config,
+            data_iterator,
+            LIST_FILTERS,
+            INVERSE_FILTER_DICT,
+            device,
+            SNTYPES,
+            nb_lcs=9,
+            return_fig=True,
+        )
+        for idx, fig in enumerate(figs):
+            writer.add_figure(f"Lightcurves/{idx}", fig, batch)
+            plt.close(fig)
+        plt.clf()
+        plt.close("all")
+
         # Save on progress
         candidate_loss = d_losses_val["clf_loss"] + d_losses_val["peak_loss"]
         if candidate_loss < best_loss:
@@ -314,9 +338,9 @@ def get_predictions(dump_dir):
     nb_classes = config["nb_classes"]
     nb_inference_samples = config["nb_inference_samples"]
 
-    n_test_batches = dataset.get_length("test", config["batch_size"])
+    n_test_batches = dataset.get_length("test", config["batch_size_test"])
     data_iterator = dataset.create_iterator(
-        "test", config["batch_size"], device, tqdm_desc=None
+        "test", config["batch_size_test"], device, tqdm_desc="Test set predictions"
     )
     num_elem = len(dataset.splits["test"])
 
@@ -347,7 +371,9 @@ def get_predictions(dump_dir):
         full_lengths = data["X_mask"].sum(1).long().detach().cpu().numpy()
 
         peak_MJDs = df_SNinfo.loc[SNIDs]["PEAKMJDNORM"].values
-        times = [np.cumsum(t[:length]) for (t, length) in zip(delta_times, full_lengths)]
+        times = [
+            np.cumsum(t[:length]) for (t, length) in zip(delta_times, full_lengths)
+        ]
         batch_size = len(times)
 
         end_idx = start_idx + len(SNIDs)
@@ -434,6 +460,7 @@ def get_predictions(dump_dir):
                         )
                     except Exception:
                         import ipdb
+
                         ipdb.set_trace()
 
                     arr_class_preds, arr_class_target = (
