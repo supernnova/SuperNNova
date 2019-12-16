@@ -100,4 +100,4 @@ class Model(torch.nn.Module):
         # apply mask
         output_peak = output_peak_tmp.squeeze(-1) * x_mask.float()
 
-        return output_class, output_peak
+        return {"X_pred_class": output_class, "X_pred_peak": output_peak}

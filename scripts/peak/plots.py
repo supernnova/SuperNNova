@@ -1360,6 +1360,7 @@ def plot_predictions(
     redshift,
     peak_MJD,
     target,
+    peak_target,
     arr_time,
     d_pred,
     sntypes,
@@ -1367,8 +1368,14 @@ def plot_predictions(
     return_fig=False,
 ):
 
-    fig = plt.figure(figsize=(9, 6))
-    gs = gridspec.GridSpec(2, 1)
+    has_peak = "peak" in d_pred[next(iter(d_pred.keys()))].keys()
+
+    if has_peak:
+        fig = plt.figure(figsize=(9, 9))
+        gs = gridspec.GridSpec(3, 1)
+    else:
+        fig = plt.figure(figsize=(9, 6))
+        gs = gridspec.GridSpec(2, 1)
     # Plot the lightcurve
     ax = plt.subplot(gs[0])
     for flt in d_plot.keys():
@@ -1387,12 +1394,13 @@ def plot_predictions(
             )
 
     ax.set_ylabel("FLUXCAL")
+    xlim = ax.get_xlim()
     ylim = ax.get_ylim()
 
     SNtype = du.sntype_decoded(target, sntypes, nb_classes)
     ax.set_title(SNtype + f" (ID: {SNID}, redshift: {redshift:.3g})")
     # Add PEAKMJD
-    if arr_time.min() < peak_MJD and peak_MJD > arr_time.max():
+    if xlim[0] < peak_MJD and peak_MJD < xlim[-1]:
         ax.plot([peak_MJD, peak_MJD], ylim, "k--", label="Peak MJD")
 
     # Plot the classifications
@@ -1433,19 +1441,48 @@ def plot_predictions(
 
     ax.set_xlabel("Time (MJD)")
     ax.set_ylabel("classification probability")
+    xlim = ax.get_xlim()
     # Add PEAKMJD
-    if arr_time.min() < peak_MJD and peak_MJD > arr_time.max():
-        ax.plot([peak_MJD, peak_MJD], [0, 1], "k--", label="Peak MJD")
+    if xlim[0] < peak_MJD and peak_MJD < xlim[-1]:
+        ax.plot([peak_MJD, peak_MJD], ylim, "k--", label="Peak MJD")
     ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.0)
+
+    # plot peak MJD preds residual with tag
+    if has_peak:
+
+        ax = plt.subplot(gs[2])
+        # truth
+        ax.plot(arr_time, np.zeros(len(arr_time)), color="grey", linestyle="dotted")
+        # predicted
+        for key in d_pred.keys():
+
+            residuals = d_pred[key]["peak"] - peak_target
+            ax.plot(arr_time, residuals, color=color, linestyle=linestyle)
+
+        # Add PEAKMJD
+        xlim = ax.get_xlim()
+        if xlim[0] < peak_MJD and peak_MJD < xlim[-1]:
+            ax.plot([peak_MJD, peak_MJD], ylim, "k--", label="Peak MJD")
+
+        # annotate the prediction
+        to_print = [int(i) for i in d_pred[key]["peak"]]
+        top = residuals.min() + abs(residuals.max() - residuals.min()) / 2
+        arr_y = np.tile([residuals.min(), top], len(arr_time) // 2 + 1)
+
+        for i, txt in enumerate(to_print):
+            ax.annotate(txt, (arr_time[i], arr_y[i]))
+
+        ax.set_xlabel("Time (MJD)")
+        ax.set_ylabel("Delta peak")
 
     plt.tight_layout()
     if return_fig:
         return fig
-    else:
-        title = f"lightcurve_{SNID}_class_{SNtype.replace(' ', '_').replace('|', '-')}"
-        plt.savefig(Path(config["dump_dir"]) / (title + ".png"))
-        plt.clf()
-        plt.close()
+
+    title = f"lightcurve_{SNID}_class_{SNtype.replace(' ', '_').replace('|', '-')}"
+    plt.savefig(Path(config["dump_dir"]) / (title + ".png"))
+    plt.clf()
+    plt.close()
 
 
 def make_early_prediction(
@@ -1461,7 +1498,6 @@ def make_early_prediction(
 ):
 
     list_figs = []
-
     with torch.no_grad():
 
         # load SN info
@@ -1501,7 +1537,7 @@ def make_early_prediction(
             d_pred = {"model": {"prob": [], "peak": []}}
             for i in range(1, seq_len + 1):
 
-                X_pred_class, X_pred_peak = model(
+                outs = model(
                     X_flux[:, :i],
                     X_fluxerr[:, :i],
                     X_flt[:, :i],
@@ -1509,15 +1545,22 @@ def make_early_prediction(
                     X_mask[:, :i],
                     x_meta=X_meta,
                 )
+                X_pred_class = outs.get("X_pred_class", None)
+                X_pred_peak = outs.get("X_pred_peak", None)
+
                 X_pred_class = (
                     torch.nn.functional.softmax(X_pred_class, dim=1).cpu().numpy()
                 )
                 d_pred["model"]["prob"].append(X_pred_class)
-                # save only last peak pred
-                d_pred["model"]["peak"].append(X_pred_peak[-1][-1].cpu().numpy())
+                if X_pred_peak is not None:
+                    d_pred["model"]["peak"].append(X_pred_peak[:, -1].cpu().numpy())
 
             # Stack
             for key in ["model"]:
+                if "peak" in d_pred[key]:
+                    d_pred[key]["peak"] = np.squeeze(
+                        np.stack(d_pred[key]["peak"], axis=0), axis=-1
+                    )
                 arr_proba = np.stack(d_pred[key]["prob"], axis=0)
                 d_pred[key]["prob"] = arr_proba  # arr_prob is (T, num_samples, 2)
                 d_pred[key]["median"] = np.median(arr_proba, axis=1)
@@ -1532,6 +1575,7 @@ def make_early_prediction(
             X_time = X_time.cpu().numpy().squeeze(0)
             X_mask = X_mask.cpu().numpy().squeeze(0)
             X_target_class = X_target_class.cpu().numpy().squeeze(0)
+            X_target_peak = X_target_peak.cpu().numpy().squeeze(0).squeeze(-1)
 
             time = X_time.cumsum()
             length = X_mask.astype(int).sum()
@@ -1561,6 +1605,7 @@ def make_early_prediction(
                 redshift,
                 peak_MJD,
                 X_target_class,
+                X_target_peak,
                 time,
                 d_pred,
                 sntypes,

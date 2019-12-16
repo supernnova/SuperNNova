@@ -36,3 +36,5 @@ mnist.npz
 sandbox/data
 scripts/mc_dropout/*.txt
 scripts/bayesian_rnn/*.txt
+tests/dump/*
+tests/raw/hostspe_SNID.pickle

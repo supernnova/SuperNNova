@@ -72,9 +72,10 @@ def forward_pass(model, data, num_batches, return_preds=False):
     X_target_class = data["X_target_class"]
     X_target_peak = data["X_target_peak"].squeeze(-1)
 
-    X_pred_class, X_pred_peak = model(
-        X_flux, X_fluxerr, X_flt, X_time, X_mask, x_meta=X_meta
-    )
+    outs = model(X_flux, X_fluxerr, X_flt, X_time, X_mask, x_meta=X_meta)
+
+    X_pred_class = outs.get("X_pred_class", None)
+    X_pred_peak = outs.get("X_pred_peak", None)
 
     if return_preds:
         return X_pred_class, X_target_class, X_pred_peak, X_target_peak
