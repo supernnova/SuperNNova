@@ -1,11 +1,11 @@
-raw_dir: /home/tmain/Lyrebird/SuperNNova_refactor/tests/raw
-preprocessed_dir: /home/tmain/Lyrebird/SuperNNova_refactor/tests/dump/preprocessed
-processed_dir: /home/tmain/Lyrebird/SuperNNova_refactor/tests/dump/processed
-fitopt_file: /home/tmain/Lyrebird/SuperNNova_refactor/tests/fits/FITOPT000.FITRES
-fig_dir: /home/tmain/Lyrebird/SuperNNova_refactor/tests/dump/figures
-dump_dir: /home/tmain/Lyrebird/SuperNNova_refactor/tests/dump/rnn/vanilla_000
+raw_dir: /u/home/SuperNNova/raw
+preprocessed_dir: /u/home/SuperNNova/data/dump/preprocessed
+processed_dir: /u/home/SuperNNova/data/dump/processed
+fitopt_file: /u/home/SuperNNova/data/fits/FITOPT000.FITRES
+fig_dir: /u/home/SuperNNova/data/dump/figures
+dump_dir: /u/home/SuperNNova/data/dump/rnn/vanilla_000
 
-nb_epoch: 1
+nb_epoch: 150
 nb_inference_samples: 1
 batch_size: 128
 batch_size_test: 16
@@ -17,12 +17,12 @@ data_fraction: 1.0
 nb_classes: &nb_classes 2
 raw_format: FITS
 seed: 42
-dataset: "saltfit"
+dataset: "photometry"
 overwrite: True
 
 module: vanilla_rnn
 model:
-  input_size: 11
+  input_size: 9
   hidden_size: 16
   output_size: *nb_classes
   num_layers: 2
@@ -31,5 +31,3 @@ model:
   normalize: False
 
 metadata_features:
-  - HOSTGAL_PHOTOZ
-  - HOSTGAL_PHOTOZ_ERR
