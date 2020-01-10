@@ -1506,9 +1506,12 @@ def plot_predictions(
     d_pred,
     sntypes,
     nb_classes,
+    return_fig=False
 ):
 
-    plt.figure()
+    fig = plt.figure(figsize=(9, 6))
+    gs = gridspec.GridSpec(2, 1)
+
     gs = gridspec.GridSpec(2, 1)
     # Plot the lightcurve
     ax = plt.subplot(gs[0])
@@ -1580,6 +1583,11 @@ def plot_predictions(
     ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.0)
 
     plt.tight_layout()
+
+    if return_fig:
+        return fig
+
+
     plt.savefig(
         Path(config["dump_dir"])
         / f"lightcurve_{SNID}_class_{SNtype.replace(' ', '_').replace('|', '-')}.png"
@@ -1597,108 +1605,113 @@ def make_early_prediction(
     device,
     sntypes,
     nb_lcs=1,
+    return_fig=False
 ):
 
-    torch.set_grad_enabled(False)
 
     # load SN info
     SNinfo_df = du.load_HDF5_SNinfo(config["processed_dir"])
-
     counter = 0
+    list_figs = []
 
-    for data in data_iterator:
+    with torch.no_grad():
 
-        SNID = data["X_SNID"].item()
+        for data in data_iterator:
 
-        try:
-            redshift = SNinfo_df[SNinfo_df["SNID"] == SNID]["SIM_REDSHIFT_CMB"].values[
-                0
-            ]
-            peak_MJD = SNinfo_df[SNinfo_df["SNID"] == SNID]["PEAKMJDNORM"].values[0]
-        except Exception:
-            redshift = 0.0
-            peak_MJD = 0.0
+            SNID = data["X_SNID"].item()
 
-        # Prepare plotting data in a dict
-        d_plot = {
-            flt: {"FLUXCAL": [], "FLUXCALERR": [], "MJD": []} for flt in list_filters
-        }
+            try:
+                redshift = SNinfo_df[SNinfo_df["SNID"] == SNID]["SIM_REDSHIFT_CMB"].values[
+                    0
+                ]
+                peak_MJD = SNinfo_df[SNinfo_df["SNID"] == SNID]["PEAKMJDNORM"].values[0]
+            except Exception:
+                redshift = 0.0
+                peak_MJD = 0.0
 
-        X_flux = data["X_flux"]
-        X_fluxerr = data["X_fluxerr"]
-        X_flt = data["X_flt"]
-        X_time = data["X_time"]
-        X_mask = data["X_mask"]
-        X_meta = data.get("X_meta", None)
-        X_target = data["X_target"]
+            # Prepare plotting data in a dict
+            d_plot = {
+                flt: {"FLUXCAL": [], "FLUXCALERR": [], "MJD": []} for flt in list_filters
+            }
 
-        seq_len = X_mask.squeeze(0).long().sum().item()
-        d_pred = {"model": {"prob": []}}
-        for i in range(1, seq_len + 1):
+            X_flux = data["X_flux"]
+            X_fluxerr = data["X_fluxerr"]
+            X_flt = data["X_flt"]
+            X_time = data["X_time"]
+            X_mask = data["X_mask"]
+            X_meta = data.get("X_meta", None)
+            X_target = data["X_target_class"]
 
-            X_pred = model(
-                X_flux[:, :i],
-                X_fluxerr[:, :i],
-                X_flt[:, :i],
-                X_time[:, :i],
-                X_mask[:, :i],
-                x_meta=X_meta,
+            seq_len = X_mask.squeeze(0).long().sum().item()
+            d_pred = {"model": {"prob": []}}
+            for i in range(1, seq_len + 1):
+
+                X_pred = model(
+                    X_flux[:, :i],
+                    X_fluxerr[:, :i],
+                    X_flt[:, :i],
+                    X_time[:, :i],
+                    X_mask[:, :i],
+                    x_meta=X_meta,
+                )["X_pred_class"]
+                X_pred = torch.nn.functional.softmax(X_pred, dim=1).cpu().numpy()
+                d_pred["model"]["prob"].append(X_pred)
+
+            # Stack
+            for key in ["model"]:
+                arr_proba = np.stack(d_pred[key]["prob"], axis=0)
+                d_pred[key]["prob"] = arr_proba  # arr_prob is (T, num_samples, 2)
+                d_pred[key]["median"] = np.median(arr_proba, axis=1)
+                d_pred[key]["perc_16"] = np.percentile(arr_proba, 16, axis=1)
+                d_pred[key]["perc_84"] = np.percentile(arr_proba, 84, axis=1)
+                d_pred[key]["perc_2"] = np.percentile(arr_proba, 2, axis=1)
+                d_pred[key]["perc_98"] = np.percentile(arr_proba, 98, axis=1)
+
+            X_flux = X_flux.cpu().numpy().squeeze(0)
+            X_fluxerr = X_fluxerr.cpu().numpy().squeeze(0)
+            X_flt = X_flt.cpu().numpy().squeeze(0)
+            X_time = X_time.cpu().numpy().squeeze(0)
+            X_mask = X_mask.cpu().numpy().squeeze(0)
+            X_target = X_target.cpu().numpy().squeeze(0)
+
+            time = X_time.cumsum()
+            length = X_mask.astype(int).sum()
+            d_plot = {c: {} for c in list_filters}
+            for j, c in enumerate(list_filters):
+                flux = [
+                    X_flux[t, j]
+                    for t in range(length)
+                    if c in inverse_filter_dict[X_flt[t]]
+                ]
+                fluxerr = [
+                    X_fluxerr[t, j]
+                    for t in range(length)
+                    if c in inverse_filter_dict[X_flt[t]]
+                ]
+                tmp = [time[t] for t in range(length) if c in inverse_filter_dict[X_flt[t]]]
+                d_plot[c]["FLUXCAL"] = flux
+                d_plot[c]["FLUXCALERR"] = fluxerr
+                d_plot[c]["MJD"] = tmp
+
+            fig = plot_predictions(
+                config,
+                d_plot,
+                SNID,
+                redshift,
+                peak_MJD,
+                X_target,
+                time,
+                d_pred,
+                sntypes,
+                config["nb_classes"],
+                return_fig=return_fig
             )
-            X_pred = torch.nn.functional.softmax(X_pred, dim=1).cpu().numpy()
-            d_pred["model"]["prob"].append(X_pred)
+            list_figs.append(fig)
 
-        # Stack
-        for key in ["model"]:
-            arr_proba = np.stack(d_pred[key]["prob"], axis=0)
-            d_pred[key]["prob"] = arr_proba  # arr_prob is (T, num_samples, 2)
-            d_pred[key]["median"] = np.median(arr_proba, axis=1)
-            d_pred[key]["perc_16"] = np.percentile(arr_proba, 16, axis=1)
-            d_pred[key]["perc_84"] = np.percentile(arr_proba, 84, axis=1)
-            d_pred[key]["perc_2"] = np.percentile(arr_proba, 2, axis=1)
-            d_pred[key]["perc_98"] = np.percentile(arr_proba, 98, axis=1)
+            counter += 1
 
-        X_flux = X_flux.cpu().numpy().squeeze(0)
-        X_fluxerr = X_fluxerr.cpu().numpy().squeeze(0)
-        X_flt = X_flt.cpu().numpy().squeeze(0)
-        X_time = X_time.cpu().numpy().squeeze(0)
-        X_mask = X_mask.cpu().numpy().squeeze(0)
-        X_target = X_target.cpu().numpy().squeeze(0)
+            if counter > nb_lcs:
+                break
 
-        time = X_time.cumsum()
-        length = X_mask.astype(int).sum()
-        d_plot = {c: {} for c in list_filters}
-        for j, c in enumerate(list_filters):
-            flux = [
-                X_flux[t, j]
-                for t in range(length)
-                if c in inverse_filter_dict[X_flt[t]]
-            ]
-            fluxerr = [
-                X_fluxerr[t, j]
-                for t in range(length)
-                if c in inverse_filter_dict[X_flt[t]]
-            ]
-            tmp = [time[t] for t in range(length) if c in inverse_filter_dict[X_flt[t]]]
-            d_plot[c]["FLUXCAL"] = flux
-            d_plot[c]["FLUXCALERR"] = fluxerr
-            d_plot[c]["MJD"] = tmp
-
-        plot_predictions(
-            config,
-            d_plot,
-            SNID,
-            redshift,
-            peak_MJD,
-            X_target,
-            time,
-            d_pred,
-            sntypes,
-            config["nb_classes"],
-        )
-
-        counter += 1
-
-        if counter > nb_lcs:
-            break
-
-    torch.set_grad_enabled(True)
+    if return_fig:
+        return list_figs

@@ -13,6 +13,12 @@ from pathlib import Path
 from copy import deepcopy
 from collections import defaultdict
 
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+
 from supernnova.utils import training_utils as tu
 from supernnova.utils import logging_utils as lu
 from supernnova.utils import data_utils as du
@@ -43,8 +49,23 @@ def find_idx(array, value):
 
     return min(idx, len(array))
 
+def get_mse_loss(pred, target, mask):
 
-def forward_pass(model, data, num_batches):
+    return ((pred - target).pow(2) * mask).sum() / mask.sum()
+
+
+def get_cross_entropy_loss(pred, target):
+
+    return torch.nn.functional.cross_entropy(pred, target, reduction="none").mean(0)
+
+
+def get_accuracy_loss(pred, target):
+
+    return (target == pred.argmax(1)).sum().float() / pred.shape[0]
+
+
+
+def forward_pass(model, data, num_batches, return_preds=False):
 
     X_flux = data["X_flux"]
     X_fluxerr = data["X_fluxerr"]
@@ -53,40 +74,47 @@ def forward_pass(model, data, num_batches):
     X_mask = data["X_mask"]
     X_meta = data.get("X_meta", None)
 
-    X_target = data["X_target"]
+    X_target_class = data["X_target_class"]
 
-    X_pred = model(X_flux, X_fluxerr, X_flt, X_time, X_mask, x_meta=X_meta)
+    outs = model(X_flux, X_fluxerr, X_flt, X_time, X_mask, x_meta=X_meta)
 
-    loss = torch.nn.functional.cross_entropy(X_pred, X_target, reduction="none").mean(0)
+    X_pred_class = outs.get("X_pred_class", None)
+    X_pred_peak = outs.get("X_pred_peak", None)
 
+    if return_preds:
+        return X_pred_class, X_target_class, X_pred_peak
+
+    d_losses = {}
+
+    # classification loss
+    d_losses["clf_loss"] = get_cross_entropy_loss(X_pred_class, X_target_class)
+    # Accuracy metric
+    d_losses["accuracy"] = get_accuracy_loss(X_pred_class, X_target_class)
+
+    # Optional KL loss
     if hasattr(model, "kl"):
-        batch_size = X_target.shape[0]
+        batch_size = X_target_class.shape[0]
         kl = model.kl / (batch_size * num_batches)
-        loss = loss + kl
+        d_losses["kl"] = kl
 
-    X_pred = torch.nn.functional.softmax(X_pred, dim=-1)
-
-    return loss, X_pred, X_target
-
+    return d_losses
 
 def eval_pass(model, data_iterator, n_batches):
 
-    list_target = []
-    list_pred = []
+    d_losses = defaultdict(list)
 
     model.eval()
     with torch.no_grad():
         for data in data_iterator:
-            _, X_pred, X_target = forward_pass(model, data, n_batches)
-            list_target.append(X_target)
-            list_pred.append(X_pred)
+            losses = forward_pass(model, data, n_batches)
 
-    X_pred = torch.cat(list_pred, dim=0)
-    X_target = torch.cat(list_target, dim=0)
+            for key, val in losses.items():
 
-    X_pred = torch.nn.functional.softmax(X_pred, dim=-1)
+                d_losses[key].append(val.item())
 
-    return X_target, X_pred
+    return d_losses
+
+
 
 
 def load_model(config, device, weights_file=None):
@@ -204,9 +232,8 @@ def train(config):
 
         desc = f"Epoch: {epoch} -- {loss_str}"
 
-        list_pred_train = []
-        list_target_train = []
-
+        d_losses_train = defaultdict(list)
+        
         for data in dataset.create_iterator(
             "train", config["batch_size"], device, tqdm_desc=desc
         ):
@@ -214,73 +241,84 @@ def train(config):
             model.train()
 
             # Train step : forward backward pass
-            loss, X_pred_train, X_target_train = forward_pass(
-                model, data, n_train_batches
+            losses_train = forward_pass(model, data, n_train_batches)
+
+            loss = (
+                losses_train["clf_loss"] * config.get("clf_weight", 1.0)
+                + losses_train.get("kl", 0.0)
             )
 
-            list_pred_train.append(X_pred_train)
-            list_target_train.append(X_target_train)
+            for key, val in losses_train.items():
+                d_losses_train[key].append(val.item())
 
             optimizer.zero_grad()
+
             loss.backward()
             optimizer.step()
 
             batch += 1
 
-        # Obtain the arrays of targets and predictions
-        X_target_train = torch.cat(list_target_train)
-        X_pred_train = torch.cat(list_pred_train)
-
-        X_target_val, X_pred_val = eval_pass(
-            model,
-            dataset.create_iterator(
-                "val", config["batch_size"], device, tqdm_desc=None
-            ),
-            n_val_batches,
+        val_iterator = dataset.create_iterator(
+            "val", config["batch_size"], device, tqdm_desc=None
         )
+        d_losses_val = eval_pass(model, val_iterator, n_val_batches)
 
-        # Actually compute metrics
-        d_losses_train = tu.get_evaluation_metrics(
-            X_pred_train.detach().cpu().numpy(),
-            X_target_train.detach().cpu().numpy(),
-            nb_classes=config["nb_classes"],
-        )
-        d_losses_val = tu.get_evaluation_metrics(
-            X_pred_val.detach().cpu().numpy(),
-            X_target_val.detach().cpu().numpy(),
-            nb_classes=config["nb_classes"],
-        )
-
-        # Add current loss avg to list of losses
+        # Monitor losses in dict + tensorboard
+        d_monitor_train["epoch"].append(epoch + 1)
+        d_monitor_val["epoch"].append(epoch + 1)
         for key in d_losses_train.keys():
+
+            d_losses_train[key] = np.mean(d_losses_train[key])
+            d_losses_val[key] = np.mean(d_losses_val[key])
+
             d_monitor_train[key].append(d_losses_train[key])
             d_monitor_val[key].append(d_losses_val[key])
 
-        d_monitor_train["epoch"].append(epoch + 1)
-        d_monitor_val["epoch"].append(epoch + 1)
-
-        for metric in d_losses_train:
             writer.add_scalars(
-                f"Metrics/{metric.title()}",
-                {"training": d_losses_train[metric], "valid": d_losses_val[metric]},
+                f"Metrics/{key.title()}",
+                {"training": d_losses_train[key], "valid": d_losses_val[key]},
                 batch,
             )
 
         # Prepare loss_str to update progress bar
         loss_str = tu.get_loss_string(d_losses_train, d_losses_val)
 
+        # Plot losses
         save_prefix = f"{config['dump_dir']}/loss"
         tu.plot_loss(d_monitor_train, d_monitor_val, save_prefix)
-        if d_monitor_val["log_loss"][-1] < best_loss:
-            best_loss = d_monitor_val["log_loss"][-1]
+
+        # Make some lightcurve plots to check predictions
+        data_iterator = dataset.create_iterator("test", 1, device, tqdm_desc=None)
+        figs = plots.make_early_prediction(
+            model,
+            config,
+            data_iterator,
+            LIST_FILTERS,
+            INVERSE_FILTER_DICT,
+            device,
+            SNTYPES,
+            nb_lcs=9,
+            return_fig=True,
+        )
+        for idx, fig in enumerate(figs):
+            writer.add_figure(f"Lightcurves/{idx}", fig, batch)
+            plt.close(fig)
+        plt.clf()
+        plt.close("all")
+
+        # Save on progress
+        candidate_loss = d_losses_val["clf_loss"]
+        if candidate_loss < best_loss:
+            best_loss = candidate_loss
             torch.save(model.state_dict(), f"{config['dump_dir']}/net.pt")
 
         # LR scheduling
-        scheduler.step(d_losses_val["log_loss"])
+        scheduler.step(candidate_loss)
         lr_value = next(iter(optimizer.param_groups))["lr"]
         if lr_value <= config["min_lr"]:
             print("Minimum LR reached, ending training")
             break
+
 
 
 def get_predictions(dump_dir):
@@ -343,7 +381,7 @@ def get_predictions(dump_dir):
         #############################
         for iter_ in range(nb_inference_samples):
 
-            _, X_pred, X_target = forward_pass(model, data, n_test_batches)
+            X_pred, X_target, _ = forward_pass(model, data, n_test_batches, return_preds=True)
             arr_preds, arr_target = X_pred.cpu().numpy(), X_target.cpu().numpy()
 
             d_pred["all"][start_idx:end_idx, iter_] = arr_preds
@@ -383,7 +421,7 @@ def get_predictions(dump_dir):
 
                 for iter_ in range(nb_inference_samples):
 
-                    _, X_pred, X_target = forward_pass(model, data_tmp, n_test_batches)
+                    X_pred, X_target, _ = forward_pass(model, data_tmp, n_test_batches, return_preds=True)
                     arr_preds, arr_target = X_pred.cpu().numpy(), X_target.cpu().numpy()
 
                     suffix = str(offset) if offset != 0 else ""

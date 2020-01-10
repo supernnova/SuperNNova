@@ -1,11 +1,11 @@
-raw_dir: /u/home/SuperNNova/raw
-preprocessed_dir: /u/home/SuperNNova/data/dump/preprocessed
-processed_dir: /u/home/SuperNNova/data/dump/processed
-fitopt_file: /u/home/SuperNNova/data/fits/FITOPT000.FITRES
-fig_dir: /u/home/SuperNNova/data/dump/figures
-dump_dir: /u/home/SuperNNova/data/dump/rnn/vanilla_000
+raw_dir: /home/tmain/Lyrebird/SuperNNova_refactor/tests/raw
+preprocessed_dir: /home/tmain/Lyrebird/SuperNNova_refactor/tests/dump/preprocessed
+processed_dir: /home/tmain/Lyrebird/SuperNNova_refactor/tests/dump/processed
+fitopt_file: /home/tmain/Lyrebird/SuperNNova_refactor/tests/fits/FITOPT000.FITRES
+fig_dir: /home/tmain/Lyrebird/SuperNNova_refactor/tests/dump/figures
+dump_dir: /home/tmain/Lyrebird/SuperNNova_refactor/tests/dump/rnn/vanilla_000
 
-nb_epoch: 10000
+nb_epoch: 1
 nb_inference_samples: 1
 batch_size: 128
 batch_size_test: 16
