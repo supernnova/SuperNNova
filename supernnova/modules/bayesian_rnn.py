@@ -126,4 +126,4 @@ class Model(torch.nn.Module):
         # Compute KL
         self.kl = self.rnn.kl + self.output_layer.kl + self.embedding.kl
 
-        return output
+        return {"X_pred_class": output}

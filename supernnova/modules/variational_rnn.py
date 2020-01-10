@@ -128,4 +128,4 @@ class Model(nn.Module):
         # Final projection layer
         output = self.output_layer(x)
 
-        return output
+        return {"X_pred_class": output}

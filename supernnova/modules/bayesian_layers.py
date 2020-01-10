@@ -143,7 +143,7 @@ class BayesLSTM(nn.Module):
             self.module._parameters[name] = mu
 
     def _setweights(self):
-        kl = 0
+        kl = torch.FloatTensor([0])
         for name, _ in self.module.named_parameters():
             mu = getattr(self, f"{name}_mu")
             rho = getattr(self, f"{name}_rho")
