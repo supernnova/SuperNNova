@@ -170,7 +170,7 @@ class HDF5Dataset:
                 tmp_X = arr_data[idxs]
                 X_SNID = arr_SNID[idxs]
                 X_target_class = arr_target_class[idxs]
-                X_target_peak_tmp = arr_target_peak[idxs]
+                X_target_peak_single = arr_target_peak[idxs]
                 X_meta = arr_meta[idxs] if has_meta else None
 
                 list_lengths = [X.shape[0] // n_features for X in tmp_X]
@@ -215,7 +215,7 @@ class HDF5Dataset:
                     X_time[i, :length, 0] = X[start:end, time_idxs]
                     # target peak is the delta(peak-time)
                     X_target_peak[i, :length, 0] = (
-                        X_target_peak_tmp[i] - X[start:end, time_idxs].cumsum()
+                        X_target_peak_single[i] - X[start:end, time_idxs].cumsum()
                     )
                     X_flt[i, :length] = X[start:end, flt_idxs]
 
@@ -231,6 +231,7 @@ class HDF5Dataset:
                     "X_flt": torch.from_numpy(X_flt).to(device),
                     "X_target_class": torch.from_numpy(X_target_class).to(device),
                     "X_target_peak": torch.from_numpy(X_target_peak).to(device),
+                    "X_target_peak_single": torch.from_numpy(X_target_peak_single).to(device),
                     "X_mask": torch.from_numpy(X_mask).to(device),
                     "X_SNID": X_SNID,
                 }
