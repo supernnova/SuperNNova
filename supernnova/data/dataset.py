@@ -27,7 +27,12 @@ class HDF5Dataset:
         hf = h5py.File(hdf5_file, "r")
         arr_meta = hf["metadata"][:]
         columns = hf["metadata"].attrs["columns"]
-        df_meta = pd.DataFrame(arr_meta, columns=columns)
+        df_meta_tmp = pd.DataFrame(arr_meta, columns=columns)
+
+        # selecting only subset of SNIDs
+        # df_meta = df_meta_tmp[df_meta_tmp['SIM_REDSHIFT_CMB']<0.4]
+        df_meta = df_meta_tmp
+
         self.arr_SNID = df_meta["SNID"].values
         self.arr_SNTYPE = df_meta["SNTYPE"].values
         self.list_features = hf["data"].attrs["columns"].tolist()
@@ -103,7 +108,7 @@ class HDF5Dataset:
 
     def __len__(self):
         if "all" in self.splits:
-            return len(self.split["all"])
+            return len(self.splits["all"])
         else:
             return len(self.splits["train"])
 
@@ -129,7 +134,6 @@ class HDF5Dataset:
             sorted(idxs[i : i + batch_size].tolist())
             for i in range(0, len(idxs), batch_size)
         ]
-
         n_features = len(self.list_features)
 
         flux_features_idxs = [
