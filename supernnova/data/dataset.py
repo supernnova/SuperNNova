@@ -27,11 +27,7 @@ class HDF5Dataset:
         hf = h5py.File(hdf5_file, "r")
         arr_meta = hf["metadata"][:]
         columns = hf["metadata"].attrs["columns"]
-        df_meta_tmp = pd.DataFrame(arr_meta, columns=columns)
-
-        # selecting only subset of SNIDs
-        # df_meta = df_meta_tmp[df_meta_tmp['SIM_REDSHIFT_CMB']<0.4]
-        df_meta = df_meta_tmp
+        df_meta = pd.DataFrame(arr_meta, columns=columns)
 
         self.arr_SNID = df_meta["SNID"].values
         self.arr_SNTYPE = df_meta["SNTYPE"].values
@@ -63,10 +59,17 @@ class HDF5Dataset:
             self.SNID_test = SNID_test
 
             if self.SNID_train is None:
+
+                # selection
+                # TODO change, this cant be hardcoded
+                df_meta = df_meta[df_meta['SIM_REDSHIFT_CMB']<0.4]
+
                 # Subsample with data fraction
                 n_samples = int(data_fraction * len(df_meta))
                 idxs = np.random.choice(len(df_meta), n_samples, replace=False)
                 df_meta = df_meta.iloc[idxs].reset_index(drop=True)
+
+                
 
                 # Pandas magic to downample each class down to lowest cardinality class
                 df_meta = df_meta.groupby("target")
