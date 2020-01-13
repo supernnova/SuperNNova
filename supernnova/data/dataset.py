@@ -117,7 +117,9 @@ class HDF5Dataset:
         ]
         return len(list_idxs)
 
-    def create_iterator(self, split, batch_size, device, tqdm_desc=None):
+    def create_iterator(
+        self, split, batch_size, device, tqdm_desc=None, random_length=False
+    ):
 
         idxs = self.splits[split]
         np.random.shuffle(idxs)
@@ -172,6 +174,22 @@ class HDF5Dataset:
                 X_meta = arr_meta[idxs] if has_meta else None
 
                 list_lengths = [X.shape[0] // n_features for X in tmp_X]
+
+                if random_length:
+                    list_start_end = []
+                    for length in list_lengths:
+                        if length < 5:
+                            # no slicng if small lightcurve
+                            start, end = 0, length
+                        else:
+                            start = np.random.randint(0, length - 4)
+                            end = np.random.randint(start + 5, length + 1)
+                        list_start_end.append([start, end])
+                    list_lengths = [x[1] - x[0] for x in list_start_end]
+
+                else:
+                    list_start_end = None
+
                 B = len(idxs)
                 L = max(list_lengths)
 
@@ -184,16 +202,22 @@ class HDF5Dataset:
                 for i in range(B):
 
                     X = tmp_X[i].reshape(-1, n_features)
+
                     length = list_lengths[i]
 
-                    X_flux[i, :length, :] = X[:length, flux_features_idxs]
-                    X_fluxerr[i, :length, :] = X[:length, fluxerr_features_idxs]
-                    X_time[i, :length, 0] = X[:length, time_idxs]
+                    if random_length:
+                        start, end = list_start_end[i]
+                    else:
+                        start, end = 0, length
+
+                    X_flux[i, :length, :] = X[start:end, flux_features_idxs]
+                    X_fluxerr[i, :length, :] = X[start:end, fluxerr_features_idxs]
+                    X_time[i, :length, 0] = X[start:end, time_idxs]
                     # target peak is the delta(peak-time)
                     X_target_peak[i, :length, 0] = (
-                        X_target_peak_tmp[i] - X[:length, time_idxs].cumsum()
+                        X_target_peak_tmp[i] - X[start:end, time_idxs].cumsum()
                     )
-                    X_flt[i, :length] = X[:length, flt_idxs]
+                    X_flt[i, :length] = X[start:end, flt_idxs]
 
                 arr_lengths = np.array(list_lengths)
                 X_mask = (

@@ -1506,7 +1506,7 @@ def plot_predictions(
     d_pred,
     sntypes,
     nb_classes,
-    return_fig=False
+    return_fig=False,
 ):
 
     fig = plt.figure(figsize=(9, 6))
@@ -1587,7 +1587,6 @@ def plot_predictions(
     if return_fig:
         return fig
 
-
     plt.savefig(
         Path(config["dump_dir"])
         / f"lightcurve_{SNID}_class_{SNtype.replace(' ', '_').replace('|', '-')}.png"
@@ -1605,9 +1604,8 @@ def make_early_prediction(
     device,
     sntypes,
     nb_lcs=1,
-    return_fig=False
+    return_fig=False,
 ):
-
 
     # load SN info
     SNinfo_df = du.load_HDF5_SNinfo(config["processed_dir"])
@@ -1621,9 +1619,9 @@ def make_early_prediction(
             SNID = data["X_SNID"].item()
 
             try:
-                redshift = SNinfo_df[SNinfo_df["SNID"] == SNID]["SIM_REDSHIFT_CMB"].values[
-                    0
-                ]
+                redshift = SNinfo_df[SNinfo_df["SNID"] == SNID][
+                    "SIM_REDSHIFT_CMB"
+                ].values[0]
                 peak_MJD = SNinfo_df[SNinfo_df["SNID"] == SNID]["PEAKMJDNORM"].values[0]
             except Exception:
                 redshift = 0.0
@@ -1631,7 +1629,8 @@ def make_early_prediction(
 
             # Prepare plotting data in a dict
             d_plot = {
-                flt: {"FLUXCAL": [], "FLUXCALERR": [], "MJD": []} for flt in list_filters
+                flt: {"FLUXCAL": [], "FLUXCALERR": [], "MJD": []}
+                for flt in list_filters
             }
 
             X_flux = data["X_flux"]
@@ -1692,7 +1691,9 @@ def make_early_prediction(
                     for t in range(length)
                     if c in inverse_filter_dict[X_flt[t]]
                 ]
-                tmp = [time[t] for t in range(length) if c in inverse_filter_dict[X_flt[t]]]
+                tmp = [
+                    time[t] for t in range(length) if c in inverse_filter_dict[X_flt[t]]
+                ]
                 d_plot[c]["FLUXCAL"] = flux
                 d_plot[c]["FLUXCALERR"] = fluxerr
                 d_plot[c]["MJD"] = tmp
@@ -1708,7 +1709,7 @@ def make_early_prediction(
                 d_pred,
                 sntypes,
                 config["nb_classes"],
-                return_fig=return_fig
+                return_fig=return_fig,
             )
             list_figs.append(fig)
 

@@ -113,7 +113,7 @@ def preprocess_data(config):
     list_Ia = [f for f in list_files if "_Ia" in f]
     list_nonIa = [f for f in list_files if "_NONIa" in f]
 
-    list_files = list_Ia[:2] + list_nonIa[:2]
+    list_files = list_Ia[:8] + list_nonIa[:8]
 
     process_fn = partial(
         process_phot_file, preprocessed_dir=preprocessed_dir, list_filters=LIST_FILTERS

@@ -49,6 +49,7 @@ def find_idx(array, value):
 
     return min(idx, len(array))
 
+
 def get_mse_loss(pred, target, mask):
 
     return ((pred - target).pow(2) * mask).sum() / mask.sum()
@@ -62,7 +63,6 @@ def get_cross_entropy_loss(pred, target):
 def get_accuracy_loss(pred, target):
 
     return (target == pred.argmax(1)).sum().float() / pred.shape[0]
-
 
 
 def forward_pass(model, data, num_batches, return_preds=False):
@@ -99,6 +99,7 @@ def forward_pass(model, data, num_batches, return_preds=False):
 
     return d_losses
 
+
 def eval_pass(model, data_iterator, n_batches):
 
     d_losses = defaultdict(list)
@@ -113,8 +114,6 @@ def eval_pass(model, data_iterator, n_batches):
                 d_losses[key].append(val.item())
 
     return d_losses
-
-
 
 
 def load_model(config, device, weights_file=None):
@@ -141,11 +140,10 @@ def load_dataset(dataset_path, config, SNID_train=None, SNID_val=None, SNID_test
         SNID_train=SNID_train,
         SNID_val=SNID_val,
         SNID_test=SNID_test,
-        load_all=True
+        load_all=True,
     )
 
     return dataset
-
 
 
 def get_predictions(model_dir, pred_dir, dataset_path):
@@ -155,9 +153,7 @@ def get_predictions(model_dir, pred_dir, dataset_path):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = load_model(config, device, weights_file=Path(model_dir) / "net.pt")
 
-    dataset = load_dataset(
-        dataset_path, config
-    )
+    dataset = load_dataset(dataset_path, config)
 
     Path(pred_dir).mkdir(exist_ok=True, parents=True)
 
@@ -204,7 +200,9 @@ def get_predictions(model_dir, pred_dir, dataset_path):
         #############################
         for iter_ in range(nb_inference_samples):
 
-            X_pred, X_target, _ = forward_pass(model, data, n_test_batches, return_preds=True)
+            X_pred, X_target, _ = forward_pass(
+                model, data, n_test_batches, return_preds=True
+            )
             arr_preds, arr_target = X_pred.cpu().numpy(), X_target.cpu().numpy()
 
             d_pred["all"][start_idx:end_idx, iter_] = arr_preds
@@ -244,7 +242,9 @@ def get_predictions(model_dir, pred_dir, dataset_path):
 
                 for iter_ in range(nb_inference_samples):
 
-                    X_pred, X_target, _ = forward_pass(model, data_tmp, n_test_batches, return_preds=True)
+                    X_pred, X_target, _ = forward_pass(
+                        model, data_tmp, n_test_batches, return_preds=True
+                    )
                     arr_preds, arr_target = X_pred.cpu().numpy(), X_target.cpu().numpy()
 
                     suffix = str(offset) if offset != 0 else ""
@@ -374,9 +374,7 @@ def get_plots(model_dir, pred_dir, dataset_path):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = load_model(config, device, weights_file=Path(model_dir) / "net.pt")
 
-    dataset = load_dataset(
-        dataset_path, config
-    )
+    dataset = load_dataset(dataset_path, config)
 
     data_iterator = dataset.create_iterator("all", 1, device, tqdm_desc=None)
 
