@@ -4,6 +4,7 @@
 ### How to
 PYTHONPATH=$PWD:$PYTHONPATH python scripts/peak/data.py scripts/peak/conf.yml
 PYTHONPATH=$PWD:$PYTHONPATH python scripts/peak/rnn.py scripts/peak/conf.yml
+tensorboard --logdir tests/dump/ 
 
 # env
 conda update -y conda

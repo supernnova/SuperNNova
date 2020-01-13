@@ -34,7 +34,7 @@ def process_phot_file(file_path, preprocessed_dir, list_filters):
 
     keep_col_header = [
         "SNID",
-        "PEAKMJD",
+        "SIM_PEAKMJD",
         "HOSTGAL_PHOTOZ",
         "HOSTGAL_PHOTOZ_ERR",
         "HOSTGAL_SPECZ",
@@ -114,6 +114,7 @@ def preprocess_data(config):
     list_nonIa = [f for f in list_files if "_NONIa" in f]
 
     list_files = list_Ia[:8] + list_nonIa[:8]
+    print(list_files)
 
     process_fn = partial(
         process_phot_file, preprocessed_dir=preprocessed_dir, list_filters=LIST_FILTERS
@@ -168,7 +169,7 @@ def pivot_dataframe_single(filename, list_filters, df_salt, sntypes):
     # We then reset the index
     df = df.reset_index()
     # Compute PEAKMJDNORM = PEAKMJD in days since the start of the light curve
-    df["PEAKMJDNORM"] = df["PEAKMJD"] - df["MJD"]
+    df["PEAKMJDNORM"] = df["SIM_PEAKMJD"] - df["MJD"]
     # The correct PEAKMJDNORM is the first one hence the use of first after groupby
     df_PEAKMJDNORM = df[["SNID", "PEAKMJDNORM"]].groupby("SNID").first().reset_index()
     # Remove PEAKMJDNORM
@@ -181,7 +182,7 @@ def pivot_dataframe_single(filename, list_filters, df_salt, sntypes):
     group_features_list = [
         "SNID",
         "grouped_MJD",
-        "PEAKMJD",
+        "SIM_PEAKMJD",
         "PEAKMJDNORM",
         "SIM_REDSHIFT_CMB",
         "SNTYPE",
