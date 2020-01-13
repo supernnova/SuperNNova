@@ -1366,7 +1366,7 @@ def plot_predictions(
     sntypes,
     nb_classes,
     return_fig=False,
-    absolute=False
+    absolute=False,
 ):
 
     has_peak = "peak" in d_pred[next(iter(d_pred.keys()))].keys()
@@ -1476,7 +1476,6 @@ def plot_predictions(
         ax.set_xlabel("Time (MJD)")
         ax.set_ylabel("Delta peak")
 
-
     if has_peak and absolute is True:
 
         ax = plt.subplot(gs[2])
@@ -1485,13 +1484,21 @@ def plot_predictions(
         # predicted
         for key in d_pred.keys():
 
-            ax.plot(arr_time, d_pred[key]["peak"], color=color, linestyle=linestyle, label=f"All curve: {d_pred[key]['peak'][-1]:.3f}")
+            ax.plot(
+                arr_time,
+                d_pred[key]["peak"],
+                color=color,
+                linestyle=linestyle,
+                label=f"All curve: {d_pred[key]['peak'][-1]:.3f}",
+            )
             ax.legend()
 
         # Add PEAKMJD
         xlim = ax.get_xlim()
         if xlim[0] < peak_MJD and peak_MJD < xlim[-1]:
-            ax.plot([peak_MJD, peak_MJD], ylim, "k--", label=f"Peak MJD: {peak_MJD:.3f}")
+            ax.plot(
+                [peak_MJD, peak_MJD], ylim, "k--", label=f"Peak MJD: {peak_MJD:.3f}"
+            )
             ax.legend()
 
         ax.set_xlabel("Time (MJD)")
@@ -1517,14 +1524,13 @@ def make_early_prediction(
     sntypes,
     nb_lcs=1,
     return_fig=False,
-    absolute=False
+    absolute=False,
 ):
 
     if absolute is True:
         print()
         print("WARNING")
         print("Plotting absolute PEAK MJD pred")
-
 
     list_figs = []
     with torch.no_grad():
@@ -1640,7 +1646,7 @@ def make_early_prediction(
                 sntypes,
                 config["nb_classes"],
                 return_fig=return_fig,
-                absolute=absolute
+                absolute=absolute,
             )
 
             list_figs.append(fig)

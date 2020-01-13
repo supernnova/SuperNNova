@@ -38,7 +38,6 @@ from constants import (
 )
 
 
-
 def find_idx(array, value):
 
     idx = np.searchsorted(array, value, side="left")
@@ -90,7 +89,6 @@ def forward_pass(model, data, num_batches, return_preds=False):
     last_peak_preds = torch.gather(
         X_pred_peak, 1, (last_time_length).view(-1, 1)
     ).squeeze(-1)
-
 
     # peak prediction loss
     # TODO change
@@ -314,7 +312,7 @@ def train(config):
             SNTYPES,
             nb_lcs=9,
             return_fig=True,
-            absolute=True
+            absolute=True,
         )
         for idx, fig in enumerate(figs):
             writer.add_figure(f"Lightcurves/{idx}", fig, batch)
