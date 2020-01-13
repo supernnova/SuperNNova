@@ -1461,6 +1461,8 @@ def plot_predictions(
             ax.plot(arr_time, residuals, color=color, linestyle=linestyle)
 
         # Add PEAKMJD
+        ylim = (residuals.min(), residuals.max())
+        ax.set_ylim(ylim)
         xlim = ax.get_xlim()
         if xlim[0] < peak_MJD and peak_MJD < xlim[-1]:
             ax.plot([peak_MJD, peak_MJD], ylim, "k--", label="Peak MJD")
