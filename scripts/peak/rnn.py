@@ -85,10 +85,16 @@ def forward_pass(model, data, num_batches, return_preds=False):
 
     d_losses = {}
 
+    last_time_length = data["X_mask"].sum(1) - 1
+    last_peak_preds = torch.gather(
+        X_pred_peak, 1, (last_time_length).view(-1, 1)
+    ).squeeze(-1)
+
     # peak prediction loss
     # TODO change
     # d_losses["peak_loss"] = get_mse_loss(X_pred_peak, X_target_peak, X_mask)
     d_losses["peak_loss"] = get_mse_loss(X_pred_peak, X_target_peak_single, X_mask)
+    # d_losses["peak_loss"] = get_mse_loss(last_peak_preds, X_target_peak_single[:, 0], torch.ones_like(last_peak_preds))
     # classification loss
     d_losses["clf_loss"] = get_cross_entropy_loss(X_pred_class, X_target_class)
     # Accuracy metric
@@ -306,6 +312,7 @@ def train(config):
             SNTYPES,
             nb_lcs=9,
             return_fig=True,
+            absolute=True,
         )
         for idx, fig in enumerate(figs):
             writer.add_figure(f"Lightcurves/{idx}", fig, batch)

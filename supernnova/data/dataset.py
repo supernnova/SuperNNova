@@ -226,9 +226,7 @@ class HDF5Dataset:
                         X_target_peak_single_tmp[i] - X[start:end, time_idxs].cumsum()
                     )
                     # adding a single value target
-                    X_target_peak_single[i, :length, 0] = (
-                        X_target_peak_single_tmp[i]
-                    )
+                    X_target_peak_single[i, :length, 0] = X_target_peak_single_tmp[i]
                     X_flt[i, :length] = X[start:end, flt_idxs]
 
                 arr_lengths = np.array(list_lengths)
@@ -243,7 +241,9 @@ class HDF5Dataset:
                     "X_flt": torch.from_numpy(X_flt).to(device),
                     "X_target_class": torch.from_numpy(X_target_class).to(device),
                     "X_target_peak": torch.from_numpy(X_target_peak).to(device),
-                    "X_target_peak_single": torch.from_numpy(X_target_peak_single).to(device),
+                    "X_target_peak_single": torch.from_numpy(X_target_peak_single).to(
+                        device
+                    ),
                     "X_mask": torch.from_numpy(X_mask).to(device),
                     "X_SNID": X_SNID,
                 }

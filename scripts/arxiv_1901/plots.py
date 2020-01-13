@@ -1657,7 +1657,7 @@ def make_early_prediction(
                     )["X_pred_class"]
                     X_pred = torch.nn.functional.softmax(X_pred, dim=1).cpu().numpy()
                     tmp_list.append(X_pred)
-                preds_all_inf_samples = np.concatenate(tmp_list,0)
+                preds_all_inf_samples = np.concatenate(tmp_list, 0)
                 d_pred["model"]["prob"].append(preds_all_inf_samples)
 
             # Stack

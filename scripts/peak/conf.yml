@@ -21,6 +21,8 @@ dataset: photometry
 overwrite: True
 random_length: False
 
+clf_weight: 0.
+
 module: peak_rnn
 model:
   input_size: 11
