@@ -232,7 +232,11 @@ def train(config):
         d_losses_train = defaultdict(list)
 
         for data in dataset.create_iterator(
-            "train", config["batch_size"], device, tqdm_desc=desc
+            "train",
+            config["batch_size"],
+            device,
+            tqdm_desc=desc,
+            random_length=config.get("random_length", False),
         ):
 
             model.train()

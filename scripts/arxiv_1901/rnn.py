@@ -49,6 +49,7 @@ def find_idx(array, value):
 
     return min(idx, len(array))
 
+
 def get_mse_loss(pred, target, mask):
 
     return ((pred - target).pow(2) * mask).sum() / mask.sum()
@@ -62,7 +63,6 @@ def get_cross_entropy_loss(pred, target):
 def get_accuracy_loss(pred, target):
 
     return (target == pred.argmax(1)).sum().float() / pred.shape[0]
-
 
 
 def forward_pass(model, data, num_batches, return_preds=False):
@@ -99,6 +99,7 @@ def forward_pass(model, data, num_batches, return_preds=False):
 
     return d_losses
 
+
 def eval_pass(model, data_iterator, n_batches):
 
     d_losses = defaultdict(list)
@@ -113,8 +114,6 @@ def eval_pass(model, data_iterator, n_batches):
                 d_losses[key].append(val.item())
 
     return d_losses
-
-
 
 
 def load_model(config, device, weights_file=None):
@@ -233,7 +232,7 @@ def train(config):
         desc = f"Epoch: {epoch} -- {loss_str}"
 
         d_losses_train = defaultdict(list)
-        
+
         for data in dataset.create_iterator(
             "train", config["batch_size"], device, tqdm_desc=desc
         ):
@@ -243,10 +242,9 @@ def train(config):
             # Train step : forward backward pass
             losses_train = forward_pass(model, data, n_train_batches)
 
-            loss = (
-                losses_train["clf_loss"] * config.get("clf_weight", 1.0)
-                + losses_train.get("kl", 0.0)
-            )
+            loss = losses_train["clf_loss"] * config.get(
+                "clf_weight", 1.0
+            ) + losses_train.get("kl", 0.0)
 
             for key, val in losses_train.items():
                 d_losses_train[key].append(val.item())
@@ -320,7 +318,6 @@ def train(config):
             break
 
 
-
 def get_predictions(dump_dir):
 
     config = yaml.load(open(Path(dump_dir) / "cf.yml", "r"), Loader=yaml.FullLoader)
@@ -381,7 +378,9 @@ def get_predictions(dump_dir):
         #############################
         for iter_ in range(nb_inference_samples):
 
-            X_pred, X_target, _ = forward_pass(model, data, n_test_batches, return_preds=True)
+            X_pred, X_target, _ = forward_pass(
+                model, data, n_test_batches, return_preds=True
+            )
             arr_preds, arr_target = X_pred.cpu().numpy(), X_target.cpu().numpy()
 
             d_pred["all"][start_idx:end_idx, iter_] = arr_preds
@@ -421,7 +420,9 @@ def get_predictions(dump_dir):
 
                 for iter_ in range(nb_inference_samples):
 
-                    X_pred, X_target, _ = forward_pass(model, data_tmp, n_test_batches, return_preds=True)
+                    X_pred, X_target, _ = forward_pass(
+                        model, data_tmp, n_test_batches, return_preds=True
+                    )
                     arr_preds, arr_target = X_pred.cpu().numpy(), X_target.cpu().numpy()
 
                     suffix = str(offset) if offset != 0 else ""
