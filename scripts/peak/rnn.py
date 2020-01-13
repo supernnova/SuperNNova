@@ -71,6 +71,7 @@ def forward_pass(model, data, num_batches, return_preds=False):
 
     X_target_class = data["X_target_class"]
     X_target_peak = data["X_target_peak"].squeeze(-1)
+    X_target_peak_single = data["X_target_peak_single"].squeeze(-1)
 
     outs = model(X_flux, X_fluxerr, X_flt, X_time, X_mask, x_meta=X_meta)
 
@@ -78,12 +79,14 @@ def forward_pass(model, data, num_batches, return_preds=False):
     X_pred_peak = outs.get("X_pred_peak", None)
 
     if return_preds:
-        return X_pred_class, X_target_class, X_pred_peak, X_target_peak
+        # return X_pred_class, X_target_class, X_pred_peak, X_target_peak
+        return X_pred_class, X_target_class, X_pred_peak, X_target_peak_single
 
     d_losses = {}
 
     # peak prediction loss
-    d_losses["peak_loss"] = get_mse_loss(X_pred_peak, X_target_peak, X_mask)
+    # d_losses["peak_loss"] = get_mse_loss(X_pred_peak, X_target_peak, X_mask)
+    d_losses["peak_loss"] = get_mse_loss(X_pred_peak, X_target_peak_single, X_mask)
     # classification loss
     d_losses["clf_loss"] = get_cross_entropy_loss(X_pred_class, X_target_class)
     # Accuracy metric
@@ -437,6 +440,7 @@ def get_predictions(dump_dir):
                     "X_flt",
                     "X_mask",
                     "X_target_peak",
+                    "X_target_peak_single",
                 ]:
                     data_tmp[key] = data_tmp[key][:, :max_length]
 
@@ -452,6 +456,7 @@ def get_predictions(dump_dir):
                         "X_flt",
                         "X_mask",
                         "X_target_peak",
+                        "X_target_peak_single",
                     ]:
                         if key == "X_mask":
                             data_tmp[key][idx, length:] = False

@@ -170,7 +170,7 @@ class HDF5Dataset:
                 tmp_X = arr_data[idxs]
                 X_SNID = arr_SNID[idxs]
                 X_target_class = arr_target_class[idxs]
-                X_target_peak_single = arr_target_peak[idxs]
+                X_target_peak_single_tmp = arr_target_peak[idxs]
                 X_meta = arr_meta[idxs] if has_meta else None
 
                 list_lengths = [X.shape[0] // n_features for X in tmp_X]
@@ -198,6 +198,7 @@ class HDF5Dataset:
                 X_time = np.zeros((B, L, 1), dtype=np.float32)
                 X_flt = np.zeros((B, L), dtype=np.int64)
                 X_target_peak = np.zeros((B, L, 1), dtype=np.float32)
+                X_target_peak_single = np.zeros((B, L, 1), dtype=np.float32)
 
                 for i in range(B):
 
@@ -215,7 +216,11 @@ class HDF5Dataset:
                     X_time[i, :length, 0] = X[start:end, time_idxs]
                     # target peak is the delta(peak-time)
                     X_target_peak[i, :length, 0] = (
-                        X_target_peak_single[i] - X[start:end, time_idxs].cumsum()
+                        X_target_peak_single_tmp[i] - X[start:end, time_idxs].cumsum()
+                    )
+                    # adding a single value target
+                    X_target_peak_single[i, :length, 0] = (
+                        X_target_peak_single_tmp[i]
                     )
                     X_flt[i, :length] = X[start:end, flt_idxs]
 
