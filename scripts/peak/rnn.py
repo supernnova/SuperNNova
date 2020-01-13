@@ -79,12 +79,14 @@ def forward_pass(model, data, num_batches, return_preds=False):
     X_pred_peak = outs.get("X_pred_peak", None)
 
     if return_preds:
+        # TODO change
         # return X_pred_class, X_target_class, X_pred_peak, X_target_peak
         return X_pred_class, X_target_class, X_pred_peak, X_target_peak_single
 
     d_losses = {}
 
     # peak prediction loss
+    # TODO change
     # d_losses["peak_loss"] = get_mse_loss(X_pred_peak, X_target_peak, X_mask)
     d_losses["peak_loss"] = get_mse_loss(X_pred_peak, X_target_peak_single, X_mask)
     # classification loss
