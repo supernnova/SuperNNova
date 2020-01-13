@@ -1644,18 +1644,22 @@ def make_early_prediction(
 
             seq_len = X_mask.squeeze(0).long().sum().item()
             d_pred = {"model": {"prob": []}}
-            for i in range(1, seq_len + 1):
 
-                X_pred = model(
-                    X_flux[:, :i],
-                    X_fluxerr[:, :i],
-                    X_flt[:, :i],
-                    X_time[:, :i],
-                    X_mask[:, :i],
-                    x_meta=X_meta,
-                )["X_pred_class"]
-                X_pred = torch.nn.functional.softmax(X_pred, dim=1).cpu().numpy()
-                d_pred["model"]["prob"].append(X_pred)
+            for i in range(1, seq_len + 1):
+                tmp_list = []
+                for f in range(config["nb_inference_samples"]):
+                    X_pred = model(
+                        X_flux[:, :i],
+                        X_fluxerr[:, :i],
+                        X_flt[:, :i],
+                        X_time[:, :i],
+                        X_mask[:, :i],
+                        x_meta=X_meta,
+                    )["X_pred_class"]
+                    X_pred = torch.nn.functional.softmax(X_pred, dim=1).cpu().numpy()
+                    tmp_list.append(X_pred)
+                preds_all_inf_samples = np.concatenate(tmp_list,0)
+                d_pred["model"]["prob"].append(preds_all_inf_samples)
 
             # Stack
             for key in ["model"]:
