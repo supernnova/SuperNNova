@@ -80,8 +80,8 @@ def forward_pass(model, data, num_batches, return_preds=False):
 
     if return_preds:
         # TODO change
-        return X_pred_class, X_target_class, X_pred_peak, X_target_peak
-        # return X_pred_class, X_target_class, X_pred_peak, X_target_peak_single
+        # return X_pred_class, X_target_class, X_pred_peak, X_target_peak
+        return X_pred_class, X_target_class, X_pred_peak, X_target_peak_single
 
     d_losses = {}
 
@@ -92,9 +92,11 @@ def forward_pass(model, data, num_batches, return_preds=False):
 
     # peak prediction loss
     # TODO change
-    d_losses["peak_loss"] = get_mse_loss(X_pred_peak, X_target_peak, X_mask)
+    # d_losses["peak_loss"] = get_mse_loss(X_pred_peak, X_target_peak, X_mask)
     # d_losses["peak_loss"] = get_mse_loss(X_pred_peak, X_target_peak_single, X_mask)
-    # d_losses["peak_loss"] = get_mse_loss(last_peak_preds, X_target_peak_single[:, 0], torch.ones_like(last_peak_preds))
+    d_losses["peak_loss"] = get_mse_loss(
+        last_peak_preds, X_target_peak_single[:, 0], torch.ones_like(last_peak_preds)
+    )
     # classification loss
     d_losses["clf_loss"] = get_cross_entropy_loss(X_pred_class, X_target_class)
     # Accuracy metric
@@ -300,6 +302,14 @@ def train(config):
         save_prefix = f"{config['dump_dir']}/loss"
         tu.plot_loss(d_monitor_train, d_monitor_val, save_prefix)
 
+        # Show scatter plot of predictions vs true
+        data_iterator = dataset.create_iterator("test", 512, device, tqdm_desc=None)
+        fig = plots.plot_peak_predictions(model, config, data_iterator)
+        writer.add_figure(f"A/Results/scatter", fig, batch)
+        plt.close(fig)
+        plt.clf()
+        plt.close("all")
+
         # Make some lightcurve plots to check predictions
         data_iterator = dataset.create_iterator("test", 1, device, tqdm_desc=None)
         figs = plots.make_early_prediction(
@@ -312,10 +322,10 @@ def train(config):
             SNTYPES,
             nb_lcs=9,
             return_fig=True,
-            absolute=False,
+            absolute=True,
         )
         for idx, fig in enumerate(figs):
-            writer.add_figure(f"Lightcurves/{idx}", fig, batch)
+            writer.add_figure(f"B/Lightcurves/{idx}", fig, batch)
             plt.close(fig)
         plt.clf()
         plt.close("all")

@@ -1660,3 +1660,57 @@ def make_early_prediction(
 
     if return_fig:
         return list_figs
+
+
+def plot_peak_predictions(model, config, data_iterator):
+
+    list_truth = []
+    list_preds = []
+
+    model.eval()
+
+    with torch.no_grad():
+
+        for data in data_iterator:
+
+            X_flux = data["X_flux"]
+            X_fluxerr = data["X_fluxerr"]
+            X_flt = data["X_flt"]
+            X_time = data["X_time"]
+            X_mask = data["X_mask"]
+            X_meta = data.get("X_meta", None)
+            X_target_peak_single = data["X_target_peak_single"]
+
+            outs = model(X_flux, X_fluxerr, X_flt, X_time, X_mask, x_meta=X_meta)
+            X_pred_peak = outs.get("X_pred_peak", None)
+
+            if X_pred_peak is None:
+                return
+
+            last_time_length = data["X_mask"].sum(1) - 1
+            last_peak_preds = torch.gather(
+                X_pred_peak, 1, (last_time_length).view(-1, 1)
+            ).squeeze(-1)
+            true_peak = torch.gather(
+                X_target_peak_single.squeeze(-1), 1, (last_time_length).view(-1, 1)
+            ).squeeze(-1)
+
+            list_truth += true_peak.view(-1).detach().cpu().numpy().tolist()
+            list_preds += last_peak_preds.view(-1).detach().cpu().numpy().tolist()
+
+    fig = plt.figure(figsize=(9, 9))
+    plt.plot(
+        [min(list_truth), max(list_truth)],
+        [min(list_preds), max(list_preds)],
+        linestyle="--",
+        color="k",
+        label="Perfect pred",
+    )
+    plt.scatter(list_truth, list_preds)
+    plt.xlabel("True Peak MJD")
+    plt.ylabel("Pred Peak MJD")
+    plt.legend()
+
+    model.train()
+
+    return fig

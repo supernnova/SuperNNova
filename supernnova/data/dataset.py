@@ -60,11 +60,16 @@ class HDF5Dataset:
 
             if self.SNID_train is None:
 
+                print("WARNING SELECTING SIM_REDSHIFT_CMB < 0.4")
+
                 # selection
                 # TODO change, this cant be hardcoded
-                df_meta = df_meta[df_meta['SIM_REDSHIFT_CMB']<0.4]
+                df_meta = df_meta[df_meta["SIM_REDSHIFT_CMB"] < 0.4]
 
-                df_meta = df_meta[(df_meta["SNTYPE"] == 101) | (df_meta["SNTYPE"] == 120.)]
+                print("WARNING SELECTING SNTYPE in [101, 120]")
+                df_meta = df_meta[
+                    (df_meta["SNTYPE"] == 101) | (df_meta["SNTYPE"] == 120.0)
+                ]
 
                 # Subsample with data fraction
                 n_samples = int(data_fraction * len(df_meta))
@@ -73,8 +78,7 @@ class HDF5Dataset:
 
                 n_samples = len(df_meta)
 
-                print("WARNING NO DOWNSAMPLING")
-                print("WARNING NO DOWNSAMPLING")
+                print("WARNING NO CLASS BALANCING")
                 # # Pandas magic to downample each class down to lowest cardinality class
                 # df_meta = df_meta.groupby("target")
                 # df_meta = (
