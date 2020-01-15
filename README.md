@@ -1,5 +1,6 @@
 [![Paper DOI](https://img.shields.io/badge/Paper%20DOI-10.1093%2Fmnras%2Fstz3312-green)](https://doi.org/10.1093/mnras/stz3312) 
 [![arXiv](https://img.shields.io/badge/arxiv-astro--ph%2F1901.06384-red)](https://arxiv.org/abs/1901.06384) 
+[![Data DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3265189.svg)](https://doi.org/10.5281/zenodo.3265189)
 
 ![Logo](docs/SuperNNova.png)
 
@@ -24,17 +25,10 @@ pip install supernnova
 
 ### Read the paper 
 
-[Paper in MNRAS](https://academic.oup.com/mnras/article-abstract/491/3/4277/5651173)
+Links to the publication: [MNRAS](https://academic.oup.com/mnras/article-abstract/491/3/4277/5651173),[ArXiv](https://arxiv.org/abs/1901.06384). All results quoted in these publications were produced using the branch "paper" which is frozen for reproducibility.
 
-[Paper in ArXiv](https://arxiv.org/abs/1901.06384)
-The paper was produced using the branch "paper".
-
-Please include the full citation if you use this material in your research: 
-
-[A Möller and T de Boissière
-Monthly Notices of the Royal Astronomical Society, Volume 491, Issue 3, January 2020, Pages 4277–4293.](https://academic.oup.com/mnras/article-abstract/491/3/4277/5651173).
-
-[![Data DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3265189.svg)](https://doi.org/10.5281/zenodo.3265189)
+Please include the full citation if you use this material in your research: [A Möller and T de Boissière,
+MNRAS, Volume 491, Issue 3, January 2020, Pages 4277–4293.](https://academic.oup.com/mnras/article-abstract/491/3/4277/5651173)
 
 
 ## Table of contents
