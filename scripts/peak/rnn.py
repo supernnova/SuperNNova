@@ -442,6 +442,9 @@ def get_predictions(dump_dir):
             lengths = [
                 find_idx(times[k], peak_MJDs[k] + offset) for k in range(batch_size)
             ]
+            # because all lightcurves are padded, length could be larger than lightcurve size
+            # fix this
+            lengths = [min(lengths[k], data["X_mask"][k].sum().item()) for k in range(batch_size)]
             # Split in 2 arrays:
             # oob_idxs: the slice for early prediction is empty for those indices
             # inb_idxs: the slice is not empty
