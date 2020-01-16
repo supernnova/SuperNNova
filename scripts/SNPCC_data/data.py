@@ -44,8 +44,12 @@ def process_phot_file(file_path, preprocessed_dir, list_filters):
             if len(words) > 1 and len(words[1]) > 1:
                 # formatting
                 val = re.findall(r'\S+', words[1])[0]
-                df_header[words[0].strip(" ")] = [float(val) if re.match(
-                    r'^-?\d+(?:\.\d+)?$', val) is not None else str(val)]
+                ss = re.search(r"SIM\_COMMENT\:[ ]+SN[ ]+Type[ ]+\=[ ]+(\w+)[ ]+(?=\,)",line)
+                if ss is not None:
+                    df_header['SNTYPE'] = [0 if ss.group(1)=='Ia' else 1]
+                elif words[0].strip(" ")!='SNTYPE':
+                    df_header[words[0].strip(" ")] = [float(val) if re.match(
+                        r'^-?\d+(?:\.\d+)?$', val) is not None else str(val)]
             if 'NOBS:' in line:
                 break
     # some reformatting
@@ -82,7 +86,6 @@ def process_phot_file(file_path, preprocessed_dir, list_filters):
     df_header = df_header.set_index("SNID")
     # join df and header
     df = df_phot.join(df_header).reset_index()
-
     #############################################
     # Miscellaneous data processing
     #############################################
@@ -123,7 +126,7 @@ def preprocess_data(config):
     # Get the list of FITS files
     list_files = natsorted(map(str, Path(raw_dir).glob(f"*.{raw_format}*")))
     #TODO: CHANGE!
-    list_files = list_files[:200]
+    # list_files = list_files[:200]
 
     process_fn = partial(
         process_phot_file, preprocessed_dir=preprocessed_dir, list_filters=LIST_FILTERS
@@ -137,7 +140,6 @@ def preprocess_data(config):
     for idx in tqdm(range(0, n_files, chunk_size), desc="Preprocess", ncols=100):
         # Process each file in the chunk in parallel
         host_spe_tmp += pool.map(process_fn, list_files[idx: idx + chunk_size])
-    # process_phot_file(list_files[0],preprocessed_dir=preprocessed_dir, list_filters=LIST_FILTERS)
     host_spe = [item for sublist in host_spe_tmp for item in sublist]
     pd.DataFrame(host_spe, columns=["SNID"]).to_pickle(
         f"{processed_dir}/hostspe_SNID.pickle"
