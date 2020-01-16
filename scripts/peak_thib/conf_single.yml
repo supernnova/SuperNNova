@@ -1,0 +1,38 @@
+raw_dir: /u/home/SuperNNova/raw
+preprocessed_dir: /u/home/SuperNNova/dump/preprocessed
+processed_dir: /u/home/SuperNNova/dump/processed
+fitopt_file: /u/home/SuperNNova/raw/FITOPT000.FITRES
+fig_dir: /u/home/SuperNNova/dump/figures
+dump_dir: /u/home/SuperNNova/dump/rnn/vanilla_000
+
+nb_epoch: 200
+nb_inference_samples: 1
+batch_size: 4
+batch_size_test: 4
+learning_rate: 3.0E-4
+min_lr: 1.0E-5
+lr_factor: 0.9999999
+patience: 1
+data_fraction: 1
+nb_classes: &nb_classes 2
+raw_format: FITS
+seed: 42
+dataset: photometry
+overwrite: True
+random_length: False
+
+clf_weight: 0.
+
+module: peak_rnn
+model:
+  input_size: 11
+  hidden_size: 16
+  output_size: *nb_classes
+  num_layers: 2
+  dropout: 0
+  embedding_dim: 16
+  normalize: False
+
+metadata_features:
+  - HOSTGAL_PHOTOZ
+  - HOSTGAL_PHOTOZ_ERR
