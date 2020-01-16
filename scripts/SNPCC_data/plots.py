@@ -1587,9 +1587,10 @@ def plot_predictions(
     if return_fig:
         return fig
 
+    path_plots = Path(config["dump_dir"]) / f"lightcurves"
+    os.makedirs(path_plots,exist_ok=True)
     plt.savefig(
-        Path(config["dump_dir"])
-        / f"lightcurve_{SNID}_class_{SNtype.replace(' ', '_').replace('|', '-')}.png"
+        f"{path_plots}/{SNID}_class_{SNtype.replace(' ', '_').replace('|', '-')}.png"
     )
     plt.clf()
     plt.close()
