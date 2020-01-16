@@ -79,6 +79,8 @@ def forward_pass(model, data, num_batches, return_preds=False):
     outs = model(X_flux, X_fluxerr, X_flt, X_time, X_mask, x_meta=X_meta)
 
     X_pred_class = outs.get("X_pred_class", None)
+    # apply softmax
+    X_pred_class = nn.functional.softmax(X_pred_class, dim=-1).data
 
     if return_preds:
         return X_pred_class, X_target_class
@@ -205,7 +207,6 @@ def get_predictions(model_dir, pred_dir, dataset_path):
                 model, data, n_test_batches, return_preds=True
             )
             arr_preds, arr_target = X_pred.cpu().numpy(), X_target.cpu().numpy()
-
             d_pred["all"][start_idx:end_idx, iter_] = arr_preds
             d_pred["target"][start_idx:end_idx, iter_] = arr_target
             d_pred["SNID"][start_idx:end_idx, iter_] = SNIDs
@@ -217,12 +218,14 @@ def get_predictions(model_dir, pred_dir, dataset_path):
             lengths = [
                 find_idx(times[k], peak_MJDs[k] + offset) for k in range(batch_size)
             ]
+            # because all lightcurves are padded, length could be larger than lightcurve size
+            # fix this
+            lengths = [min(lengths[k], data["X_mask"][k].sum().item()) for k in range(batch_size)]
             # Split in 2 arrays:
             # oob_idxs: the slice for early prediction is empty for those indices
             # inb_idxs: the slice is not empty
             oob_idxs = np.where(np.array(lengths) < 1)[0]
             inb_idxs = np.where(np.array(lengths) >= 1)[0]
-
             if len(inb_idxs) > 0:
                 data_tmp = deepcopy(data)
                 max_length = max(lengths)
@@ -241,23 +244,22 @@ def get_predictions(model_dir, pred_dir, dataset_path):
                         else:
                             data_tmp[key][idx, length:] = 0
 
-                # for iter_ in range(nb_inference_samples):
+                for iter_ in range(nb_inference_samples):
 
-                    # import ipdb; ipdb.set_trace()
-                    # X_pred, X_target = forward_pass(
-                    #     model, data_tmp, n_test_batches, return_preds=True
-                    # )
-                    # arr_preds, arr_target = X_pred.cpu().numpy(), X_target.cpu().numpy()
+                    X_pred, X_target = forward_pass(
+                        model, data_tmp, n_test_batches, return_preds=True
+                    )
+                    arr_preds, arr_target = X_pred.cpu().numpy(), X_target.cpu().numpy()
 
-                    # suffix = str(offset) if offset != 0 else ""
-                    # suffix = f"+{suffix}" if offset > 0 else suffix
-                    # col = f"PEAKMJD{suffix}"
+                    suffix = str(offset) if offset != 0 else ""
+                    suffix = f"+{suffix}" if offset > 0 else suffix
+                    col = f"PEAKMJD{suffix}"
 
-                    # d_pred[col][start_idx + inb_idxs, iter_] = arr_preds[inb_idxs]
-                    # # For oob_idxs, no prediction can be made, fill with nan
-                    # d_pred[col][start_idx + oob_idxs, iter_] = np.nan
+                    d_pred[col][start_idx + inb_idxs, iter_] = arr_preds[inb_idxs]
+                    # For oob_idxs, no prediction can be made, fill with nan
+                    d_pred[col][start_idx + oob_idxs, iter_] = np.nan
 
-        # start_idx = end_idx
+        start_idx = end_idx
 
     # Flatten all arrays and aggregate in dataframe
     d_series = {}
@@ -288,18 +290,18 @@ def get_predictions(model_dir, pred_dir, dataset_path):
     acc = (preds == g_pred.target.values).sum() / len(g_pred)
 
     # Display accuracy
-    lu.print_green(f"Accuracy ({nb_inference_samples} inference samples)", acc)
-    for col in [f"PEAKMJD{s}" for s in OFFSETS_STR]:
+    # lu.print_green(f"Accuracy ({nb_inference_samples} inference samples)", acc)
+    # for col in [f"PEAKMJD{s}" for s in OFFSETS_STR]:
 
-        preds_target = g_pred[
-            [f"{col}_class{i}" for i in range(nb_classes)] + ["target"]
-        ].dropna()
-        preds = preds_target[[f"{col}_class{i}" for i in range(nb_classes)]].values
-        target = preds_target["target"].values
-        preds = np.argmax(preds, 1)
-        acc = (preds == target).sum() / len(g_pred)
+    #     preds_target = g_pred[
+    #         [f"{col}_class{i}" for i in range(nb_classes)] + ["target"]
+    #     ].dropna()
+    #     preds = preds_target[[f"{col}_class{i}" for i in range(nb_classes)]].values
+    #     target = preds_target["target"].values
+    #     preds = np.argmax(preds, 1)
+    #     acc = (preds == target).sum() / len(g_pred)
 
-        lu.print_green(f"{col} Accuracy", acc)
+    #     lu.print_green(f"{col} Accuracy", acc)
 
     class_col = [f"all_class{i}" for i in range(nb_classes)]
     tmp = df_pred[["SNID", "target"] + class_col].groupby("SNID").mean()
@@ -385,7 +387,7 @@ def get_plots(model_dir, pred_dir, dataset_path):
 
     config["dump_dir"] = pred_dir
 
-    plots.make_early_prediction(dataset_path,model, config, data_iterator, LIST_FILTERS, INVERSE_FILTER_DICT, device, SNTYPES
+    plots.make_early_prediction(dataset_path,model, config, data_iterator, LIST_FILTERS, INVERSE_FILTER_DICT, device, SNTYPES, nb_lcs = 10
                                 )
 
 
