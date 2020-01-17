@@ -72,7 +72,7 @@ def build_traintestval_splits(settings):
 
     # Load df_photo
     df_photo = pd.concat(list_df)
-    df_photo["SNID"] = df_photo["SNID"].astype(int)
+    df_photo["SNID"] = df_photo["SNID"].astype(str)
 
     # load FITOPT file on which we will base our splits
     df_salt = data_utils.load_fitfile(settings)
@@ -304,7 +304,7 @@ def process_single_FITS(file_path, settings):
     # check if keys are in header
     keep_col_header = [k for k in keep_col_header if k in df_header.keys()]
     df_header = df_header[keep_col_header].copy()
-    df_header["SNID"] = df_header["SNID"].astype(np.int32)
+    df_header["SNID"] = df_header["SNID"].astype(str)
 
     #############################################
     # Photometry window init
@@ -318,7 +318,7 @@ def process_single_FITS(file_path, settings):
                 delimiter=" ",
                 skipinitialspace=True,
             )
-            df_peak["SNID"] = df_peak["CID"].astype(int)
+            df_peak["SNID"] = df_peak["CID"].astype(str)
             try:
                 df_peak = df_peak[["SNID", settings.photo_window_var]]
             except Exception:
@@ -342,6 +342,7 @@ def process_single_FITS(file_path, settings):
         # index starts at zero
         arr_ID[start:end] = df_header.SNID.iloc[counter - 1]
     df["SNID"] = arr_ID
+    df['SNID'] = df['SNID'].astype(str)
     df = df.set_index("SNID")
     df_header = df_header.set_index("SNID")
     # join df and header
@@ -444,7 +445,7 @@ def process_single_csv(file_path, settings):
     # check if keys are in header
     keep_col_header = [k for k in keep_col_header if k in df_header.keys()]
     df_header = df_header[keep_col_header].copy()
-    df_header["SNID"] = df_header["SNID"].astype(np.int32)
+    df_header["SNID"] = df_header["SNID"].astype(str)
     df_header = df_header.set_index("SNID")
     df = df.join(df_header).reset_index()
 
