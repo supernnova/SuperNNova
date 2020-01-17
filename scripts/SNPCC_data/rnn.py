@@ -75,7 +75,6 @@ def forward_pass(model, data, num_batches, return_preds=False):
     X_meta = data.get("X_meta", None)
 
     X_target_class = data["X_target_class"]
-
     outs = model(X_flux, X_fluxerr, X_flt, X_time, X_mask, x_meta=X_meta)
 
     X_pred_class = outs.get("X_pred_class", None)
@@ -158,7 +157,6 @@ def train(config):
 
     # Data
     dataset = load_dataset(config)
-
     # Model specification
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = load_model(config, device)
@@ -185,7 +183,6 @@ def train(config):
             model.flux_norm.data = flux_norm
             model.fluxerr_norm.data = fluxerr_norm
             model.delta_time_norm.data = delta_time_norm
-
     print(model)
 
     loss_str = ""
@@ -288,6 +285,7 @@ def train(config):
         # Make some lightcurve plots to check predictions
         data_iterator = dataset.create_iterator("test", 1, device, tqdm_desc=None)
         figs = plots.make_early_prediction(
+            config['processed_dir'],
             model,
             config,
             data_iterator,
@@ -394,6 +392,9 @@ def get_predictions(dump_dir):
             lengths = [
                 find_idx(times[k], peak_MJDs[k] + offset) for k in range(batch_size)
             ]
+            # because all lightcurves are padded, length could be larger than lightcurve size
+            # fix this
+            lengths = [min(lengths[k], data["X_mask"][k].sum().item()) for k in range(batch_size)]
             # Split in 2 arrays:
             # oob_idxs: the slice for early prediction is empty for those indices
             # inb_idxs: the slice is not empty
@@ -565,7 +566,7 @@ def get_plots(dump_dir):
     data_iterator = dataset.create_iterator("test", 1, device, tqdm_desc=None)
 
     plots.make_early_prediction(
-        model, config, data_iterator, LIST_FILTERS, INVERSE_FILTER_DICT, device, SNTYPES
+        config['processed_dir'],model, config, data_iterator, LIST_FILTERS, INVERSE_FILTER_DICT, device, SNTYPES
     )
 
 

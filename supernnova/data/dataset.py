@@ -60,16 +60,17 @@ class HDF5Dataset:
 
             if self.SNID_train is None:
 
-                print("WARNING SELECTING SIM_REDSHIFT_CMB < 0.4")
+                # print("MAY CAUSE NO SPLITS!!!!")
+                # print("WARNING SELECTING SIM_REDSHIFT_CMB < 0.4")
 
                 # selection
                 # TODO change, this cant be hardcoded
-                df_meta = df_meta[df_meta["SIM_REDSHIFT_CMB"] < 0.4]
+                # df_meta = df_meta[df_meta["SIM_REDSHIFT_CMB"] < 0.4]
 
-                print("WARNING SELECTING SNTYPE in [101, 120]")
-                df_meta = df_meta[
-                    (df_meta["SNTYPE"] == 101) | (df_meta["SNTYPE"] == 120.0)
-                ]
+                # print("WARNING SELECTING SNTYPE in [101, 120]")
+                # df_meta = df_meta[
+                #     (df_meta["SNTYPE"] == 101) | (df_meta["SNTYPE"] == 120.0)
+                # ]
 
                 # Subsample with data fraction
                 n_samples = int(data_fraction * len(df_meta))
