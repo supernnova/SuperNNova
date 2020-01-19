@@ -64,16 +64,15 @@ def build_traintestval_splits(settings):
         )
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
         list_df = executor.map(process_fn, list_files)
-    # only used for debugging (if parallelization above commented)
+    # only used for debugging    (if parallelization above commented)
     # if fmat == 'FITS':
-    #     list_df = data_utils.process_header_FITS(list_files[0],settings,columns=photo_columns + ["SNTYPE"])
-    # else:
+    #     list_df = data_utils.process_header_FITS(list_files[-1],settings,columns=photo_columns + ["SNTYPE"])
+    # # else:
     #     list_df = data_utils.process_header_csv(list_files[0],settings,columns=photo_columns + ["SNTYPE"])
 
     # Load df_photo
     df_photo = pd.concat(list_df)
     df_photo["SNID"] = df_photo["SNID"].astype(str)
-
     # load FITOPT file on which we will base our splits
     df_salt = data_utils.load_fitfile(settings)
     if len(df_salt) < 1:
@@ -213,46 +212,6 @@ def build_traintestval_splits(settings):
     # Save to pickle
     df.to_pickle(f"{settings.processed_dir}/SNID.pickle")
 
-    # if not settings.data_testing:
-    #     # Save stats for publication
-    #     df_stats = pd.DataFrame(
-    #         np.array(list_stat),
-    #         columns=[
-    #             "dataset",
-    #             "nb_classes",
-    #             "split",
-    #             "total_samples",
-    #             "occurences_per_class",
-    #             "ocurrences_per_SNTYPE",
-    #         ],
-    #     )
-    #     df_stats.to_csv(
-    #         os.path.join(settings.stats_dir, "data_stats.csv"),
-    #         index=False,
-    #     )
-    #     paper_df = pd.DataFrame()
-    #     for dataset in df_stats["dataset"].unique():
-    #         for classes in df_stats["nb_classes"].unique():
-    #             paper_df[f"{dataset} {classes} classes"] = (
-    #                 df_stats[
-    #                     (df_stats["dataset"] == dataset)
-    #                     & (df_stats["nb_classes"] == classes)
-    #                 ]["ocurrences_per_SNTYPE"]
-    #                 .apply(pd.Series)
-    #                 .sum()
-    #             )
-    #     keep_cols = ["saltfit 2 classes", "photometry 2 classes"]
-    #     paper_df["SN"] = np.array([settings.sntypes[str(i)]
-    #                                for i in paper_df.index])
-    #     paper_df.index = paper_df["SN"]
-    #     paper_df = paper_df[keep_cols]
-    #     paper_df = paper_df.sort_index()
-    #     # save to
-    #     with open(
-    #         os.path.join(settings.latex_dir, "data_stats.tex"), "w"
-    #     ) as tf:
-    #         tf.write(paper_df.to_latex())
-
     logging_utils.print_green("Done")
 
 
@@ -286,6 +245,10 @@ def process_single_FITS(file_path, settings):
     # Load the companion HEAD file
     header = Table.read(file_path.replace("PHOT", "HEAD"), format="fits")
     df_header = header.to_pandas()
+    try:
+        df_header['SNID'] = df_header['SNID'].str.decode('utf-8')
+    except Exception:
+        df_header['SNID'] = df_header['SNID'].astype(str)
     # Keep only columns of interest
     keep_col_header = [
         "SNID",
@@ -332,7 +295,7 @@ def process_single_FITS(file_path, settings):
     #############################################
     # Compute SNID for df and join with df_header
     #############################################
-    arr_ID = np.zeros(len(df), dtype=np.int32)
+    arr_ID = np.chararray(len(df), itemsize=15)
     # New light curves are identified by MJD == -777.0
     arr_idx = np.where(df["MJD"].values == -777.0)[0]
     arr_idx = np.hstack((np.array([0]), arr_idx, np.array([len(df)])))
@@ -341,12 +304,12 @@ def process_single_FITS(file_path, settings):
         start, end = arr_idx[counter - 1], arr_idx[counter]
         # index starts at zero
         arr_ID[start:end] = df_header.SNID.iloc[counter - 1]
-    df["SNID"] = arr_ID
-    df['SNID'] = df['SNID'].astype(str)
+    df["SNID"] = arr_ID.astype(str)
     df = df.set_index("SNID")
     df_header = df_header.set_index("SNID")
     # join df and header
     df = df.join(df_header).reset_index()
+
 
     #############################################
     # Photometry window selection
@@ -505,6 +468,7 @@ def preprocess_data(settings):
     if len(list_files) > 0:
         # Parameters of multiprocessing below
         parallel_fn = partial(process_single_FITS, settings=settings)
+        # process_single_FITS(list_files[0],settings)
     else:
         list_files = natsorted(glob.glob(os.path.join(settings.raw_dir, f"*PHOT.csv*")))
         parallel_fn = partial(process_single_csv, settings=settings)
@@ -519,6 +483,7 @@ def preprocess_data(settings):
     num_elem = len(list_files)
     num_chunks = num_elem // 10 + 1
     list_chunks = np.array_split(np.arange(num_elem), num_chunks)
+
     # Loop over chunks of files
     for chunk_idx in tqdm(list_chunks, desc="Preprocess", ncols=100):
         # Process each file in the chunk in parallel

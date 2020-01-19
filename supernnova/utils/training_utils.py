@@ -118,7 +118,7 @@ def fill_data_list(
 
         X_all = arr_data[i].reshape(-1, n_features)
         target = int(arr_target[i])
-        lc = int(arr_SNID[i])
+        lc = str(arr_SNID[i])
 
         # Keep an unnormalized copy of the data (for test and display)
         X_ori = X_all.copy()[:, settings.idx_features]

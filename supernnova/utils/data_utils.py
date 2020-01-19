@@ -210,6 +210,11 @@ def process_header_FITS(file_path, settings, columns=None):
     # Data
     df = load_pandas_from_fit(file_path)
 
+    try:
+        df['SNID'] = df['SNID'].str.decode('utf-8')
+    except Exception:
+        df['SNID'] = df['SNID'].astype(str)
+
     df = tag_type(df, settings, type_column="SNTYPE")
 
     if columns is not None:
@@ -455,7 +460,7 @@ def save_to_HDF5(settings, df):
         start_idxs = [i[0] for i in list_start_end]
         shuffled_ID = ID[start_idxs]
         hf.create_dataset(
-            "SNID", data=shuffled_ID.astype(np.int32), dtype=np.dtype("int32")
+            "SNID", data=shuffled_ID, dtype=h5py.special_dtype(vlen=str)
         )
         df_SNID = pd.DataFrame(shuffled_ID, columns=["SNID"])
         logging_utils.print_green("Saving misc features")
