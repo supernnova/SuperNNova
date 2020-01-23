@@ -307,6 +307,7 @@ def process_single_FITS(file_path, settings):
     df["SNID"] = arr_ID.astype(str)
     df["SNID"] = df["SNID"].str.strip()
     df = df.set_index("SNID")
+    df_header['SNID'] = df_header['SNID'].str.strip()
     df_header = df_header.set_index("SNID")
     # join df and header
     df = df.join(df_header).reset_index()
