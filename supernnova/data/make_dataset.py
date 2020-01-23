@@ -410,6 +410,7 @@ def process_single_csv(file_path, settings):
     keep_col_header = [k for k in keep_col_header if k in df_header.keys()]
     df_header = df_header[keep_col_header].copy()
     df_header["SNID"] = df_header["SNID"].astype(str)
+    df_header["SNID"] = df_header["SNID"].str.strip()
     df_header = df_header.set_index("SNID")
     df = df.join(df_header).reset_index()
 
