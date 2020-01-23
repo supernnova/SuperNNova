@@ -72,14 +72,14 @@ def build_traintestval_splits(settings):
 
     # Load df_photo
     df_photo = pd.concat(list_df)
-    df_photo["SNID"] = df_photo["SNID"].astype(str)
+    df_photo["SNID"] = df_photo["SNID"].astype(str).str.strip()
     # load FITOPT file on which we will base our splits
     df_salt = data_utils.load_fitfile(settings)
     if len(df_salt) < 1:
         # if no fits file we include all lcs
         logging_utils.print_yellow(f"All lcs used for salt and photometry samples")
         df_salt = pd.DataFrame()
-        df_salt["SNID"] = df_photo["SNID"]
+        df_salt["SNID"] = df_photo["SNID"].str.strip()
     df_salt["is_salt"] = 1
 
     # Check all SNID in df_salt are also in df_photo
@@ -305,6 +305,7 @@ def process_single_FITS(file_path, settings):
         # index starts at zero
         arr_ID[start:end] = df_header.SNID.iloc[counter - 1]
     df["SNID"] = arr_ID.astype(str)
+    df["SNID"] = df["SNID"].str.strip()
     df = df.set_index("SNID")
     df_header = df_header.set_index("SNID")
     # join df and header
@@ -347,7 +348,7 @@ def process_single_FITS(file_path, settings):
     #############################################
     df_SNID = pd.read_pickle(f"{settings.processed_dir}/SNID.pickle")
     # Check all SNID in df are in df_SNID
-    assert np.all(np.in1d(df.SNID.values, df_SNID.SNID.values))
+    assert np.all(np.isin(df.SNID.values,df_SNID.SNID.values))
     # Merge left on df: len(df) will not change and will now include
     # relevant columns from df_SNID
     merge_columns = ["SNID"]
