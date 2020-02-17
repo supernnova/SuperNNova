@@ -73,6 +73,7 @@ def build_traintestval_splits(settings):
     # Load df_photo
     df_photo = pd.concat(list_df)
     df_photo["SNID"] = df_photo["SNID"].astype(str).str.strip()
+    df_photo = df_photo.sort_values(by='SNID')
     # load FITOPT file on which we will base our splits
     df_salt = data_utils.load_fitfile(settings)
     if len(df_salt) < 1:
@@ -81,10 +82,9 @@ def build_traintestval_splits(settings):
         df_salt = pd.DataFrame()
         df_salt["SNID"] = df_photo["SNID"].str.strip()
     df_salt["is_salt"] = 1
-
     # Check all SNID in df_salt are also in df_photo
     try:
-        assert np.all(np.in1d(df_salt.SNID.values, df_photo.SNID.values))
+        assert np.all(df_salt.SNID.isin(df_photo.SNID))
     except Exception:
         logging_utils.print_red(
             " BEWARE! This is not the fits file for this photometry "
@@ -135,11 +135,8 @@ def build_traintestval_splits(settings):
                     .reset_index(drop=True)
                     .sample(frac=1)
                 )
-
-            all_SNIDs = df.SNID.values
             sampled_SNIDs = g["SNID"].values
             n_samples = len(sampled_SNIDs)
-
             # Now create train/test/validation indices
             if settings.data_training:
                 SNID_train = sampled_SNIDs[: int(0.99 * n_samples)]
@@ -154,11 +151,10 @@ def build_traintestval_splits(settings):
                 SNID_train = sampled_SNIDs[: int(0.8 * n_samples)]
                 SNID_val = sampled_SNIDs[int(0.8 * n_samples) : int(0.9 * n_samples)]
                 SNID_test = sampled_SNIDs[int(0.9 * n_samples) :]
-
             # Find the indices of our train test val splits
-            idxs_train = np.where(np.in1d(all_SNIDs, SNID_train))[0]
-            idxs_val = np.where(np.in1d(all_SNIDs, SNID_val))[0]
-            idxs_test = np.where(np.in1d(all_SNIDs, SNID_test))[0]
+            idxs_train = np.where(df.SNID.isin(SNID_train))[0]
+            idxs_val = np.where(df.SNID.isin(SNID_val))[0]
+            idxs_test = np.where(df.SNID.isin(SNID_test))[0]
 
             # Create a new column that will state to which data split
             # a given SNID will be assigned
@@ -169,7 +165,6 @@ def build_traintestval_splits(settings):
             arr_dataset[idxs_test] = 2
 
             df[f"dataset_{dataset}_{nb_classes}classes"] = arr_dataset
-
             # Display classes balancing in the dataset, for each split
             logging_utils.print_bright("Dataset composition")
             for split_name, idxs in zip(
@@ -268,6 +263,7 @@ def process_single_FITS(file_path, settings):
     keep_col_header = [k for k in keep_col_header if k in df_header.keys()]
     df_header = df_header[keep_col_header].copy()
     df_header["SNID"] = df_header["SNID"].astype(str).str.strip()
+    df_header = df_header.sort_values(by='SNID')
 
     #############################################
     # Photometry window init
@@ -306,9 +302,9 @@ def process_single_FITS(file_path, settings):
         arr_ID[start:end] = df_header.SNID.iloc[counter - 1]
     df["SNID"] = arr_ID.astype(str)
     df["SNID"] = df["SNID"].str.strip()
-    df = df.set_index("SNID")
+    df = df.set_index("SNID").sort_index()
     df_header['SNID'] = df_header['SNID'].str.strip()
-    df_header = df_header.set_index("SNID")
+    df_header = df_header.set_index("SNID").sort_index()
     # join df and header
     df = df.join(df_header).reset_index()
 
@@ -348,8 +344,9 @@ def process_single_FITS(file_path, settings):
     # Add class and dataset information
     #############################################
     df_SNID = pd.read_pickle(f"{settings.processed_dir}/SNID.pickle")
+    df_SNID = df_SNID.sort_values(by='SNID')
     # Check all SNID in df are in df_SNID
-    assert np.all(np.isin(df.SNID.values,df_SNID.SNID.values))
+    assert np.all(df.SNID.isin(df_SNID.SNID)) 
     # Merge left on df: len(df) will not change and will now include
     # relevant columns from df_SNID
     merge_columns = ["SNID"]
@@ -388,7 +385,7 @@ def process_single_csv(file_path, settings):
     # Keep only columns of interest
     keep_col = ["SNID", "MJD", "FLUXCAL", "FLUXCALERR", "FLT"]
     df = df[keep_col].copy()
-    df = df.set_index("SNID")
+    df = df.set_index("SNID").sort_index()
 
     # Load the companion HEAD file
     df_header = pd.read_csv(file_path.replace("PHOT", "HEAD"))
@@ -412,7 +409,7 @@ def process_single_csv(file_path, settings):
     df_header = df_header[keep_col_header].copy()
     df_header["SNID"] = df_header["SNID"].astype(str)
     df_header["SNID"] = df_header["SNID"].str.strip()
-    df_header = df_header.set_index("SNID")
+    df_header = df_header.set_index("SNID").sort_index()
     df = df.join(df_header).reset_index()
 
     #############################################
@@ -434,7 +431,7 @@ def process_single_csv(file_path, settings):
     #############################################
     df_SNID = pd.read_pickle(f"{settings.processed_dir}/SNID.pickle")
     # Check all SNID in df are in df_SNID
-    assert np.all(np.in1d(df.SNID.values, df_SNID.SNID.values))
+    assert np.all(df.SNID.isin(df_SNID.SNID))
     # Merge left on df: len(df) will not change and will now include
     # relevant columns from df_SNID
     merge_columns = ["SNID"]
@@ -619,7 +616,7 @@ def pivot_dataframe_single(filename, settings):
     # Add some extra columns from the FITOPT file
     df_salt = data_utils.load_fitfile(settings, verbose=False)
     if len(df_salt) > 1:
-        df_salt = df_salt.set_index("SNID")
+        df_salt = df_salt.set_index("SNID").sort_index()
     else:
         # if no fits file we populate with dummies
         # logging_utils.print_yellow(f"Creating dummy mB,c,x1")
@@ -628,7 +625,7 @@ def pivot_dataframe_single(filename, settings):
         df_salt["mB"] = np.zeros(len(df.index.unique()))
         df_salt["c"] = np.zeros(len(df.index.unique()))
         df_salt["x1"] = np.zeros(len(df.index.unique()))
-        df_salt = df_salt.set_index("SNID")
+        df_salt = df_salt.set_index("SNID").sort_index()
     df = df.join(df_salt[["mB", "c", "x1"]], how="left")
 
     df.drop(columns="MJD", inplace=True)
