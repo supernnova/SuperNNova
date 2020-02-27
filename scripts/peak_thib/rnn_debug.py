@@ -8,7 +8,7 @@ import pandas as pd
 from pathlib import Path
 from copy import deepcopy
 from collections import defaultdict
-
+from matplotlib.colors import LogNorm
 import matplotlib
 
 matplotlib.use("Agg")
@@ -117,6 +117,7 @@ class WN(torch.nn.Module):
 
         return self.end(output)
 
+
 def find_idx(array, value):
 
     idx = np.searchsorted(array, value, side="left")
@@ -157,7 +158,9 @@ class Model(torch.nn.Module):
 
         self.embedding = torch.nn.Embedding(num_embeddings, embedding_dim)
 
-        self.wn = WN(input_size + embedding_dim, 3, 64, 3)
+        hidden_size = 256
+        num_layers = 3
+        # self.wn = WN(input_size + embedding_dim, 3, 64, 3)
 
         # encoder_layer = torch.nn.TransformerEncoderLayer(d_model=64, nhead=8)
         # self.tf = torch.nn.TransformerEncoder(encoder_layer, num_layers=3)
@@ -172,8 +175,8 @@ class Model(torch.nn.Module):
             batch_first=True,
             bias=True,
         )
-        self.output_class_layer = torch.nn.Linear(hidden_size * 4, output_size)
-        self.output_peak_layer = torch.nn.Linear(hidden_size * 4, 1)
+        self.output_class_layer = torch.nn.Linear(hidden_size * 2, output_size)
+        self.output_peak_layer = torch.nn.Linear(hidden_size * 2, 1)
 
     def forward(self, x_flux, x_fluxerr, x_flt, x_time, x_mask, x_meta=None):
 
@@ -191,7 +194,7 @@ class Model(torch.nn.Module):
             x = torch.cat([x, x_meta], dim=-1)
 
         # x = self.wn(x.transpose(2, 1).contiguous()).transpose(2, 1).contiguous()
-        # # B, L, D
+        # B, L, D
         # x = self.tf(x.transpose(1, 0).contiguous()).transpose(1, 0).contiguous()
 
         lengths = x_mask.sum(dim=-1).long()
@@ -199,12 +202,14 @@ class Model(torch.nn.Module):
             x, lengths, batch_first=True, enforce_sorted=False
         )
         # Pass it to the RNN
-        _, (x, _) = self.rnn(x_packed)
-
+        hidden_packed, (x, _) = self.rnn(x_packed)
         x = x.transpose(1, 0).contiguous().view(B, -1)
+        # undo PackedSequence
+        hidden, _ = pad_packed_sequence(hidden_packed, batch_first=True)
+        # hidden is (B, L, D)
 
-        output_class = self.output_class_layer(x)
-        output_peak = self.output_peak_layer(x)
+        output_class = self.output_class_layer(hidden)
+        output_peak = self.output_peak_layer(hidden)
 
         return {"X_pred_class": output_class, "X_pred_peak": output_peak}
 
@@ -227,16 +232,30 @@ def forward_pass(model, data, num_batches, return_preds=False):
     X_pred_class = outs.get("X_pred_class", None)
     X_pred_peak = outs.get("X_pred_peak", None)
 
+    # last_time_length = data["X_mask"].sum(1) - 1
+    # last_peak_preds = torch.gather(
+    #     X_pred_peak.squeeze(-1), 1, (last_time_length).view(-1, 1)
+    # ).squeeze(-1)
+
     if return_preds:
         return X_pred_class, X_target_class, X_pred_peak, X_target_peak_single
 
     d_losses = {}
 
-    d_losses["peak_loss"] = nn.L1Loss()(X_target_peak_single[:, 0], X_pred_peak[:, 0])
+    loss = torch.nn.SmoothL1Loss(reduction="none")(
+        X_pred_peak.squeeze(-1), X_target_peak_single
+    )
+    loss = (loss * data["X_mask"]).sum() / data["X_mask"].sum()
+    d_losses["peak_loss"] = loss
+    # nn.L1Loss()(X_target_peak_single[:, 0], X_pred_peak[:, 0])
     # classification loss
-    d_losses["clf_loss"] = get_cross_entropy_loss(X_pred_class, X_target_class)
+    d_losses["clf_loss"] = torch.zeros(1).to(
+        X_target_peak.device
+    )  # get_cross_entropy_loss(X_pred_class, X_target_class)
     # Accuracy metric
-    d_losses["accuracy"] = get_accuracy_loss(X_pred_class, X_target_class)
+    d_losses["accuracy"] = torch.zeros(1).to(
+        X_target_peak.device
+    )  # get_accuracy_loss(X_pred_class, X_target_class)
 
     # Optional KL loss
     if hasattr(model, "kl"):
@@ -302,15 +321,22 @@ def scatter_peak(model, dataset, split, device, writer, batch):
             outs = model(X_flux, X_fluxerr, X_flt, X_time, X_mask, x_meta=X_meta)
             X_pred_peak = outs.get("X_pred_peak", None)
 
-            list_truth += X_pred_peak[:, 0].view(-1).detach().cpu().numpy().tolist()
-            list_preds += (
+            last_time_length = data["X_mask"].sum(1) - 1
+            last_peak_preds = torch.gather(
+                X_pred_peak.squeeze(-1), 1, (last_time_length).view(-1, 1)
+            ).squeeze(-1)
+
+            list_truth += (
                 X_target_peak_single[:, 0].view(-1).detach().cpu().numpy().tolist()
             )
+            list_preds += last_peak_preds.view(-1).detach().cpu().numpy().tolist()
+
+    vals = list_truth + list_preds
 
     fig = plt.figure(figsize=(9, 9))
     plt.plot(
-        [min(list_truth), max(list_truth)],
-        [min(list_preds), max(list_preds)],
+        [min(vals), max(vals)],
+        [min(vals), max(vals)],
         linestyle="--",
         color="k",
         label="Perfect pred",
@@ -321,6 +347,25 @@ def scatter_peak(model, dataset, split, device, writer, batch):
     plt.legend()
 
     writer.add_figure(f"A/Results/scatter_{split}", fig, batch)
+    plt.close(fig)
+    plt.clf()
+    plt.close("all")
+
+    fig = plt.figure(figsize=(9, 9))
+    plt.hist2d(list_truth, list_preds, bins=200, norm=LogNorm())
+    plt.plot(
+        [min(vals), max(vals)],
+        [min(vals), max(vals)],
+        linestyle="--",
+        color="k",
+        label="Perfect pred",
+    )
+    plt.xlabel("True Peak MJD")
+    plt.ylabel("Pred Peak MJD")
+    plt.legend()
+    plt.colorbar()
+
+    writer.add_figure(f"B/Results/density_{split}", fig, batch)
     plt.close(fig)
     plt.clf()
     plt.close("all")
@@ -344,10 +389,8 @@ def train(config):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = Model(**config["model"]).to(device)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=1E-3)
-    # optimizer = AdaMod(
-    #     model.parameters(), lr=config["learning_rate"]
-    # )
+    print(model)
+    optimizer = torch.optim.Adam(model.parameters(), lr=config["learning_rate"])
 
     loss_str = ""
     d_monitor_train = defaultdict(list)
@@ -391,37 +434,39 @@ def train(config):
     for epoch in range(config["nb_epoch"]):
 
         desc = f"Epoch: {epoch} -- {loss_str}"
-
+        print(desc)
         d_losses_train = defaultdict(list)
 
-        for data in dataset.create_iterator(
-            "train",
-            config["batch_size"],
-            device,
-            tqdm_desc=desc,
-            random_length=config.get("random_length", False),
-        ):
+        for _ in range(1):
 
-            model.train()
+            for data in dataset.create_iterator(
+                "train",
+                config["batch_size"],
+                device,
+                # tqdm_desc=desc,
+                random_length=config.get("random_length", False),
+            ):
 
-            # Train step : forward backward pass
-            losses_train = forward_pass(model, data, n_train_batches)
+                model.train()
 
-            loss = (
-                losses_train["clf_loss"] * config.get("clf_weight", 1.0)
-                + losses_train.get("kl", 0.0)
-                + losses_train["peak_loss"] * config.get("peak_weight", 1.0)
-            )
+                # Train step : forward backward pass
+                losses_train = forward_pass(model, data, n_train_batches)
 
-            for key, val in losses_train.items():
-                d_losses_train[key].append(val.item())
+                loss = (
+                    losses_train["clf_loss"] * config.get("clf_weight", 1.0)
+                    + losses_train.get("kl", 0.0)
+                    + losses_train["peak_loss"] * config.get("peak_weight", 1.0)
+                )
 
-            optimizer.zero_grad()
+                for key, val in losses_train.items():
+                    d_losses_train[key].append(val.item())
 
-            loss.backward()
-            optimizer.step()
+                optimizer.zero_grad()
 
-            batch += 1
+                loss.backward()
+                optimizer.step()
+
+                batch += 1
 
         model.eval()
 

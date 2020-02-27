@@ -65,12 +65,12 @@ class HDF5Dataset:
 
                 # selection
                 # TODO change, this cant be hardcoded
-                # df_meta = df_meta[df_meta["SIM_REDSHIFT_CMB"] < 0.4]
+                df_meta = df_meta[df_meta["SIM_REDSHIFT_CMB"] < 0.4]
 
-                # print("WARNING SELECTING SNTYPE in [101, 120]")
-                # df_meta = df_meta[
-                #     (df_meta["SNTYPE"] == 101) | (df_meta["SNTYPE"] == 120.0)
-                # ]
+                print("WARNING SELECTING SNTYPE in [101, 120]")
+                df_meta = df_meta[
+                    (df_meta["SNTYPE"] == 101) | (df_meta["SNTYPE"] == 120.0)
+                ]
 
                 # Subsample with data fraction
                 n_samples = int(data_fraction * len(df_meta))
@@ -79,22 +79,22 @@ class HDF5Dataset:
 
                 n_samples = len(df_meta)
 
-                print("WARNING NO CLASS BALANCING")
-                # # Pandas magic to downample each class down to lowest cardinality class
-                # df_meta = df_meta.groupby("target")
-                # df_meta = (
-                #     df_meta.apply(lambda x: x.sample(df_meta.size().min()))
-                #     .reset_index(drop=True)
-                #     .sample(frac=1)
-                # ).reset_index(drop=True)
+                # print("WARNING NO CLASS BALANCING")
+                # Pandas magic to downample each class down to lowest cardinality class
+                df_meta = df_meta.groupby("target")
+                df_meta = (
+                    df_meta.apply(lambda x: x.sample(df_meta.size().min()))
+                    .reset_index(drop=True)
+                    .sample(frac=1)
+                ).reset_index(drop=True)
 
-                # n_samples = len(df_meta)
+                n_samples = len(df_meta)
 
-                # for t in range(nb_classes):
-                #     n = len(df_meta[df_meta.target == t])
-                #     print(
-                #         f"{n} ({100 * n / n_samples:.2f} %) class {t} samples after balancing"
-                #     )
+                for t in range(nb_classes):
+                    n = len(df_meta[df_meta.target == t])
+                    print(
+                        f"{n} ({100 * n / n_samples:.2f} %) class {t} samples after balancing"
+                    )
 
                 # 80/10/10 Train/val/test split
                 n_train = int(0.8 * n_samples)
@@ -113,9 +113,9 @@ class HDF5Dataset:
             np.random.shuffle(test_indices)
 
             self.splits = {
-                "train": train_indices,
-                "val": val_indices,
-                "test": test_indices,
+                "train": train_indices[:],
+                "val": val_indices[:],
+                "test": test_indices[:],
             }
 
     def __len__(self):

@@ -3,13 +3,13 @@ preprocessed_dir: /u/home/SuperNNova/dump/preprocessed
 processed_dir: /u/home/SuperNNova/dump/processed
 fitopt_file: /u/home/SuperNNova/raw/FITOPT000.FITRES
 fig_dir: /u/home/SuperNNova/dump/figures
-dump_dir: /u/home/SuperNNova/dump/rnn/vanilla_000
+dump_dir: /u/home/SuperNNova/dump/rnn/vanilla_000_big
 
 nb_epoch: 200
 nb_inference_samples: 1
 batch_size: 512
 batch_size_test: 512
-learning_rate: 3.0E-4
+learning_rate: 1.0E-3
 min_lr: 1.0E-5
 lr_factor: 0.9999999
 patience: 1
