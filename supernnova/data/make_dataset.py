@@ -263,7 +263,6 @@ def process_single_FITS(file_path, settings):
     keep_col_header = [k for k in keep_col_header if k in df_header.keys()]
     df_header = df_header[keep_col_header].copy()
     df_header["SNID"] = df_header["SNID"].astype(str).str.strip()
-    df_header = df_header.sort_values(by='SNID')
 
     #############################################
     # Photometry window init
