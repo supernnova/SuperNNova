@@ -2,6 +2,7 @@ import torch.nn as nn
 import torch
 from . import logging_utils as lu
 from ..training import bayesian_rnn
+from ..training import bayesian_rnn_2
 from ..training import variational_rnn
 from ..training import vanilla_rnn
 import os
@@ -31,8 +32,6 @@ def normalize_arr(arr, settings):
         (np.array) the normalized array
     """
 
-    
-
     if settings.norm == "none":
         return arr
 
@@ -45,11 +44,11 @@ def normalize_arr(arr, settings):
         # clipping
         arr_to_norm = np.clip(arr_to_norm, arr_min, np.inf)
 
-        if settings.norm == 'cosmo':
+        if settings.norm == "cosmo":
             # setting max flux to 1 for all lcs
-            lu.print_yellow('BEWARE: normalization can not be reversed')
+            lu.print_yellow("BEWARE: normalization can not be reversed")
             # TO DO: deal with flux errors since they encode S/N info
-            arr_to_norm = arr_to_norm/arr_to_norm.max()
+            arr_to_norm = arr_to_norm / arr_to_norm.max()
 
         arr_normed = np.log(arr_to_norm - arr_min + 1e-5)
         arr_normed = (arr_normed - arr_mean) / arr_std
@@ -78,7 +77,7 @@ def unnormalize_arr(arr, settings):
     arr_to_unnorm = arr[:, settings.idx_features_to_normalize]
 
     arr_to_unnorm = arr_to_unnorm * arr_std + arr_mean
-    arr_unnormed = np.exp(arr_to_unnorm) + arr_min - 1E-5
+    arr_unnormed = np.exp(arr_to_unnorm) + arr_min - 1e-5
 
     arr[:, settings.idx_features_to_normalize] = arr_unnormed
 
@@ -127,14 +126,17 @@ def fill_data_list(
         # using clipping in case of min<model_min
         X_clip = X_all.copy()
         X_clip = np.clip(
-            X_clip[:, settings.idx_features_to_normalize], settings.arr_norm[:, 0], np.inf)
+            X_clip[:, settings.idx_features_to_normalize],
+            settings.arr_norm[:, 0],
+            np.inf,
+        )
         X_all[:, settings.idx_features_to_normalize] = X_clip
 
-        if settings.norm != 'cosmo':
-            X_tmp = unnormalize_arr(normalize_arr(
-                X_all.copy(), settings), settings)
+        if settings.norm != "cosmo":
+            X_tmp = unnormalize_arr(normalize_arr(X_all.copy(), settings), settings)
             assert np.all(
-                np.all(np.isclose(np.ravel(X_all), np.ravel(X_tmp), atol=1e-1)))
+                np.all(np.isclose(np.ravel(X_all), np.ravel(X_tmp), atol=1e-1))
+            )
 
         # Normalize features that need to be normalized
         X_normed = X_all.copy()
@@ -189,8 +191,7 @@ def load_HDF5(settings, test=False):
             try:
                 idxs_test = np.where(hf[dataset_split_key][:] == 2)[0]
             except Exception:
-                idxs_test = np.where(
-                    hf['dataset_photometry_2classes'][:] != 100)[0]
+                idxs_test = np.where(hf["dataset_photometry_2classes"][:] != 100)[0]
         else:
             idxs_train = np.where(hf[dataset_split_key][:] == 0)[0]
             idxs_val = np.where(hf[dataset_split_key][:] == 1)[0]
@@ -201,8 +202,7 @@ def load_HDF5(settings, test=False):
             np.random.shuffle(idxs_val)
             np.random.shuffle(idxs_test)
 
-            idxs_train = idxs_train[: int(
-                settings.data_fraction * len(idxs_train))]
+            idxs_train = idxs_train[: int(settings.data_fraction * len(idxs_train))]
 
         n_features = hf["data"].attrs["n_features"]
 
@@ -216,7 +216,7 @@ def load_HDF5(settings, test=False):
             try:
                 arr_target = hf[target_key][:]
             except Exception:
-                arr_target = hf['target_2classes'][:]
+                arr_target = hf["target_2classes"][:]
         else:
             arr_target = hf[target_key][:]
         arr_SNID = hf["SNID"][:]
@@ -273,6 +273,8 @@ def get_model(settings, input_size):
         rnn = variational_rnn.VariationalRNN
     elif settings.model == "bayesian":
         rnn = bayesian_rnn.BayesianRNN
+    elif settings.model == "bayesian_2":
+        rnn = bayesian_rnn_2.BayesianRNN
 
     rnn = rnn(input_size, settings)
 
@@ -391,7 +393,8 @@ def get_data_batch(list_data, idxs, settings, max_lengths=None, OOD=None):
             X_tensor[: X.shape[0], i, :] = torch.FloatTensor(X)
         except Exception:
             X_tensor[: X.shape[0], i, :] = torch.FloatTensor(
-                torch.from_numpy(np.flip(X, axis=0).copy()))
+                torch.from_numpy(np.flip(X, axis=0).copy())
+            )
         list_target.append(target)
         lengths.append(list_len[idx])
 
@@ -491,8 +494,7 @@ def plot_loss(d_train, d_val, epoch, settings):
     for key in d_train.keys():
 
         plt.figure()
-        plt.plot(d_train["epoch"], d_train[key],
-                 label="Train %s" % key.title())
+        plt.plot(d_train["epoch"], d_train[key], label="Train %s" % key.title())
         plt.plot(d_val["epoch"], d_val[key], label="Val %s" % key.title())
         plt.legend(loc="best", fontsize=18)
         plt.xlabel("Step", fontsize=22)
@@ -705,8 +707,7 @@ def train_and_evaluate_randomforest_model(clf, X_train, y_train, X_val, y_val):
     # Compute AUC and precision
     fpr, tpr, thresholds = metrics.roc_curve(y_val, probas_[:, 1])
     roc_auc = metrics.auc(fpr, tpr)
-    pscore = metrics.precision_score(
-        y_val, clf.predict(X_val), average="binary")
+    pscore = metrics.precision_score(y_val, clf.predict(X_val), average="binary")
     lu.print_green("Validation AUC", roc_auc)
     lu.print_green("Validation precision score", pscore)
 
@@ -715,8 +716,7 @@ def train_and_evaluate_randomforest_model(clf, X_train, y_train, X_val, y_val):
         100 * (sum(clf.predict(X_train) == y_train)) / X_train.shape[0],
     )
     lu.print_green(
-        "Val data accuracy", 100 *
-        (sum(clf.predict(X_val) == y_val)) / X_val.shape[0]
+        "Val data accuracy", 100 * (sum(clf.predict(X_val) == y_val)) / X_val.shape[0]
     )
 
     return clf
