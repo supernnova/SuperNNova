@@ -34,8 +34,10 @@ class BayesianRNN(torch.nn.Module):
         self.use_cuda = settings.use_cuda
         self.rnn_output_option = settings.rnn_output_option
 
-        self.prior_recurrent = Prior(0.75, -1.0, -7.0)
-        self.prior = Prior(0.75, -0.5, -0.1)
+        self.prior = Prior(settings.pi, settings.log_sigma1, settings.log_sigma2)
+        self.prior_output = Prior(
+            settings.pi, settings.log_sigma1_output, settings.log_sigma2_output
+        )
 
         bidirectional_factor = 2 if self.bidirectional is True else 1
         last_input_size = (
@@ -47,15 +49,25 @@ class BayesianRNN(torch.nn.Module):
         init_recurrent = {
             "mu_lower": -0.05,
             "mu_upper": 0.05,
-            "rho_lower": math.log(math.exp(self.prior_recurrent.sigma_mix / 4.0) - 1.0),
-            "rho_upper": math.log(math.exp(self.prior_recurrent.sigma_mix / 3.0) - 1.0),
+            "rho_lower": math.log(
+                math.exp(self.prior.sigma_mix / settings.rho_scale_lower) - 1.0
+            ),
+            "rho_upper": math.log(
+                math.exp(self.prior.sigma_mix / settings.rho_scale_upper) - 1.0
+            ),
         }
 
         init = {
             "mu_lower": -0.05,
             "mu_upper": 0.05,
-            "rho_lower": math.log(math.exp(self.prior.sigma_mix / 3.0) - 1.0),
-            "rho_upper": math.log(math.exp(self.prior.sigma_mix / 2.0) - 1.0),
+            "rho_lower": math.log(
+                math.exp(self.prior_output.sigma_mix / settings.rho_scale_lower_output)
+                - 1.0
+            ),
+            "rho_upper": math.log(
+                math.exp(self.prior_output.sigma_mix / settings.rho_scale_upper_output)
+                - 1.0
+            ),
         }
 
         # Define layers
@@ -67,11 +79,11 @@ class BayesianRNN(torch.nn.Module):
             bidirectional=self.bidirectional,
             batch_first=False,
             bias=True,
-            prior=self.prior_recurrent,
+            prior=self.prior,
             **init_recurrent,
         )
-        self.output_layer = BayesBiasLinear(
-            last_input_size, self.output_size, self.prior, **init
+        self.output_layer = BayesLinear(
+            last_input_size, self.output_size, self.prior_output, **init
         )
 
         self.kl = None
@@ -201,50 +213,55 @@ class BayesLSTM(nn.Module):
             return self.module.forward(*args)
 
 
-class BayesBiasLinear(nn.Module):
+class BayesLinear(nn.Module):
     def __init__(
         self, in_features, out_features, prior, mu_lower, mu_upper, rho_lower, rho_upper
     ):
-        super(BayesBiasLinear, self).__init__()
+        super(BayesLinear, self).__init__()
         self.in_features = in_features
         self.out_features = out_features
         self.prior = prior
 
-        self.W_mu, self.W_rho = get_bbb_variable(
+        mu, rho = get_bbb_variable(
             (out_features, in_features), mu_lower, mu_upper, rho_lower, rho_upper
         )
 
-        self.b_mu, self.b_rho = get_bbb_variable(
-            (out_features,), mu_lower, mu_upper, rho_lower, rho_upper
-        )
+        bias = nn.Parameter(torch.Tensor(out_features))
+        bias.data.fill_(0.0)
+
+        self.mu = mu
+        self.rho = rho
+        self.bias = bias
+        self.kl = None
 
     def forward(self, x, mean_field_inference=False):
 
         self.kl = 0
 
-        W_mu = self.W_mu
-        b_mu = self.b_mu
+        mu = self.mu
 
         if mean_field_inference is False:
-
-            W_sigma = F.softplus(self.W_rho) + 1e-5
-            W_eps = W_mu.data.new(W_mu.size()).normal_(0.0, 1.0)
-            weights = W_mu + W_eps * W_sigma
-
-            b_sigma = F.softplus(self.b_rho) + 1e-5
-            b_eps = b_mu.data.new(b_mu.size()).normal_(0.0, 1.0)
-            biases = b_mu + b_eps * b_sigma
-
+            sigma = F.softplus(self.rho) + 1e-5
+            eps = mu.data.new(mu.size()).normal_(0.0, 1.0)
+            weights = mu + eps * sigma
             # Compute KL divergence
-            self.kl += compute_KL(weights, W_mu, W_sigma, self.prior)
-            self.kl += compute_KL(biases, b_mu, b_sigma, self.prior)
+            self.kl = compute_KL(weights, mu, sigma, self.prior)
         else:
-            weights = W_mu
-            biases = b_mu
+            weights = mu
 
-        logits = F.linear(x, weights, biases)
+        logits = F.linear(x, weights, self.bias)
 
         return logits
+
+    def __repr__(self):
+        return (
+            self.__class__.__name__
+            + " ("
+            + str(self.in_features)
+            + " -> "
+            + str(self.out_features)
+            + ")"
+        )
 
 
 class Prior(object):
