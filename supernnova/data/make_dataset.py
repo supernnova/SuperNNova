@@ -73,7 +73,6 @@ def build_traintestval_splits(settings):
     # Load df_photo
     df_photo = pd.concat(list_df)
     df_photo["SNID"] = df_photo["SNID"].astype(str).str.strip()
-    df_photo = df_photo.sort_values(by='SNID')
     # load FITOPT file on which we will base our splits
     df_salt = data_utils.load_fitfile(settings)
     if len(df_salt) < 1:
@@ -303,7 +302,7 @@ def process_single_FITS(file_path, settings):
     df["SNID"] = df["SNID"].str.strip()
     df = df.set_index("SNID")
     df_header['SNID'] = df_header['SNID'].str.strip()
-    df_header = df_header.set_index("SNID").sort_index()
+    df_header = df_header.set_index("SNID")
     # join df and header
     df = df.join(df_header).reset_index()
 
