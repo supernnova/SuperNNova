@@ -73,7 +73,6 @@ def build_traintestval_splits(settings):
     # Load df_photo
     df_photo = pd.concat(list_df)
     df_photo["SNID"] = df_photo["SNID"].astype(str).str.strip()
-    df_photo = df_photo.sort_values(by='SNID')
     # load FITOPT file on which we will base our splits
     df_salt = data_utils.load_fitfile(settings)
     if len(df_salt) < 1:
@@ -301,9 +300,9 @@ def process_single_FITS(file_path, settings):
         arr_ID[start:end] = df_header.SNID.iloc[counter - 1]
     df["SNID"] = arr_ID.astype(str)
     df["SNID"] = df["SNID"].str.strip()
-    df = df.set_index("SNID").sort_index()
+    df = df.set_index("SNID")
     df_header['SNID'] = df_header['SNID'].str.strip()
-    df_header = df_header.set_index("SNID").sort_index()
+    df_header = df_header.set_index("SNID")
     # join df and header
     df = df.join(df_header).reset_index()
 
@@ -343,7 +342,6 @@ def process_single_FITS(file_path, settings):
     # Add class and dataset information
     #############################################
     df_SNID = pd.read_pickle(f"{settings.processed_dir}/SNID.pickle")
-    df_SNID = df_SNID.sort_values(by='SNID')
     # Check all SNID in df are in df_SNID
     assert np.all(df.SNID.isin(df_SNID.SNID)) 
     # Merge left on df: len(df) will not change and will now include
@@ -384,7 +382,7 @@ def process_single_csv(file_path, settings):
     # Keep only columns of interest
     keep_col = ["SNID", "MJD", "FLUXCAL", "FLUXCALERR", "FLT"]
     df = df[keep_col].copy()
-    df = df.set_index("SNID").sort_index()
+    df = df.set_index("SNID")
 
     # Load the companion HEAD file
     df_header = pd.read_csv(file_path.replace("PHOT", "HEAD"))
@@ -408,7 +406,7 @@ def process_single_csv(file_path, settings):
     df_header = df_header[keep_col_header].copy()
     df_header["SNID"] = df_header["SNID"].astype(str)
     df_header["SNID"] = df_header["SNID"].str.strip()
-    df_header = df_header.set_index("SNID").sort_index()
+    df_header = df_header.set_index("SNID")
     df = df.join(df_header).reset_index()
 
     #############################################
@@ -615,7 +613,7 @@ def pivot_dataframe_single(filename, settings):
     # Add some extra columns from the FITOPT file
     df_salt = data_utils.load_fitfile(settings, verbose=False)
     if len(df_salt) > 1:
-        df_salt = df_salt.set_index("SNID").sort_index()
+        df_salt = df_salt.set_index("SNID")
     else:
         # if no fits file we populate with dummies
         # logging_utils.print_yellow(f"Creating dummy mB,c,x1")
@@ -624,7 +622,7 @@ def pivot_dataframe_single(filename, settings):
         df_salt["mB"] = np.zeros(len(df.index.unique()))
         df_salt["c"] = np.zeros(len(df.index.unique()))
         df_salt["x1"] = np.zeros(len(df.index.unique()))
-        df_salt = df_salt.set_index("SNID").sort_index()
+        df_salt = df_salt.set_index("SNID")
     df = df.join(df_salt[["mB", "c", "x1"]], how="left")
 
     df.drop(columns="MJD", inplace=True)
