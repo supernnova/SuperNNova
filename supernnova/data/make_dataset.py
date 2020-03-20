@@ -382,6 +382,7 @@ def process_single_csv(file_path, settings):
     # Keep only columns of interest
     keep_col = ["SNID", "MJD", "FLUXCAL", "FLUXCALERR", "FLT"]
     df = df[keep_col].copy()
+    df['SNID'] = df['SNID'].astype(str)
     df = df.set_index("SNID")
 
     # Load the companion HEAD file
@@ -443,7 +444,7 @@ def process_single_csv(file_path, settings):
     df.to_pickle(f"{settings.preprocessed_dir}/{basename.replace('.FITS', '.pickle')}")
 
     # getting SNIDs for SNe with Host_spec
-    host_spe = df[df["HOSTGAL_SPECZ"] > 0]["SNID"].unique().tolist()
+    host_spe = df[df["HOSTGAL_SPECZ"] > 0]["SNID"].unique().tolist() if 'HOSTGAL_SPECZ' in df.keys() else []
 
     return host_spe
 
@@ -469,6 +470,7 @@ def preprocess_data(settings):
     else:
         list_files = natsorted(glob.glob(os.path.join(settings.raw_dir, f"*PHOT.csv*")))
         parallel_fn = partial(process_single_csv, settings=settings)
+        # process_single_csv(list_files[0],settings)
 
     logging_utils.print_green("List to preprocess ", list_files)
     max_workers = multiprocessing.cpu_count()
