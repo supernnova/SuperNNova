@@ -18,7 +18,7 @@ def launch_docker():
 
     if args.use_cuda:
         cmd = (
-            f"nvidia-docker run -it --rm --user {UID}"
+            f"docker --gpus all run -it --rm --user {UID}"
             f" -v {pwd}/../../SuperNNova:/home/SuperNNova"
             f" -v {pwd}/{args.dump_dir}:/home/snndump rnn-gpu:latest"
         )
@@ -27,7 +27,7 @@ def launch_docker():
         except Exception as err:
             print(err)
             print("Possible errors:")
-            print("You may not have installed nvidia-docker.")
+            print("You may not have installed docker.")
             print("You may not have a GPU.")
             print("You may not have built the images ==> call make gpu or make cpu")
     else:
