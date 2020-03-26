@@ -81,6 +81,8 @@ def build_traintestval_splits(settings):
         df_salt = pd.DataFrame()
         df_salt["SNID"] = df_photo["SNID"].str.strip()
     df_salt["is_salt"] = 1
+    # correct format SNID
+    df_salt['SNID'] = df_salt['SNID'].astype(str).str.strip()
     # Check all SNID in df_salt are also in df_photo
     try:
         assert np.all(df_salt.SNID.isin(df_photo.SNID))
@@ -97,7 +99,6 @@ def build_traintestval_splits(settings):
         import sys
 
         sys.exit(1)
-
     # Merge left on df_photo
     df = df_photo.merge(df_salt[["SNID", "is_salt"]], on=["SNID"], how="left")
     # Some curves are in photo and not in salt, these curves have is_salt = NaN
