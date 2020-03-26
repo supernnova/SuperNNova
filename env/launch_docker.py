@@ -18,7 +18,7 @@ def launch_docker():
 
     if args.use_cuda:
         cmd = (
-            f"nvidia-docker run -it --rm --user {UID}"
+            f"docker run -it --gpus all --rm --user {UID}"
             f" -v {pwd}/../../SuperNNova:/home/SuperNNova"
             f" -v {pwd}/{args.dump_dir}:/home/snndump rnn-gpu:latest"
         )
