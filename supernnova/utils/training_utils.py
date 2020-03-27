@@ -2,6 +2,7 @@ import torch.nn as nn
 import torch
 from . import logging_utils as lu
 from ..training import bayesian_rnn
+from ..training import bayesian_rnn_2
 from ..training import variational_rnn
 from ..training import vanilla_rnn
 import os
@@ -272,6 +273,8 @@ def get_model(settings, input_size):
         rnn = variational_rnn.VariationalRNN
     elif settings.model == "bayesian":
         rnn = bayesian_rnn.BayesianRNN
+    elif settings.model == "bayesian_2":
+        rnn = bayesian_rnn_2.BayesianRNN
 
     rnn = rnn(input_size, settings)
 
