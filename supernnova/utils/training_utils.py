@@ -46,7 +46,7 @@ def normalize_arr(arr, settings):
 
         if settings.norm == "cosmo":
             # setting max flux to 1 for all lcs
-            lu.print_yellow("BEWARE: normalization can not be reversed")
+            # lu.print_yellow('BEWARE: normalization can not be reversed')
             # TO DO: deal with flux errors since they encode S/N info
             arr_to_norm = arr_to_norm / arr_to_norm.max()
 

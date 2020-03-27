@@ -81,6 +81,8 @@ def build_traintestval_splits(settings):
         df_salt = pd.DataFrame()
         df_salt["SNID"] = df_photo["SNID"].str.strip()
     df_salt["is_salt"] = 1
+    # correct format SNID
+    df_salt['SNID'] = df_salt['SNID'].astype(str).str.strip()
     # Check all SNID in df_salt are also in df_photo
     try:
         assert np.all(df_salt.SNID.isin(df_photo.SNID))
@@ -97,7 +99,6 @@ def build_traintestval_splits(settings):
         import sys
 
         sys.exit(1)
-
     # Merge left on df_photo
     df = df_photo.merge(df_salt[["SNID", "is_salt"]], on=["SNID"], how="left")
     # Some curves are in photo and not in salt, these curves have is_salt = NaN
@@ -382,6 +383,7 @@ def process_single_csv(file_path, settings):
     # Keep only columns of interest
     keep_col = ["SNID", "MJD", "FLUXCAL", "FLUXCALERR", "FLT"]
     df = df[keep_col].copy()
+    df['SNID'] = df['SNID'].astype(str)
     df = df.set_index("SNID")
 
     # Load the companion HEAD file
@@ -443,7 +445,7 @@ def process_single_csv(file_path, settings):
     df.to_pickle(f"{settings.preprocessed_dir}/{basename.replace('.FITS', '.pickle')}")
 
     # getting SNIDs for SNe with Host_spec
-    host_spe = df[df["HOSTGAL_SPECZ"] > 0]["SNID"].unique().tolist()
+    host_spe = df[df["HOSTGAL_SPECZ"] > 0]["SNID"].unique().tolist() if 'HOSTGAL_SPECZ' in df.keys() else []
 
     return host_spe
 
@@ -469,6 +471,7 @@ def preprocess_data(settings):
     else:
         list_files = natsorted(glob.glob(os.path.join(settings.raw_dir, f"*PHOT.csv*")))
         parallel_fn = partial(process_single_csv, settings=settings)
+        # process_single_csv(list_files[0],settings)
 
     logging_utils.print_green("List to preprocess ", list_files)
     max_workers = multiprocessing.cpu_count()

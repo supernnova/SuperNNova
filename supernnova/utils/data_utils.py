@@ -37,7 +37,8 @@ DICT_PLASTICC_CLASS = OrderedDict(
         99: 14,
     }
 )
-LogStandardized = namedtuple("LogStandardized", ["arr_min", "arr_mean", "arr_std"])
+LogStandardized = namedtuple(
+    "LogStandardized", ["arr_min", "arr_mean", "arr_std"])
 
 
 def load_pandas_from_fit(fit_file_path):
@@ -112,7 +113,8 @@ def tag_type(df, settings, type_column="TYPE"):
     if "Ia" in list_types:
         df[type_column] = df[type_column].astype(str)
         # get keys of Ias, the rest tag them as CC
-        keys_ia = [key for (key, value) in settings.sntypes.items() if value == "Ia"]
+        keys_ia = [key for (key, value)
+                   in settings.sntypes.items() if value == "Ia"]
         df["target_2classes"] = df[type_column].apply(
             lambda x: 0 if x in keys_ia else 1
         )
@@ -444,7 +446,8 @@ def save_to_HDF5(settings, df):
     # Filter list start end so we get only light curves with at least 3 points
     # except when creating testing data (we want to classify all lcs even w. 1-2 epochs)
     if not settings.data_testing:
-        list_start_end = list(filter(lambda x: x[1] - x[0] >= 3, list_start_end))
+        list_start_end = list(
+            filter(lambda x: x[1] - x[0] >= 3, list_start_end))
 
     # Shuffle
     np.random.shuffle(list_start_end)
@@ -469,7 +472,8 @@ def save_to_HDF5(settings, df):
                 dtype = np.dtype("int32")
             else:
                 dtype = np.dtype("float32")
-            hf.create_dataset(feat, data=df[feat].values[start_idxs], dtype=dtype)
+            hf.create_dataset(
+                feat, data=df[feat].values[start_idxs], dtype=dtype)
             df.drop(columns=feat, inplace=True)
 
         logging_utils.print_green("Saving class")
@@ -491,7 +495,8 @@ def save_to_HDF5(settings, df):
         for offset, suffix in zip(OFFSETS, OFFSETS_STR):
             new_column = f"PEAKMJD{suffix}_unique_nights"
             df_nights = (
-                df[df["time"] < df["PEAKMJDNORM"] + offset][["PEAKMJDNORM", "SNID"]]
+                df[df["time"] < df["PEAKMJDNORM"] +
+                    offset][["PEAKMJDNORM", "SNID"]]
                 .groupby("SNID")
                 .count()
                 .astype(np.uint8)
@@ -501,7 +506,8 @@ def save_to_HDF5(settings, df):
 
             hf.create_dataset(
                 new_column,
-                data=df_SNID.merge(df_nights, on="SNID", how="left")[new_column].values,
+                data=df_SNID.merge(df_nights, on="SNID", how="left")[
+                    new_column].values,
                 dtype=np.dtype("uint8"),
             )
 
@@ -574,7 +580,8 @@ def save_to_HDF5(settings, df):
         # FLUXERR features
         ###################
         fluxerr_features = [f"FLUXCALERR_{f}" for f in settings.list_filters]
-        fluxerr_log_standardized = log_standardization(df[fluxerr_features].values)
+        fluxerr_log_standardized = log_standardization(
+            df[fluxerr_features].values)
         # Store normalization parameters
         gnorm.create_dataset(f"FLUXCALERR/min", data=fluxerr_log_standardized.arr_min)
         gnorm.create_dataset(f"FLUXCALERR/mean", data=fluxerr_log_standardized.arr_mean)
@@ -592,16 +599,26 @@ def save_to_HDF5(settings, df):
 
         hf.create_dataset("data", (n_samples,), dtype=data_type)
 
-        # Fit a one hot encoder for FLT
+        # If header does not have HOST info fill with empty arrays
+        list_to_fill = [
+            k for k in list_training_features if k not in df.columns.values.tolist()]
+        if len([k for k in list_to_fill if 'HOST' not in k]) > 0:
+            logging_utils.print_red("missing information in input")
+            raise AttributeError
+        for key in list_to_fill:
+            df[key] = np.zeros(len(df))
+
         logging_utils.print_green("Fit onehot on FLT")
         assert sorted(df.columns.values.tolist()) == sorted(
             list_training_features + ["FLT"]
         )
+
+        # Fit a one hot encoder for FLT
         # to have the same onehot for all datasets
         tmp = pd.Series(settings.list_filters_combination).append(df["FLT"])
         tmp_onehot = pd.get_dummies(tmp)
         # this is ok since it goes by length not by index (which I never reset)
-        FLT_onehot = tmp_onehot[len(settings.list_filters_combination) :]
+        FLT_onehot = tmp_onehot[len(settings.list_filters_combination):]
         df = pd.concat([df[list_training_features], FLT_onehot], axis=1)
         # store feature names
         list_training_features = df.columns.values.tolist()
@@ -611,7 +628,8 @@ def save_to_HDF5(settings, df):
             dtype=h5py.special_dtype(vlen=str),
         )
         hf["features"][:] = list_training_features
-        logging_utils.print_green("Saved features:", ",".join(list_training_features))
+        logging_utils.print_green(
+            "Saved features:", ",".join(list_training_features))
 
         # Save training features to hdf5
         logging_utils.print_green("Save data features to HDF5")
@@ -620,5 +638,5 @@ def save_to_HDF5(settings, df):
         for idx, idx_pair in enumerate(
             tqdm(list_start_end, desc="Filling hdf5", ncols=100)
         ):
-            arr = arr_feat[idx_pair[0] : idx_pair[1]]
+            arr = arr_feat[idx_pair[0]: idx_pair[1]]
             hf["data"][idx] = np.ravel(arr)
