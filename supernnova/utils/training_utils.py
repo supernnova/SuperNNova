@@ -45,14 +45,21 @@ def normalize_arr(arr, settings):
         # clipping
         arr_to_norm = np.clip(arr_to_norm, arr_min, np.inf)
 
-        if settings.norm == 'cosmo':
-            # setting max flux to 1 for all lcs
-            lu.print_yellow('BEWARE: normalization can not be reversed')
-            # TO DO: deal with flux errors since they encode S/N info
-            arr_to_norm = arr_to_norm/arr_to_norm.max()
+        if settings.norm !='cosmo':
+            # normalize using global norm
+            arr_normed = np.log(arr_to_norm - arr_min + 1e-5)
+            arr_normed = (arr_normed - arr_mean) / arr_std
 
-        arr_normed = np.log(arr_to_norm - arr_min + 1e-5)
-        arr_normed = (arr_normed - arr_mean) / arr_std
+        else:
+            # normalize all lcs to 1 (fluxes), maintain color info
+            # time is normalized as global norm
+            arr_normed_cosmo = arr_to_norm
+            arr_normed_cosmo[:,:-1] = arr_normed_cosmo[:,:-1]/arr_normed_cosmo[:,:-1].max()
+            # time normalization
+            tmp_cosmo = np.log(arr_to_norm[:,-1] - arr_min[-1] + 1e-5)
+            arr_normed_cosmo[:,-1] = (tmp_cosmo - arr_mean[-1]) / arr_std[-1]
+            arr_normed = arr_normed_cosmo
+
         arr[:, settings.idx_features_to_normalize] = arr_normed
 
     return arr
@@ -72,15 +79,27 @@ def unnormalize_arr(arr, settings):
     if settings.norm == "none":
         return arr
 
+
     arr_min = settings.arr_norm[:, 0]
     arr_mean = settings.arr_norm[:, 1]
     arr_std = settings.arr_norm[:, 2]
-    arr_to_unnorm = arr[:, settings.idx_features_to_normalize]
 
-    arr_to_unnorm = arr_to_unnorm * arr_std + arr_mean
-    arr_unnormed = np.exp(arr_to_unnorm) + arr_min - 1E-5
+    if settings.norm =='cosmo':
+        # onyl unnormalize time
+        arr_to_unnorm = arr[:, settings.idx_features_to_normalize[-1]]
 
-    arr[:, settings.idx_features_to_normalize] = arr_unnormed
+        arr_to_unnorm = arr_to_unnorm * arr_std[-1] + arr_mean[-1]
+        arr_unnormed = np.exp(arr_to_unnorm) + arr_min[-1] - 1E-5
+
+        arr[:, settings.idx_features_to_normalize[-1]] = arr_unnormed
+
+    else:
+        arr_to_unnorm = arr[:, settings.idx_features_to_normalize]
+
+        arr_to_unnorm = arr_to_unnorm * arr_std + arr_mean
+        arr_unnormed = np.exp(arr_to_unnorm) + arr_min - 1E-5
+
+        arr[:, settings.idx_features_to_normalize] = arr_unnormed
 
     return arr
 
