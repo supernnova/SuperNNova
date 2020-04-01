@@ -30,7 +30,7 @@ def launch_docker():
         )
 
     if args.raw_dir:
-        f" -v {args.raw_dir}:/u/home/raw"
+        cmd += f" -v {args.raw_dir}:/u/home/raw"
 
     cmd += (
         f" -e HOST_USER_ID={os.getuid()} "
