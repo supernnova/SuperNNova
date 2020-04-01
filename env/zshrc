@@ -1,11 +1,9 @@
-# Path to your oh-my-zsh installation.
-export ZSH=/home/.oh-my-zsh
-
 # Theme
 ZSH_THEME="refined"
+export PATH=$PATH_TO_COPY
 
 # Plugins
-plugins=(git autojump wd sm zsh_reload)
+plugins=(git zsh_reload)
 
 source "$ZSH/oh-my-zsh.sh"
 
@@ -15,6 +13,3 @@ if [[ -n $SSH_CONNECTION ]]; then
 else
   export EDITOR='vim'
 fi
-
-# Anaconda path
-export PATH="/home/miniconda3/bin:$PATH"

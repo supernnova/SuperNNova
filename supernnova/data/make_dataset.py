@@ -697,7 +697,7 @@ def make_dataset(settings):
 
     # Aggregate the pivoted dataframe
     list_files = natsorted(
-        glob.glob(os.path.join(settings.preprocessed_dir, f"*pivot.pickle"))
+        glob.glob(os.path.join(settings.preprocessed_dir, f"*pivot.pickle*"))
     )
     logging_utils.print_green("Concatenating pivot")
 

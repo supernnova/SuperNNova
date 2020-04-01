@@ -7,44 +7,36 @@ from pathlib import Path
 
 def launch_docker():
 
+    pwd = os.getcwd()
+    UID = os.getuid()
+    snn_dir = os.path.abspath(Path(os.path.dirname(os.path.realpath(__file__))).parent)
+    dump_dir = os.path.abspath(Path(snn_dir).parent)
+
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dump_dir", default="../../snndump", help="Dump dir")
-    parser.add_argument("--use_cuda", action="store_true", help="Use gpu image")
+    parser.add_argument("--image", type=str, choices=['cpu','gpu','gpu10'],help="Use which image gpu or cpu")
+    parser.add_argument("--dump_dir", default=dump_dir, help='Dir to dump results')
 
     args = parser.parse_args()
 
-    pwd = os.getcwd()
-    UID = os.getuid()
+    cmd = (
+        f"docker run -it --rm ")
 
-    if args.use_cuda:
-        cmd = (
-            f"docker run -it --gpus all --rm --user {UID}"
-            f" -v {pwd}/../../SuperNNova:/home/SuperNNova"
-            f" -v {pwd}/{args.dump_dir}:/home/snndump rnn-gpu:latest"
-        )
-        try:
-            subprocess.check_call(shlex.split(cmd))
-        except Exception as err:
-            print(err)
-            print("Possible errors:")
-            print("You may not have installed nvidia-docker.")
-            print("You may not have a GPU.")
-            print("You may not have built the images ==> call make gpu or make cpu")
-    else:
+    cmd += f" --gpus all " if 'gpu' in args.image else ""
 
-        cmd = (
-            f"docker run -it --rm --user {UID}"
-            f" -v {pwd}/../../SuperNNova:/home/SuperNNova"
-            f" -v {pwd}/{args.dump_dir}:/home/{Path(args.dump_dir).name} rnn-cpu:latest"
-        )
-
-        try:
-            subprocess.check_call(shlex.split(cmd))
-        except Exception as err:
-            print(err)
-            print("Possible errors:")
-            print("You may not have installed docker.")
-            print("You may not have built the images ==> call make gpu or make cpu")
+    cmd += (
+        f" -v {snn_dir}:/u/home/SuperNNova"
+        f" -v {args.dump_dir}:/u/home/snndump"
+        f" -e HOST_USER_ID={os.getuid()} "
+        f" -e HOST_USER_GID={os.getgid()} "
+        f" rnn-{args.image}:latest"
+    )
+    try:
+        subprocess.check_call(shlex.split(cmd))
+    except Exception as err:
+        print(err)
+        print("Possible errors:")
+        print("You may not have a GPU.")
+        print(f"You may not have built the images ==> call make {args.image}")
 
 
 if __name__ == "__main__":
