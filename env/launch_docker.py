@@ -28,8 +28,8 @@ def launch_docker():
         f" -v {snn_dir}:/u/home/SuperNNova"
         f" -v {args.dump_dir}:/u/home/snndump"
         )
-    
-    if parser.raw_dir:
+
+    if args.raw_dir:
         f" -v {args.raw_dir}:/u/home/raw"
 
     cmd += (
