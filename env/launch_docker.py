@@ -15,6 +15,7 @@ def launch_docker():
     parser = argparse.ArgumentParser()
     parser.add_argument("--image", type=str, choices=['cpu','gpu','gpu10'],help="Use which image gpu or cpu")
     parser.add_argument("--dump_dir", default=dump_dir, help='Dir to dump results')
+    parser.add_argument("--raw_dir", help='Optional dir to point towards data')
 
     args = parser.parse_args()
 
@@ -26,6 +27,12 @@ def launch_docker():
     cmd += (
         f" -v {snn_dir}:/u/home/SuperNNova"
         f" -v {args.dump_dir}:/u/home/snndump"
+        )
+    
+    if parser.raw_dir:
+        f" -v {args.raw_dir}:/u/home/raw"
+
+    cmd += (
         f" -e HOST_USER_ID={os.getuid()} "
         f" -e HOST_USER_GID={os.getgid()} "
         f" rnn-{args.image}:latest"
