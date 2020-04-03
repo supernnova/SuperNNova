@@ -133,8 +133,7 @@ def get_predictions(settings, model_file=None):
     
     # Batching stuff together
     num_elem = len(list_data_test)
-    factor = (num_elem // 4) if settings.source_data == "photometry" else num_elem
-    num_batches = num_elem / min(factor,100000)
+    num_batches = num_elem / min(num_elem, settings.batch_size)
     list_batches = np.array_split(np.arange(num_elem), num_batches)
     
     # Prepare output arrays
