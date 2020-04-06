@@ -128,9 +128,7 @@ def tag_type(df, settings, type_column="TYPE"):
     # check if all types are given in input dictionary
     tmp = df[~df[type_column].isin(settings.sntypes.keys())][type_column]
     if len(tmp) > 0:
-        logging_utils.print_red("Not all sntypes are given in input")
-        logging_utils.print_red(f"missing: {tmp.unique()}")
-        logging_utils.print_red(f"tagging them as class {len(settings.sntypes)}")
+        logging_utils.print_red("Missing sntypes",f"{tmp.unique()} tagging as: {len(settings.sntypes)}")
 
     classes_to_use = {}
     for i, k in enumerate(settings.sntypes.keys()):
@@ -140,7 +138,6 @@ def tag_type(df, settings, type_column="TYPE"):
 
     df[f"target_{len(settings.sntypes)}classes"] = df[type_column].apply(
         lambda x: classes_to_use[x]
-    )
 
     return df
 
@@ -396,6 +393,10 @@ def log_standardization(arr):
     arr_log = np.log(-arr_min + arr + 1e-5)
     arr_mean = arr_log.mean()
     arr_std = arr_log.std()
+
+    if arr_min<-2000:
+        logging_utils.print_yellow(f'Warning: extreme data values {arr_min}',f'clipping normalization min to -2000')
+        arr_min = -2000
 
     return LogStandardized(arr_min=arr_min, arr_mean=arr_mean, arr_std=arr_std)
 
