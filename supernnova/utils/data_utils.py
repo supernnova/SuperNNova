@@ -138,6 +138,7 @@ def tag_type(df, settings, type_column="TYPE"):
 
     df[f"target_{len(settings.sntypes)}classes"] = df[type_column].apply(
         lambda x: classes_to_use[x]
+        )
 
     return df
 
