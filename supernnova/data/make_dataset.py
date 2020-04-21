@@ -64,11 +64,15 @@ def build_traintestval_splits(settings):
         )
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
         list_df = executor.map(process_fn, list_files)
-    # only used for debugging    (if parallelization above commented)
-    # if fmat == 'FITS':
-    #     list_df = data_utils.process_header_FITS(list_files[-1],settings,columns=photo_columns + ["SNTYPE"])
-    # # else:
-    #     list_df = data_utils.process_header_csv(list_files[0],settings,columns=photo_columns + ["SNTYPE"])
+    # # only used for debugging    (if parallelization above commented)
+    # if fmat == "FITS":
+    #     list_df = data_utils.process_header_FITS(
+    #         list_files[-1], settings, columns=photo_columns + ["SNTYPE"]
+    #     )
+    #     # else:
+    #     list_df = data_utils.process_header_csv(
+    #         list_files[0], settings, columns=photo_columns + ["SNTYPE"]
+    #     )
 
     # Load df_photo
     df_photo = pd.concat(list_df)
@@ -82,7 +86,7 @@ def build_traintestval_splits(settings):
         df_salt["SNID"] = df_photo["SNID"].str.strip()
     df_salt["is_salt"] = 1
     # correct format SNID
-    df_salt['SNID'] = df_salt['SNID'].astype(str).str.strip()
+    df_salt["SNID"] = df_salt["SNID"].astype(str).str.strip()
     # Check all SNID in df_salt are also in df_photo
     try:
         assert np.all(df_salt.SNID.isin(df_photo.SNID))
@@ -241,9 +245,9 @@ def process_single_FITS(file_path, settings):
     header = Table.read(file_path.replace("PHOT", "HEAD"), format="fits")
     df_header = header.to_pandas()
     try:
-        df_header['SNID'] = df_header['SNID'].str.decode('utf-8')
+        df_header["SNID"] = df_header["SNID"].str.decode("utf-8")
     except Exception:
-        df_header['SNID'] = df_header['SNID'].astype(str)
+        df_header["SNID"] = df_header["SNID"].astype(str)
     # Keep only columns of interest
     keep_col_header = [
         "SNID",
@@ -302,11 +306,10 @@ def process_single_FITS(file_path, settings):
     df["SNID"] = arr_ID.astype(str)
     df["SNID"] = df["SNID"].str.strip()
     df = df.set_index("SNID")
-    df_header['SNID'] = df_header['SNID'].str.strip()
+    df_header["SNID"] = df_header["SNID"].str.strip()
     df_header = df_header.set_index("SNID")
     # join df and header
     df = df.join(df_header).reset_index()
-
 
     #############################################
     # Photometry window selection
@@ -344,7 +347,7 @@ def process_single_FITS(file_path, settings):
     #############################################
     df_SNID = pd.read_pickle(f"{settings.processed_dir}/SNID.pickle")
     # Check all SNID in df are in df_SNID
-    assert np.all(df.SNID.isin(df_SNID.SNID)) 
+    assert np.all(df.SNID.isin(df_SNID.SNID))
     # Merge left on df: len(df) will not change and will now include
     # relevant columns from df_SNID
     merge_columns = ["SNID"]
@@ -383,7 +386,7 @@ def process_single_csv(file_path, settings):
     # Keep only columns of interest
     keep_col = ["SNID", "MJD", "FLUXCAL", "FLUXCALERR", "FLT"]
     df = df[keep_col].copy()
-    df['SNID'] = df['SNID'].astype(str)
+    df["SNID"] = df["SNID"].astype(str)
     df = df.set_index("SNID")
 
     # Load the companion HEAD file
@@ -445,7 +448,11 @@ def process_single_csv(file_path, settings):
     df.to_pickle(f"{settings.preprocessed_dir}/{basename.replace('.FITS', '.pickle')}")
 
     # getting SNIDs for SNe with Host_spec
-    host_spe = df[df["HOSTGAL_SPECZ"] > 0]["SNID"].unique().tolist() if 'HOSTGAL_SPECZ' in df.keys() else []
+    host_spe = (
+        df[df["HOSTGAL_SPECZ"] > 0]["SNID"].unique().tolist()
+        if "HOSTGAL_SPECZ" in df.keys()
+        else []
+    )
 
     return host_spe
 
@@ -484,16 +491,23 @@ def preprocess_data(settings):
     num_chunks = num_elem // 10 + 1
     list_chunks = np.array_split(np.arange(num_elem), num_chunks)
 
-    # Loop over chunks of files
-    for chunk_idx in tqdm(list_chunks, desc="Preprocess", ncols=100):
-        # Process each file in the chunk in parallel
-        with ProcessPoolExecutor(max_workers=max_workers) as executor:
-            start, end = chunk_idx[0], chunk_idx[-1] + 1
-            # Need to cast to list because executor returns an iterator
-            host_spe_tmp += list(executor.map(parallel_fn, list_files[start:end]))
-    # for debugging only (parallelization needs to be commented)
-    # host_spe_tmp.append(process_single_FITS(list_files[0], settings))
-    # host_spe_tmp.append(process_single_csv(list_files[0], settings))
+    # # Loop over chunks of files
+    if not settings.debug:
+        for chunk_idx in tqdm(list_chunks, desc="Preprocess", ncols=100):
+            # Process each file in the chunk in parallel
+            with ProcessPoolExecutor(max_workers=max_workers) as executor:
+                start, end = chunk_idx[0], chunk_idx[-1] + 1
+                # Need to cast to list because executor returns an iterator
+                host_spe_tmp += list(executor.map(parallel_fn, list_files[start:end]))
+    else:
+        logging_utils.print_yellow("Beware debugging mode (only one file processed)")
+        # for debugging only (parallelization needs to be commented)
+        out = (
+            process_single_FITS(list_files[0], settings)
+            if "FITS" in list_files[0]
+            else process_single_csv(list_files[0], settings)
+        )
+        host_spe_tmp.append(out)
     # Save host spe for plotting and performance tests
     host_spe = [item for sublist in host_spe_tmp for item in sublist]
     pd.DataFrame(host_spe, columns=["SNID"]).to_pickle(
@@ -503,6 +517,16 @@ def preprocess_data(settings):
 
 
 def pivot_dataframe_single(filename, settings):
+
+    df = pd.read_pickle(filename)
+    df = pivot_dataframe_single_from_df(df, settings)
+
+    # Save to pickle
+    dump_filename = os.path.splitext(filename)[0] + "_pivot.pickle"
+    df.to_pickle(dump_filename)
+
+
+def pivot_dataframe_single_from_df(df, settings):
     """
     Carry out pivot: we will group time-wise close observations on the same row
     and each row in the dataframe will show a value for each of the flux and flux
@@ -520,7 +544,6 @@ def pivot_dataframe_single(filename, settings):
 
     assert len(list_filters) > 0
 
-    df = pd.read_pickle(filename)
     arr_MJD = df.MJD.values
     arr_delta_time = df.delta_time.values
     # Loop over times to create grouped MJD:
@@ -594,6 +617,11 @@ def pivot_dataframe_single(filename, settings):
 
     # New column to indicate which channel (r,g,z,i) is present
     # The column will read ``rg`` if r,g are present; ``rgz`` if r,g and z are present, etc.
+    # fix missing filters
+    missing_filters = [k for k in list_filters if f"FLUXCAL_{k}" not in df.columns]
+    for f in missing_filters:
+        df[f"FLUXCAL_{f}"] = np.nan
+        df[f"FLUXCALERR_{f}"] = np.nan
     for flt in list_filters:
         df[flt] = np.where(df["FLUXCAL_%s" % flt].isnull(), "", flt)
     df["FLT"] = df[list_filters[0]]
@@ -629,9 +657,8 @@ def pivot_dataframe_single(filename, settings):
     df = df.join(df_salt[["mB", "c", "x1"]], how="left")
 
     df.drop(columns="MJD", inplace=True)
-    # Save to pickle
-    dump_filename = os.path.splitext(filename)[0] + "_pivot.pickle"
-    df.to_pickle(dump_filename)
+
+    return df
 
 
 def pivot_dataframe_batch(list_files, settings):
@@ -651,17 +678,20 @@ def pivot_dataframe_batch(list_files, settings):
     list_chunks = np.array_split(np.arange(num_elem), num_chunks)
 
     # Parameters of multiprocessing below
-    max_workers = multiprocessing.cpu_count()
-    # use parallelization to speed up processing
-    # Loop over chunks of files
-    for chunk_idx in tqdm(list_chunks, desc="Pivoting dataframes", ncols=100):
-        parallel_fn = partial(pivot_dataframe_single, settings=settings)
-        # Process each file in the chunk in parallel
-        with ProcessPoolExecutor(max_workers=max_workers) as executor:
-            start, end = chunk_idx[0], chunk_idx[-1] + 1
-            executor.map(parallel_fn, list_files[start:end])
-    # for debugging only (if above is commented)
-    # pivot_dataframe_single(list_files[0], settings)
+    if not settings.debug:
+        max_workers = multiprocessing.cpu_count()
+        # use parallelization to speed up processing
+        # Loop over chunks of files
+        for chunk_idx in tqdm(list_chunks, desc="Pivoting dataframes", ncols=100):
+            parallel_fn = partial(pivot_dataframe_single, settings=settings)
+            # Process each file in the chunk in parallel
+            with ProcessPoolExecutor(max_workers=max_workers) as executor:
+                start, end = chunk_idx[0], chunk_idx[-1] + 1
+                executor.map(parallel_fn, list_files[start:end])
+    else:
+        logging_utils.print_yellow("Beware debugging mode (only one file processed)")
+        # for debugging only, process one file only
+        pivot_dataframe_single(list_files[0], settings)
 
     logging_utils.print_green("Finished pivot")
 

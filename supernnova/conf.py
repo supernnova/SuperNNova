@@ -86,6 +86,15 @@ def get_args():
         "--done_file", default=None, type=str, help="Done or failure file name"
     )
 
+    parser.add_argument(
+        "--no_dump", action="store_true", help="No dump database nor preds"
+    )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Debug database creation: one file processed only",
+    )
+
     #######################
     # PLASTICC parameters
     #######################

@@ -1,10 +1,10 @@
 import torch.nn as nn
 import torch
-from . import logging_utils as lu
-from ..training import bayesian_rnn
-from ..training import bayesian_rnn_2
-from ..training import variational_rnn
-from ..training import vanilla_rnn
+from supernnova.utils import logging_utils as lu
+from supernnova.training import bayesian_rnn
+from supernnova.training import bayesian_rnn_2
+from supernnova.training import variational_rnn
+from supernnova.training import vanilla_rnn
 import os
 import h5py
 import json
@@ -12,6 +12,7 @@ import pickle
 import numpy as np
 from tqdm import tqdm
 from pathlib import Path
+
 from sklearn import metrics
 import matplotlib.pyplot as plt
 
@@ -44,7 +45,7 @@ def normalize_arr(arr, settings):
         # clipping
         arr_to_norm = np.clip(arr_to_norm, arr_min, np.inf)
 
-        if settings.norm !='cosmo':
+        if settings.norm != "cosmo":
             # normalize using global norm
             arr_normed = np.log(arr_to_norm - arr_min + 1e-5)
             arr_normed = (arr_normed - arr_mean) / arr_std
@@ -53,10 +54,12 @@ def normalize_arr(arr, settings):
             # normalize all lcs to 1 (fluxes), maintain color info
             # time is normalized as global norm
             arr_normed_cosmo = arr_to_norm
-            arr_normed_cosmo[:,:-1] = arr_normed_cosmo[:,:-1]/arr_normed_cosmo[:,:-1].max()
+            arr_normed_cosmo[:, :-1] = (
+                arr_normed_cosmo[:, :-1] / arr_normed_cosmo[:, :-1].max()
+            )
             # time normalization
-            tmp_cosmo = np.log(arr_to_norm[:,-1] - arr_min[-1] + 1e-5)
-            arr_normed_cosmo[:,-1] = (tmp_cosmo - arr_mean[-1]) / arr_std[-1]
+            tmp_cosmo = np.log(arr_to_norm[:, -1] - arr_min[-1] + 1e-5)
+            arr_normed_cosmo[:, -1] = (tmp_cosmo - arr_mean[-1]) / arr_std[-1]
             arr_normed = arr_normed_cosmo
 
         arr[:, settings.idx_features_to_normalize] = arr_normed
@@ -78,17 +81,16 @@ def unnormalize_arr(arr, settings):
     if settings.norm == "none":
         return arr
 
-
     arr_min = settings.arr_norm[:, 0]
     arr_mean = settings.arr_norm[:, 1]
     arr_std = settings.arr_norm[:, 2]
 
-    if settings.norm =='cosmo':
+    if settings.norm == "cosmo":
         # onyl unnormalize time
         arr_to_unnorm = arr[:, settings.idx_features_to_normalize[-1]]
 
         arr_to_unnorm = arr_to_unnorm * arr_std[-1] + arr_mean[-1]
-        arr_unnormed = np.exp(arr_to_unnorm) + arr_min[-1] - 1E-5
+        arr_unnormed = np.exp(arr_to_unnorm) + arr_min[-1] - 1e-5
 
         arr[:, settings.idx_features_to_normalize[-1]] = arr_unnormed
 
@@ -96,7 +98,7 @@ def unnormalize_arr(arr, settings):
         arr_to_unnorm = arr[:, settings.idx_features_to_normalize]
 
         arr_to_unnorm = arr_to_unnorm * arr_std + arr_mean
-        arr_unnormed = np.exp(arr_to_unnorm) + arr_min - 1E-5
+        arr_unnormed = np.exp(arr_to_unnorm) + arr_min - 1e-5
 
         arr[:, settings.idx_features_to_normalize] = arr_unnormed
 
