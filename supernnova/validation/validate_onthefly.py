@@ -63,6 +63,7 @@ def format_data(df, settings):
     tmp = pd.Series(settings.list_filters_combination).append(df["FLT"])
     tmp_onehot = pd.get_dummies(tmp)
     # this is ok since it goes by length not by index (which I never reset)
+    # beware: this requires index int!
     FLT_onehot = tmp_onehot[len(settings.list_filters_combination) :]
     df = pd.concat([df, FLT_onehot], axis=1)[settings.training_features]
 
