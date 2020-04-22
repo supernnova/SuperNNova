@@ -41,31 +41,32 @@ class ExperimentSettings:
             self.weight_decay = 0.0
 
         # Load simulation and training settings and prepare directories
-        self.setup_dir()
+        if self.no_dump:
+            pass
+        else:
+            self.setup_dir()
+            # Set the database file names
+            self.set_database_file_names()
+        
+            self.randomforest_features = self.get_randomforest_features()
 
-        self.set_pytorch_model_name()
-        self.set_randomforest_model_name()
+            # Set the feature lists
+            self.set_feature_lists()
 
-        self.randomforest_features = self.get_randomforest_features()
+            self.overwrite = not self.no_overwrite
 
-        # Set the database file names
-        self.set_database_file_names()
+            # filter combination
+            list_filters_combination = []
+            for i in range(1, len(self.list_filters)+1):
+                tmp = [''.join(t) for t in list(
+                    itertools.combinations(self.list_filters, i))]
+                list_filters_combination = list_filters_combination + tmp
+            self.list_filters_combination = list_filters_combination
 
-        # Set the feature lists
-        self.set_feature_lists()
-
-        # Get the feature normalization dict
-        self.load_normalization()
-
-        self.overwrite = not self.no_overwrite
-
-        # filter combination
-        list_filters_combination = []
-        for i in range(1, len(self.list_filters)+1):
-            tmp = [''.join(t) for t in list(
-                itertools.combinations(self.list_filters, i))]
-            list_filters_combination = list_filters_combination + tmp
-        self.list_filters_combination = list_filters_combination
+            self.set_randomforest_model_name()
+            self.set_pytorch_model_name()
+            # Get the feature normalization dict
+            self.load_normalization()
 
     def get_randomforest_features(self):
         """Specify list of features to be used for RandomForest training
@@ -146,11 +147,18 @@ class ExperimentSettings:
         self.pytorch_model_name = name
         self.rnn_dir = f"{self.models_dir}/{self.pytorch_model_name}"
 
+        # deserializing numpy arrays to save as json
+        d_tmp = {}
+        for k, v in self.__dict__.items():
+            if isinstance(v,np.ndarray):
+                v = v.tolist()
+            d_tmp[k] = v
+
         if self.train_rnn:
             os.makedirs(self.rnn_dir, exist_ok=True)
             # Dump the command line arguments (for model restoration)
             with open(Path(self.rnn_dir) / "cli_args.json", "w") as f:
-                json.dump(self.cli_args, f, indent=4, sort_keys=True)
+                json.dump(d_tmp, f, indent=4, sort_keys=True)
 
     def set_randomforest_model_name(self):
         """Define the model name for all RandomForest based classifiers
