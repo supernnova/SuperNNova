@@ -1,7 +1,29 @@
-import numpy as np
 import argparse
+import numpy as np
 import pandas as pd
+from pathlib import Path
+import supernnova.utils.logging_utils as lu
 from supernnova.validation.validate_onthefly import classify_lcs
+
+"""
+    Example code on how to run on the fly classifications
+    - Need to laod a pre-trained model
+    - Either provide a list with data or a Pandas DataFrame
+"""
+
+# Data columns to provide
+# HOSTGAL redshifts only required if classification with redshift is used
+COLUMN_NAMES = [
+    "SNID",
+    "MJD",
+    "FLUXCAL",
+    "FLUXCALERR",
+    "FLT",
+    "HOSTGAL_PHOTOZ",
+    "HOSTGAL_SPECZ",
+    "HOSTGAL_PHOTOZ_ERR",
+    "HOSTGAL_SPECZ_ERR",
+]
 
 
 def manual_lc():
@@ -20,15 +42,27 @@ def manual_lc():
     df["FLT"] = ["g", "r", "g", "r"]
     # redshift is not required if classifying without it
     df["HOSTGAL_SPECZ"] = [0.12, 0.12, 0.5, 0.5]
-    df["HOSTGAL_PHOTZ"] = [0.1, 0.1, 0.5, 0.5]
+    df["HOSTGAL_PHOTOZ"] = [0.1, 0.1, 0.5, 0.5]
+    df["HOSTGAL_SPECZ_ERR"] = [0.001, 0.001, 0.001, 0.001]
+    df["HOSTGAL_PHOTOZ_ERR"] = [0.01, 0.01, 0.01, 0.01]
 
     return df
 
 
 def load_lc_csv(filename):
-    df = pd.read_csv(filename, usecols=["SNID", "FLUXCAL", "FLUXCALERR", "FLT", "MJD"],)
-    df["HOSTGAL_SPECZ"] = np.zeros(len(df))
-    df["HOSTGAL_PHOTZ"] = np.zeros(len(df))
+    """Read light-curve(s) in csv format
+
+    Args:
+        filename (str): data file
+    """
+    df = pd.read_csv(filename)
+
+    missing_cols = [k for k in COLUMN_NAMES if k not in df.keys()]
+    lu.print_red(f"Missing {len(missing_cols)} columns", missing_cols)
+    lu.print_yellow(f"filling with zeros")
+    lu.print_yellow(f"HOSTGAL required only for classification with redshift")
+    for k in missing_cols:
+        df[k] = np.zeros(len(df))
     df = df.sort_values(by=["MJD"])
     df["SNID"] = df["SNID"].astype(int).astype(str)
 
@@ -36,6 +70,8 @@ def load_lc_csv(filename):
 
 
 def reformat_to_df(pred_probs, ids=None):
+    """
+    """
     # TO DO: suppport nb_inference != 1
     num_inference_samples = 1
 
@@ -69,7 +105,10 @@ if __name__ == "__main__":
         description="Classification using pre-trained model"
     )
     parser.add_argument(
-        "--model_file", type=str, help="path to pre-trained SuperNNova model"
+        "--model_file",
+        type=str,
+        default="tests/onthefly_model/vanilla_S_0_CLF_2_R_none_photometry_DF_1.0_N_global_lstm_32x2_0.05_128_True_mean.pt",
+        help="path to pre-trained SuperNNova model",
     )
     parser.add_argument(
         "--device", type=str, default="cpu", help="device to be used [cuda,cpu]"
@@ -83,18 +122,21 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # data
-    # csv or manual data, choose one
-    # df = load_lc_csv(args.filename)
-    df = manual_lc()
+    # Input data
+    # options: csv or manual data, choose one
+    df = load_lc_csv(args.filename)
+    # df = manual_lc()
 
     # Obtain predictions for full light-curve
     # Format: batch, nb_inference_samples, nb_classes
     pred_probs = classify_lcs(df, args.model_file, args.device)
 
+    # ________________________
+    # Optional
+    #
     # reformat to df
     preds_df = reformat_to_df(pred_probs, ids=df.SNID.unique())
+    preds_df.to_csv(f"Predictions_{Path(args.filename).name}")
 
-    import ipdb
-
-    ipdb.set_trace()
+    # To implement
+    # Early prediction visualization
