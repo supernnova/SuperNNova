@@ -106,7 +106,7 @@ def classify_lcs(df, model_file, device):
         X_normed = X_all.copy()
         X_normed = tu.normalize_arr(X_normed, settings)
         # format: data, target (filled with zeros), _
-        X_tmp = X_normed, np.zeros(len(X_normed)), "dummy"
+        X_tmp = X_normed, 0, "dummy"
         list_lcs.append(X_tmp)
 
     packed, _, target_tensor, idxs_rev_sort = tu.get_data_batch(
