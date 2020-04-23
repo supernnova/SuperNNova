@@ -88,10 +88,7 @@ def reformat_to_df(pred_probs, ids=None):
     preds_df = pd.DataFrame.from_dict(d_series)
 
     # get predicted class
-    try:
-        preds_df["pred_class"] = np.argmax(pred_probs, axis=0)[0]
-    except Exception:
-        preds_df["pred_class"] = np.argmax(pred_probs[0], axis=0)[0]
+    preds_df["pred_class"] = np.argmax(pred_probs, axis=-1).reshape(-1)
 
     return preds_df
 
@@ -124,8 +121,8 @@ if __name__ == "__main__":
 
     # Input data
     # options: csv or manual data, choose one
-    df = load_lc_csv(args.filename)
-    # df = manual_lc()
+    # df = load_lc_csv(args.filename)
+    df = manual_lc()
 
     # Obtain predictions for full light-curve
     # Format: batch, nb_inference_samples, nb_classes
