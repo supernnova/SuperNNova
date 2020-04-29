@@ -1,7 +1,7 @@
 raw_dir: /home/tmain/Lyrebird/SuperNNova_refactor/raw
 preprocessed_dir: /home/tmain/Lyrebird/SuperNNova_refactor/tests/dump/preprocessed
 processed_dir: /home/tmain/Lyrebird/SuperNNova_refactor/tests/dump/processed
-fitopt_file: /home/tmain/Lyrebird/SuperNNova_refactor/raw/FITOPT000.FITRES
+# fitopt_file: /home/tmain/Lyrebird/SuperNNova_refactor/raw/FITOPT000.FITRES
 fig_dir: /home/tmain/Lyrebird/SuperNNova_refactor/tests/dump/figures
 dump_dir: /home/tmain/Lyrebird/SuperNNova_refactor/tests/dump/rnn/vanilla_000
 
