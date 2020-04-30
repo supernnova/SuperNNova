@@ -299,7 +299,8 @@ def get_model(settings, input_size):
 
     rnn = rnn(input_size, settings)
 
-    print(rnn)
+    if not settings.no_dump:
+        print(rnn)
 
     return rnn
 
