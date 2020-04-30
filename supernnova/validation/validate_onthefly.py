@@ -122,7 +122,7 @@ def classify_lcs(df, model_file, device):
 
     # obtain predictions
     list_preds = []
-    for iter_ in tqdm(range(settings.num_inference_samples), ncols=100):
+    for iter_ in range(settings.num_inference_samples):
 
         arr_preds, _ = get_batch_predictions(rnn, packed, target_tensor)
 
