@@ -70,9 +70,10 @@ def load_lc_csv(filename):
 
 
 def reformat_to_df(pred_probs, ids=None):
-    """
-    """
+    """ Reformat SNN predictions to a DataFrame
+
     # TO DO: suppport nb_inference != 1
+    """
     num_inference_samples = 1
 
     d_series = {}
@@ -80,7 +81,7 @@ def reformat_to_df(pred_probs, ids=None):
         d_series["SNID"] = []
         d_series[f"prob_class{i}"] = []
     for idx, value in enumerate(pred_probs):
-        d_series["SNID"] += ids[idx] if len(ids) > 0 else idx
+        d_series["SNID"] += [ids[idx]] if len(ids) > 0 else idx
         value = value.reshape((num_inference_samples, -1))
         value_dim = value.shape[1]
         for i in range(value_dim):
@@ -126,7 +127,8 @@ if __name__ == "__main__":
 
     # Obtain predictions for full light-curve
     # Format: batch, nb_inference_samples, nb_classes
-    pred_probs = classify_lcs(df, args.model_file, args.device)
+    # Beware, ids are resorted while obtaining predictions!
+    ids_preds, pred_probs = classify_lcs(df, args.model_file, args.device)
 
     # ________________________
     # Optional

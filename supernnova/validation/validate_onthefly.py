@@ -54,6 +54,7 @@ def format_data(df, settings):
     # fill dummies
     if "PEAKMJD" not in df.keys():
         df["PEAKMJD"] = np.zeros(len(df))
+
     # pivot
     df = pivot_dataframe_single_from_df(df, settings)
 
@@ -71,6 +72,16 @@ def format_data(df, settings):
 
 
 def classify_lcs(df, model_file, device):
+    """ Obtain predictions for light-curves
+    Args:
+        df (DataFrame): light-curves to classify
+        model_file (str): Path+name of model to use for predictions
+        device (str): wehter to use cuda or cpu
+
+    Returns:
+        idx (list): light-curve indices after classification (they are resorted)
+        preds (np.array): predictions for this model (shape= len(idx),model_nb_class)
+    """
     # init
     settings = get_settings(model_file)
     settings.use_cuda = True if "cuda" in str(device) else False
@@ -134,4 +145,4 @@ def classify_lcs(df, model_file, device):
     # B, inf_samples, nb_classes
     preds = np.stack(list_preds, axis=1)
 
-    return preds
+    return df.index.unique(), preds
