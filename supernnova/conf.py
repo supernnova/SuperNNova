@@ -208,6 +208,18 @@ def get_args():
         default=natsorted(["g", "i", "r", "z"]),
         help="Survey filters",
     )
+    # Photometry filtering
+    parser.add_argument(
+        "--phot_reject",
+        type=None,
+        help="Variable representing bit photometry flag for rejection (e.g.PHOTFLAG)",
+    )
+    parser.add_argument(
+        "--phot_reject_list",
+        type=str,
+        default=[8, 16, 32, 64, 128, 256, 512],
+        help="Bit list to mask",
+    )
 
     ######################
     # RNN  parameters

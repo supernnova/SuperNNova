@@ -239,7 +239,11 @@ def process_single_FITS(file_path, settings):
         df = df.drop(df.index[-1])
     # Keep only columns of interest
     keep_col = ["MJD", "FLUXCAL", "FLUXCALERR", "FLT"]
-    df = df[keep_col].copy()
+    df = (
+        df[keep_col + [settings.phot_reject]].copy()
+        if settings.phot_reject
+        else df[keep_col].copy()
+    )
 
     # Load the companion HEAD file
     header = Table.read(file_path.replace("PHOT", "HEAD"), format="fits")
@@ -312,8 +316,9 @@ def process_single_FITS(file_path, settings):
     df = df.join(df_header).reset_index()
 
     #############################################
-    # Photometry window selection
+    # Photometry window & quality (flag) selection
     #############################################
+    # window
     if settings.photo_window_files:
         df["window_time_cut"] = True
         mask = df["MJD"] != -777.00
@@ -324,6 +329,20 @@ def process_single_FITS(file_path, settings):
             else (True if (x <= 0 and x > settings.photo_window_min) else False)
         )
         df = df[df["window_time_cut"] == True]
+    # quality
+    if settings.phot_reject:
+        from astropy.nddata import bitmask
+
+        tmp = len(df.SNID.unique())
+        tmp2 = len(df)
+        df["phot_reject"] = bitmask.bitfield_to_boolean_mask(
+            df[settings.phot_reject].values, settings.phot_reject_list
+        )
+        df = df[df["phot_reject"] == True]
+        if settings.debug:
+            logging_utils.print_blue("Phot reject", file_path)
+            logging_utils.print_blue(f"SNID {tmp} to {len(df.SNID.unique())}")
+            logging_utils.print_blue(f"Phot {tmp2} to {len(df)}")
 
     #############################################
     # Miscellaneous data processing
@@ -500,14 +519,15 @@ def preprocess_data(settings):
                 # Need to cast to list because executor returns an iterator
                 host_spe_tmp += list(executor.map(parallel_fn, list_files[start:end]))
     else:
-        logging_utils.print_yellow("Beware debugging mode (only one file processed)")
+        logging_utils.print_yellow("Beware debugging mode")
         # for debugging only (parallelization needs to be commented)
-        out = (
-            process_single_FITS(list_files[0], settings)
-            if "FITS" in list_files[0]
-            else process_single_csv(list_files[0], settings)
-        )
-        host_spe_tmp.append(out)
+        for i in range(len(list_files)):
+            out = (
+                process_single_FITS(list_files[i], settings)
+                if "FITS" in list_files[i]
+                else process_single_csv(list_files[i], settings)
+            )
+            host_spe_tmp.append(out)
     # Save host spe for plotting and performance tests
     host_spe = [item for sublist in host_spe_tmp for item in sublist]
     pd.DataFrame(host_spe, columns=["SNID"]).to_pickle(
