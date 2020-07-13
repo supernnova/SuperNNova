@@ -331,13 +331,24 @@ def process_single_FITS(file_path, settings):
         df = df[df["window_time_cut"] == True]
     # quality
     if settings.phot_reject:
-        from astropy.nddata import bitmask
+        # only valid for powers of two combinations
+        def powers_of_two(x):
+            powers = []
+            i = 1
+            while i <= x:
+                if i & x:
+                    powers.append(i)
+                i <<= 1
+            return powers
 
         tmp = len(df.SNID.unique())
         tmp2 = len(df)
-        df["phot_reject"] = bitmask.bitfield_to_boolean_mask(
-            df[settings.phot_reject].values, settings.phot_reject_list
+        df["phot_reject"] = df[settings.phot_reject].apply(
+            lambda x: False
+            if len(set(settings.phot_reject_list).intersection(powers_of_two(x))) > 0
+            else True
         )
+
         df = df[df["phot_reject"] == True]
         if settings.debug:
             logging_utils.print_blue("Phot reject", file_path)

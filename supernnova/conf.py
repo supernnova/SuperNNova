@@ -212,13 +212,13 @@ def get_args():
     parser.add_argument(
         "--phot_reject",
         type=None,
-        help="Variable representing bit photometry flag for rejection (e.g.PHOTFLAG)",
+        help="Variable for photometry flag rejection as a power of 2 (e.g.PHOTFLAG)",
     )
     parser.add_argument(
         "--phot_reject_list",
         type=str,
         default=[8, 16, 32, 64, 128, 256, 512],
-        help="Bit list to mask",
+        help="Bit list to mask (supports only powers of 2)",
     )
 
     ######################
