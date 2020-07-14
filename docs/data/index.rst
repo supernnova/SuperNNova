@@ -101,6 +101,26 @@ The default filter set is the one from the Dark Energy Survey Supernova ``g,r,i,
 
 e.g. ``--list_filters g r ``. 
 
+Using a different redshift label
+------------------------------
+The default redshift label is either ``HOSTGAL_SPECZ``/``HOSTGAL_PHOTOZ`` (with option ``zspe``/``zpho``). If you want to use your own label, you'll need to specify it. Beware, this will override also ``SIM_REDSHIFT_CMB`` used for the title of plotted light-curves.
+
+.. code::
+
+    python run.py --dump_dir <path/to/save/database/> --data --raw_dir <path/to/raw/data/>  --redshift_label <your/label>
+
+e.g. ``--redshift_label REDSHIFT_FINAL``. 
+
+Masking photometry
+------------------------------
+The default is to use all available photometry for classification. However, we support masking photometric epochs with a power of two mask. Any combination of these power of two integers, and with other numbers, will be eliminated from the database.
+
+.. code::
+
+    python run.py --dump_dir <path/to/save/database/> --data --raw_dir <path/to/raw/data/>  --phot_reject <your/label> --phot_reject_list <list/to/reject>
+
+e.g. ``--phot_reject PHOTFLAG --phot_reject_list 8 16 32 64 128 256 512``. 
+
 Under the hood
 -------------------------------
 
