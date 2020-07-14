@@ -216,9 +216,16 @@ def get_args():
     )
     parser.add_argument(
         "--phot_reject_list",
-        type=str,
+        nargs="+",
+        type=int,
         default=[8, 16, 32, 64, 128, 256, 512],
         help="Bit list to mask (supports only powers of 2)",
+    )
+    parser.add_argument(
+        "--redshift_label",
+        type=str,
+        default="none",
+        help="Redshift label to be used instead of HOSTGAL_SPECZ (with _ERR) and SIM_REDSHIFT",
     )
 
     ######################

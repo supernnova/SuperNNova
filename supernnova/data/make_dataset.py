@@ -253,6 +253,13 @@ def process_single_FITS(file_path, settings):
     except Exception:
         df_header["SNID"] = df_header["SNID"].astype(str)
     # Keep only columns of interest
+    # Hack for using the final redshift not the galaxy
+    if settings.redshift_label != "none":
+        logging_utils.print_yellow("Changed redshift to", settings.redshift_label)
+        df_header["HOSTGAL_SPECZ"] = df_header[settings.redshift_label]
+        df_header["HOSTGAL_SPECZ_ERR"] = df_header[f"{settings.redshift_label}_ERR"]
+        df_header["SIM_REDSHIFT_CMB"] = df_header[settings.redshift_label]
+
     keep_col_header = [
         "SNID",
         "PEAKMJD",
@@ -345,11 +352,12 @@ def process_single_FITS(file_path, settings):
         tmp2 = len(df)
         df["phot_reject"] = df[settings.phot_reject].apply(
             lambda x: False
-            if len(set(settings.phot_reject_list).intersection(powers_of_two(x))) > 0
+            if len(set(settings.phot_reject_list).intersection(set(powers_of_two(x))))
+            > 0
             else True
         )
-
         df = df[df["phot_reject"] == True]
+
         if settings.debug:
             logging_utils.print_blue("Phot reject", file_path)
             logging_utils.print_blue(f"SNID {tmp} to {len(df.SNID.unique())}")
