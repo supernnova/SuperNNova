@@ -108,7 +108,18 @@ def tag_type(df, settings, type_column="TYPE"):
 
     # 2 classes
     # taking the first type vs. others
+
     list_types = list(set([x for x in settings.sntypes.values()]))
+
+    if type_column not in df.keys():
+        if settings.data_testing:
+            df["SNTYPE"] = np.ones(len(df)).astype(int)
+        else:
+            logging_utils.print_red(
+                "Please provide SNTYPE with data (else use data_testing option)"
+            )
+            raise Exception
+
     if "Ia" in list_types:
         df[type_column] = df[type_column].astype(str)
         # get keys of Ias, the rest tag them as CC
