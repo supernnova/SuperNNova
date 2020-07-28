@@ -253,6 +253,13 @@ def process_single_FITS(file_path, settings):
     except Exception:
         df_header["SNID"] = df_header["SNID"].astype(str)
     # Keep only columns of interest
+    # Hack for using the final redshift not the galaxy
+    if settings.redshift_label != "none":
+        logging_utils.print_yellow("Changed redshift to", settings.redshift_label)
+        df_header["HOSTGAL_SPECZ"] = df_header[settings.redshift_label]
+        df_header["HOSTGAL_SPECZ_ERR"] = df_header[f"{settings.redshift_label}_ERR"]
+        df_header["SIM_REDSHIFT_CMB"] = df_header[settings.redshift_label]
+
     keep_col_header = [
         "SNID",
         "PEAKMJD",
@@ -331,14 +338,26 @@ def process_single_FITS(file_path, settings):
         df = df[df["window_time_cut"] == True]
     # quality
     if settings.phot_reject:
-        from astropy.nddata import bitmask
+        # only valid for powers of two combinations
+        def powers_of_two(x):
+            powers = []
+            i = 1
+            while i <= x:
+                if i & x:
+                    powers.append(i)
+                i <<= 1
+            return powers
 
         tmp = len(df.SNID.unique())
         tmp2 = len(df)
-        df["phot_reject"] = bitmask.bitfield_to_boolean_mask(
-            df[settings.phot_reject].values, settings.phot_reject_list
+        df["phot_reject"] = df[settings.phot_reject].apply(
+            lambda x: False
+            if len(set(settings.phot_reject_list).intersection(set(powers_of_two(x))))
+            > 0
+            else True
         )
         df = df[df["phot_reject"] == True]
+
         if settings.debug:
             logging_utils.print_blue("Phot reject", file_path)
             logging_utils.print_blue(f"SNID {tmp} to {len(df.SNID.unique())}")
