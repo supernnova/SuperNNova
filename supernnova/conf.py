@@ -155,7 +155,7 @@ def get_args():
     )
     parser.add_argument(
         "--norm",
-        choices=["none", "perfilter", "global", "cosmo"],
+        choices=["none", "perfilter", "global", "cosmo", "cosmo_quantile"],
         default="global",
         help="Feature normalization: global does the same norm for all filters",
     )
