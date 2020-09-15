@@ -50,29 +50,37 @@ def build_traintestval_splits(settings):
     list_files = list_files[:]
     print("List files", list_files)
     # use parallelization to speed up processing
-    if fmat == "FITS":
-        process_fn = partial(
-            data_utils.process_header_FITS,
-            settings=settings,
-            columns=photo_columns + ["SNTYPE"],
-        )
+    if not settings.debug:
+        if fmat == "FITS":
+            process_fn = partial(
+                data_utils.process_header_FITS,
+                settings=settings,
+                columns=photo_columns + ["SNTYPE"],
+            )
+        else:
+            process_fn = partial(
+                data_utils.process_header_csv,
+                settings=settings,
+                columns=photo_columns + ["SNTYPE"],
+            )
+        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+            list_df = executor.map(process_fn, list_files)
     else:
-        process_fn = partial(
-            data_utils.process_header_csv,
-            settings=settings,
-            columns=photo_columns + ["SNTYPE"],
-        )
-    with ProcessPoolExecutor(max_workers=max_workers) as executor:
-        list_df = executor.map(process_fn, list_files)
-    # # only used for debugging    (if parallelization above commented)
-    # if fmat == "FITS":
-    #     list_df = data_utils.process_header_FITS(
-    #         list_files[-1], settings, columns=photo_columns + ["SNTYPE"]
-    #     )
-    #     # else:
-    #     list_df = data_utils.process_header_csv(
-    #         list_files[0], settings, columns=photo_columns + ["SNTYPE"]
-    #     )
+        logging_utils.print_yellow("Beware debugging mode (only one file processed)")
+        list_df = []
+        for fil in list_files:
+            if fmat == "FITS":
+                list_df.append(
+                    data_utils.process_header_FITS(
+                        fil, settings, columns=photo_columns + ["SNTYPE"]
+                    )
+                )
+            else:
+                list_df.append(
+                    data_utils.process_header_csv(
+                        fil, settings, columns=photo_columns + ["SNTYPE"]
+                    )
+                )
 
     # Load df_photo
     df_photo = pd.concat(list_df)
@@ -155,6 +163,7 @@ def build_traintestval_splits(settings):
                 SNID_train = sampled_SNIDs[: int(0.8 * n_samples)]
                 SNID_val = sampled_SNIDs[int(0.8 * n_samples) : int(0.9 * n_samples)]
                 SNID_test = sampled_SNIDs[int(0.9 * n_samples) :]
+
             # Find the indices of our train test val splits
             idxs_train = np.where(df.SNID.isin(SNID_train))[0]
             idxs_val = np.where(df.SNID.isin(SNID_val))[0]
