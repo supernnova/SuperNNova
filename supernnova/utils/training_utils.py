@@ -590,7 +590,7 @@ def get_evaluation_metrics(settings, list_data, model, sample_size=None):
     assert len(targets.shape) == 1
     assert len(preds.shape) == 2
 
-    if settings.nb_classes == 2:
+    if settings.nb_classes == 2 and len(set(targets)) > 1:
         auc = metrics.roc_auc_score(targets, preds[:, 1])
     else:
         # Can't compute AUC for more than 2 classes
@@ -655,7 +655,7 @@ def save_training_results(settings, d_monitor, training_time):
         if key == "AUC" and settings.nb_classes > 2:
             d_results[key] = -1
         else:
-            d_results[key] = max(d_monitor[key])
+            d_results[key] = max(d_monitor[key]) if None not in d_monitor[key] else None
     d_results["loss"] = min(d_monitor["loss"])
 
     try:
