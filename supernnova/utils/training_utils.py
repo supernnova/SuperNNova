@@ -70,9 +70,11 @@ def normalize_arr(arr, settings):
             # time is normalized as global norm
             arr_normed_cosmo = arr_to_norm
             # Flux + flux err normalization
-            arr_normed_cosmo[:, :-1] = arr_normed_cosmo[:, :-1] / np.quantile(
-                arr_normed_cosmo[:, :-1], 0.98
-            )
+            quant_max = np.quantile(arr_normed_cosmo[:, :-1], 0.98)
+            quant_min = np.quantile(arr_normed_cosmo[:, :-1], 0.0001)
+            # clip quant_min and max
+            arr_to_norm = np.clip(arr_to_norm, -200, quant_max)
+            arr_normed_cosmo[:, :-1] = arr_normed_cosmo[:, :-1] / quant_max
 
             # time normalization (log norm)
             tmp_cosmo = np.log(arr_to_norm[:, -1] - arr_min[-1] + 1e-5)
@@ -608,7 +610,7 @@ def get_evaluation_metrics(settings, list_data, model, sample_size=None):
     assert len(targets.shape) == 1
     assert len(preds.shape) == 2
 
-    if settings.nb_classes == 2:
+    if settings.nb_classes == 2 and len(set(targets)) > 1:
         auc = metrics.roc_auc_score(targets, preds[:, 1])
     else:
         # Can't compute AUC for more than 2 classes
