@@ -70,10 +70,8 @@ def normalize_arr(arr, settings):
             # time is normalized as global norm
             arr_normed_cosmo = arr_to_norm
             # Flux + flux err normalization
-            quant_max = np.quantile(arr_normed_cosmo[:, :-1], 0.98)
-            quant_min = np.quantile(arr_normed_cosmo[:, :-1], 0.0001)
+            quant_max = np.quantile(arr_normed_cosmo[:, :-1], 0.99)
             # clip quant_min and max
-            arr_to_norm = np.clip(arr_to_norm, -200, quant_max)
             arr_normed_cosmo[:, :-1] = arr_normed_cosmo[:, :-1] / quant_max
 
             # time normalization (log norm)
