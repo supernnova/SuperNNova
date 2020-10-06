@@ -45,7 +45,9 @@ and that you have already created the database as above:
 
 Outputs: a figure folder under ``tests/dump/lightcurves/vanilla_S_0_CLF_2_R_None_saltfit_DF_1.0_N_global_lstm_32x2_0.05_128_True_mean``.
 
-This folder contains the plot of several lightcurves and the predictions made by the neural network referred to by the ``model_files`` argument.
+This folder contains the plot of several random lightcurves and the predictions made by the neural network referred to by the ``model_files`` argument.
+
+If you want to plot a selection of lightcurves you can add ``--plot_file <filename.csv>`` which contains a column ``SNID`` with the ids requested to be plotted.
 
 Below is a sample plot:
 
@@ -96,7 +98,7 @@ Below is a sample plot:
 Science plots
 -------------------------------------------
 
-The plots of the paper can be reproduced by running
+The plots of the paper can be reproduced by running in the ``paper branch``:
 
 .. code::
 
