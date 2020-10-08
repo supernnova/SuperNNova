@@ -241,9 +241,17 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
     SNinfo_df = du.load_HDF5_SNinfo(settings)
 
     # Loop over data to plot prediction
-    # randomly select lcs to plot
-    list_entries = np.random.randint(0, high=len(list_data_test), size=nb_lcs)
-    subset_to_plot = [list_data_test[i] for i in list_entries]
+    if settings.plot_file:
+        # plot only lcs with  SNID in csv file
+        tmp = pd.read_csv(settings.plot_file)
+        list_to_plot = tmp.SNID.astype(str).tolist()
+        subset_to_plot = filter(lambda x: x[2] in list_to_plot, list_data_test)
+        subset_to_plot = list(subset_to_plot)
+    else:
+        # randomly select lcs to plot
+        list_entries = np.random.randint(0, high=len(list_data_test), size=nb_lcs)
+        subset_to_plot = [list_data_test[i] for i in list_entries]
+
     for X, target, SNID, _, X_ori in tqdm(subset_to_plot, ncols=100):
 
         try:
@@ -260,7 +268,7 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
             flt: {"FLUXCAL": [], "FLUXCALERR": [], "MJD": []}
             for flt in settings.list_filters
         }
-        for OOD in [None] + du.OOD_TYPES:
+        for OOD in [None]:  # + du.OOD_TYPES: # uncomment to plot OOD
             with torch.no_grad():
                 d_pred, X_normed = get_predictions(
                     settings, dict_rnn, X, target, OOD=OOD

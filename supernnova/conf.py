@@ -73,6 +73,11 @@ def get_args():
         help="Plot lcs with classification probabilities",
     )
     parser.add_argument(
+        "--plot_file",
+        default=None,
+        help="Plot subset of lcs in file (csv with SNID column)",
+    )
+    parser.add_argument(
         "--plot_prediction_distribution",
         action="store_true",
         help="Plot lcs and the histogram of probability for each class",
