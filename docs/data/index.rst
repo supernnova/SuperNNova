@@ -72,14 +72,13 @@ Creating a database
 
 Creating a database for testing a trained model
 ------------------------------
-Models are dependent on their training sets. When generating a new dataset to be classified by an existing model, the same normalization as in the training must be used. This is how to create that linked database.
+This is how to create a database with only lightcurves to evaluate.
 
 .. code::
 
-    python run.py --dump_dir <path/to/save/database/> --data --data_testing  --raw_dir <path/to/raw/data/>  --model_files <path/to/model/to/be/used/modelname.pt> 
+    python run.py --dump_dir <path/to/save/database/> --data --data_testing  --raw_dir <path/to/raw/data/> 
 
 Note that:
-- there is no need to specify salt2fits file to make the dataset. It can be used if available but it is not needed ``--fits_dir <empty/path/>``.
 - using ``--data_testing`` option will generate a 100% testing set (see below for more details).
 
 

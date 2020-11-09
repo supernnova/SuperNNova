@@ -20,8 +20,8 @@ Argument                  Type                Help
 ======================  ============  ==================================================================
 --data                    bool        if True, launch data creation
 --dump_dir                str         path where data and models are dumped
---redshift                str         Host redshift used in classification: zpho, zspe or None
---norm                    str         Feature normalization: None, perfilter, global
+--norm                    str         Feature normalization used in training/validation: None, perfilter, global, cosmo, cosmo_quantile
+--redshift                str         Host redshift used in training/validation: zpho, zspe or None
 --source_data             str         Data source: photometry or salt
 --no_overwrite            bool        If True, overwrite preprocessed dir when creating database
 --data_fraction           float       Fraction of data to use
