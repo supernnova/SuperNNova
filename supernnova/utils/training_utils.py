@@ -45,21 +45,39 @@ def normalize_arr(arr, settings):
         # clipping
         arr_to_norm = np.clip(arr_to_norm, arr_min, np.inf)
 
-        if settings.norm != "cosmo":
+        if "cosmo" not in settings.norm:
             # normalize using global norm
             arr_normed = np.log(arr_to_norm - arr_min + 1e-5)
             arr_normed = (arr_normed - arr_mean) / arr_std
 
-        else:
+        elif settings.norm == "cosmo":
             # normalize all lcs to 1 (fluxes), maintain color info
             # time is normalized as global norm
             arr_normed_cosmo = arr_to_norm
+            # Flux + flux err normalization
             arr_normed_cosmo[:, :-1] = (
                 arr_normed_cosmo[:, :-1] / arr_normed_cosmo[:, :-1].max()
             )
-            # time normalization
+            # time normalization (log norm)
             tmp_cosmo = np.log(arr_to_norm[:, -1] - arr_min[-1] + 1e-5)
             arr_normed_cosmo[:, -1] = (tmp_cosmo - arr_mean[-1]) / arr_std[-1]
+            # all together
+            arr_normed = arr_normed_cosmo
+
+        elif settings.norm == "cosmo_quantile":
+            # normalize all lcs to 1 (using quantile not max for outliers)
+            # maintain color info
+            # time is normalized as global norm
+            arr_normed_cosmo = arr_to_norm
+            # Flux + flux err normalization
+            quant_max = np.quantile(arr_normed_cosmo[:, :-1], 0.99)
+            # clip quant_min and max
+            arr_normed_cosmo[:, :-1] = arr_normed_cosmo[:, :-1] / quant_max
+
+            # time normalization (log norm)
+            tmp_cosmo = np.log(arr_to_norm[:, -1] - arr_min[-1] + 1e-5)
+            arr_normed_cosmo[:, -1] = (tmp_cosmo - arr_mean[-1]) / arr_std[-1]
+            # all together
             arr_normed = arr_normed_cosmo
 
         arr[:, settings.idx_features_to_normalize] = arr_normed
@@ -85,7 +103,7 @@ def unnormalize_arr(arr, settings):
     arr_mean = settings.arr_norm[:, 1]
     arr_std = settings.arr_norm[:, 2]
 
-    if settings.norm == "cosmo":
+    if "cosmo" in settings.norm:
         # onyl unnormalize time
         arr_to_unnorm = arr[:, settings.idx_features_to_normalize[-1]]
 
@@ -153,7 +171,7 @@ def fill_data_list(
         )
         X_all[:, settings.idx_features_to_normalize] = X_clip
 
-        if settings.norm != "cosmo":
+        if "cosmo" not in settings.norm:
             X_tmp = unnormalize_arr(normalize_arr(X_all.copy(), settings), settings)
             assert np.all(
                 np.all(np.isclose(np.ravel(X_all), np.ravel(X_tmp), atol=1e-1))
