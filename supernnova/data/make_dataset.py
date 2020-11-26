@@ -253,7 +253,6 @@ def process_single_FITS(file_path, settings):
         if settings.phot_reject
         else df[keep_col].copy()
     )
-
     # Load the companion HEAD file
     header = Table.read(file_path.replace("PHOT", "HEAD"), format="fits")
     df_header = header.to_pandas()
@@ -308,6 +307,11 @@ def process_single_FITS(file_path, settings):
                 raise Exception
             # merge with header
             df_header = pd.merge(df_header, df_peak, on="SNID")
+            if len(df_header) < 1:
+                logging_utils.print_red(
+                    "Provide a matching photo_window_file (not a common SNID found) "
+                )
+                raise Exception
         else:
             logging_utils.print_red("Provide a valid photo_window_file")
 
@@ -460,6 +464,9 @@ def process_single_csv(file_path, settings):
     df_header["SNID"] = df_header["SNID"].str.strip()
     df_header = df_header.set_index("SNID")
     df = df.join(df_header).reset_index()
+
+    if settings.photo_window_files:
+        logging_utils.print_red("Photo window not supported for csv!")
 
     #############################################
     # Miscellaneous data processing
