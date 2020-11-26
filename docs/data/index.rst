@@ -43,7 +43,7 @@ Activate the environment
 
 Creating a debugging database
 -------------------------------
-
+**Using command line:**
 .. code::
 
     python run.py --data --dump_dir tests/dump --raw_dir tests/raw --fits_dir tests/fits
@@ -52,17 +52,28 @@ Creating a debugging database
 - This is intended for debugging purposes (training, validation can run very fast with this small database)
 - The database is saved to the specified ``tests/dump/processed``
 
+**Using yaml:** 
+.. code::
+
+    python run_yaml.py <yaml_file_with_config> --mode data 
+
+an example ``<yaml_file_with_config>`` is at ``configs_yml``.
 
 Creating a database
 ------------------------------
-
+**Using command line:**
 .. code::
 
     python run.py --data --dump_dir <path/to/full/database/> --raw_dir <path/to/raw/data/> --fits_dir <path/to/fits/>
 
+**Using yaml:** modify the configuration file
+.. code::
+
+    python run_yaml.py <yaml_file_with_config> --mode data 
+
 - You **DO NEED** to download the raw data for this database or point where your data is.
 - This creates a database for all the available data with 80/10/10 train/validate/test splits. 
-- Splits can be changed using ``--data_training`` or ``--data_testing`` commands.
+- Splits can be changed using ``--data_training`` or ``--data_testing`` commands. For yaml just add ``data_training: True`` or ``--data_testing: True``.
 - The database is saved to the specified ``dump_dir``, in the ``processed`` subfolder.
 - There is no need to specify salt2fits file to make the dataset. It can be used if available but it is not needed ``--fits_dir <empty/path/>``.
 - Raw data can be in csv format with columns:
@@ -80,6 +91,7 @@ This is how to create a database with only lightcurves to evaluate.
 
 Note that:
 - using ``--data_testing`` option will generate a 100% testing set (see below for more details).
+**Using command yaml:** modify the configuration file with ``data_testing: True`` and use the ``--mode data``.
 
 
 Creating a database with photometry limited to a time window

@@ -18,30 +18,20 @@ Activate the environment
     source activate <conda_env_name>
 
 
-Training a randomforest model
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. code::
-
-    python run.py --data --dump_dir /path/to/your/dump/dir # build the data
-    python run.py --train_rf --dump_dir /path/to/your/dump/dir # train and validate
-
-This will:
-
-- Train a randomforest classifier
-- All outputs are dumped to ``/path/to/your/dump/dir/models/randomforest_S_0_CLF_2_R_None_saltfit_DF_1.0_N_global``
-- Save the trained classifier: ``randomforest_S_0_CLF_2_R_None_saltfit_DF_1.0_N_global.pickle``
-- Make predictions on a test set: ``PRED_DES_randomforest_S_0_CLF_2_R_None_saltfit_DF_1.0_N_global.pickle``
-- Compute metrics on the test: ``METRICS_DES_randomforest_S_0_CLF_2_R_None_saltfit_DF_1.0_N_global.pickle``
-
-
 Training an RNN model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+**Using command line:**
 .. code::
 
     python run.py --data --dump_dir /path/to/your/dump/dir # build the data
     python run.py --train_rnn --dump_dir /path/to/your/dump/dir # train and validate
+
+**Using Yaml:**
+.. code::
+
+    python run_yaml.py <yaml_file_with_config> --mode train_rnn 
+
+an example ``<yaml_file_with_config>`` is at ``configs_yml``.
 
 This will:
 
@@ -60,3 +50,22 @@ The data for training and validation can be normalized for better performance. C
 For ``global, perfilter`` normalizations, features (f) are first log transformed and then scaled. The log transform (fl) uses the minimum value of the feature min(f) and a constant (epsilon) to center the distribution in zero as follows: fl = log (−min( f ) + f + epsilon). Using the mean and standard deviation of the log transform (mu,sigma(fl)), standard scaling is applied: fˆ = ( fl − mu( fl))/sigma( fl). In the “global” scheme, the minimum, mean and standard deviation are computed over all fluxes (resp. all errors). In the “per-filter” scheme, they are computed for each filter.
 
 When using ``--redshift`` for classification, we suggest to use either ``cosmo,cosmo_quantile`` norms. These normalizations blur the distance information that SNe Ia provide with apparent flux which together with redshift information may bias the classification for cosmology. For this, light-curves are normalized to a flux ~1 using either the maximum flux at any filter (``cosmo``) or the 99 quantile of the flux distribution (``cosmo_quantile``). The latter is mroe robust against outliers.
+
+
+Training a randomforest model (paper branch)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code::
+
+    python run.py --data --dump_dir /path/to/your/dump/dir # build the data
+    python run.py --train_rf --dump_dir /path/to/your/dump/dir # train and validate
+
+This will:
+
+- Train a randomforest classifier
+- All outputs are dumped to ``/path/to/your/dump/dir/models/randomforest_S_0_CLF_2_R_None_saltfit_DF_1.0_N_global``
+- Save the trained classifier: ``randomforest_S_0_CLF_2_R_None_saltfit_DF_1.0_N_global.pickle``
+- Make predictions on a test set: ``PRED_DES_randomforest_S_0_CLF_2_R_None_saltfit_DF_1.0_N_global.pickle``
+- Compute metrics on the test: ``METRICS_DES_randomforest_S_0_CLF_2_R_None_saltfit_DF_1.0_N_global.pickle``
+
+Beware: RF is not currently supported for Yaml runs.
