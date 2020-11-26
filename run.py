@@ -96,7 +96,9 @@ if __name__ == "__main__":
                     )
                     # Compute metrics
                     metrics.get_metrics_singlemodel(
-                        model_settings, prediction_file=prediction_file, model_type="rnn"
+                        model_settings,
+                        prediction_file=prediction_file,
+                        model_type="rnn",
                     )
 
         if settings.validate_rf:
@@ -131,8 +133,8 @@ if __name__ == "__main__":
         if settings.plot_lcs:
             if settings.model_files:
                 for model_file in settings.model_files:
-                    settings = conf.get_norm_from_model(model_file,settings)
-            early_prediction.make_early_prediction(settings,nb_lcs =20,do_gifs=False)
+                    settings = conf.get_norm_from_model(model_file, settings)
+            early_prediction.make_early_prediction(settings, nb_lcs=20, do_gifs=False)
 
         if settings.plot_prediction_distribution:
             prediction_distribution.plot_prediction_distribution(settings)
@@ -193,13 +195,12 @@ if __name__ == "__main__":
             validate_plasticc.get_predictions(settings)
 
         if settings.done_file:
-            with open(Path(settings.done_file), 'w') as the_file:
-                the_file.write('SUCCESS\n')
+            with open(Path(settings.done_file), "w") as the_file:
+                the_file.write("SUCCESS\n")
 
     except Exception as e:
         settings = conf.get_settings()
         if settings.done_file:
-            with open(Path(settings.done_file), 'w') as the_file:
-                the_file.write('FAILURE\n')
+            with open(Path(settings.done_file), "w") as the_file:
+                the_file.write("FAILURE\n")
         raise e
-
