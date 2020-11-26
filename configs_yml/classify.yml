@@ -1,0 +1,23 @@
+# file paths
+raw_dir: ./tests/raw/
+dump_dir: ./tests/dump_evaluate/
+done_file: ./tests/done_classify.txt
+
+# survey options
+list_filters: ["g", "i", "r", "z"]
+sntypes: {"101": "Ia","120": "IIP","121": "IIn","122": "IIL1","123": "IIL2","132": "Ib","133": "Ic"}
+
+# running options
+use_cuda: False
+
+# data options
+# --mode data
+data_testing: True # classifiy all data
+phot_reject: PHOTFLAG 
+phot_reject_list: 8 16 32 64 128 256 512 
+redshift_label: REDSHIFT_FINAL
+photo_window_files: ./tests/photo_window/PHOTOWINDOW_FITS.SNANA.TEXT 
+
+# input model
+# --mode validate_rnn
+model_files: ./tests/dump/models/vanilla_S_0_CLF_2_R_none_photometry_DF_1.0_N_cosmo_quantile_lstm_32x2_0.05_128_True_mean/vanilla_S_0_CLF_2_R_none_photometry_DF_1.0_N_cosmo_quantile_lstm_32x2_0.05_128_True_mean.pt
