@@ -40,7 +40,7 @@ Please do! But beware: you need to have a large amount of lightcurves (simulated
 
 - **How can I use SuperNNova for my classification problem?**
 
-It may require a little bit of code modification depending on your data. You can load data from SNANA formats (``.FITS`` and ``FITRES``, the latter is an ascii file) or ``.csv`` files (like the one from the Kaggle challenge, PlastiCC). Observations are grouped per night, so if you are looking for fast transients, you may need to create your own data pipeline or modify SuperNNova time grouping. Contact us if you have questions anais.moller@anu.edu.au and please report any issues!
+It may require a little bit of code modification depending on your data. You can load data from SNANA formats (``.FITS`` and ``FITRES``, the latter is an ascii file) or ``.csv`` files (like the one from the Kaggle challenge, PlastiCC). Observations are grouped per night, so if you are looking for fast transients, you may need to create your own data pipeline or modify SuperNNova time grouping. Contact us if you have questions anais.moller@clermont.in2p3.fr and please report any issues!
 
 
 Technical questions

@@ -33,20 +33,18 @@ Usage
 
 For quick tests, a database that contains a limited number of light-curves is provided. It is located in ``tests/raw``. For more information on the available data, check :ref:`DataStructure`.
 
-Build the database
+Using command line 
 -----------------------
-
+Build the database
 .. code::
 
     python run.py --data --dump_dir tests/dump --raw_dir tests/raw --fits_dir tests/fits
 
 Train an RNN
----------------------------------------
-
 
 .. code::
 
-    $ python run.py --train_rnn --dump_dir tests/dump
+    python run.py --train_rnn --dump_dir tests/dump
 
 With this command you are training and validating our Baseline RNN with the test database. The trained model will be saved in a newly created model folder inside ``tests/dump/models``.
 
@@ -64,14 +62,29 @@ Remember that our data is split in training, validation and test sets.
 
 **You have trained, validated and tested your model.** You can now inspect the test light-curves and their predictions in ``tests/dump/lightcurves``.
 
+Using Yaml
+-----------------------
+Build the database
+.. code::
 
-Reproduce SuperNNova paper
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-To reproduce the results of the paper please use the branch paper and run:
+    python run_yml.py configs_yml/default.yml --mode data
+
+Train an RNN
 
 .. code::
 
-    $ cd SuperNNova && python run_paper.py --debug --dump_dir tests/dump
+    python run_yml.py configs_yml/default.yml --mode train_rnn
+
+Available modes: ``data``,``train_rnn``, ``validate_rnn``, ``plot_lcs``. Currently RF classification is not suppported with the yaml configurations. An example of classification using existing model is in ``configs_yml/classify.yml``.
+
+
+Reproduce SuperNNova paper
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+To reproduce the results of the paper please use the branch ``paper`` and run:
+
+.. code::
+
+    cd SuperNNova && python run_paper.py --debug --dump_dir tests/dump
 
 ``--debug``  will train simplified models with a reduced number of epochs. Remove this flag for full reproducibility.
 With the ``--debug`` flag on, this should take between 15 and 30 minutes on the CPU.

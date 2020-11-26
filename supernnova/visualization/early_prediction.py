@@ -243,10 +243,17 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
     # Loop over data to plot prediction
     if settings.plot_file:
         # plot only lcs with  SNID in csv file
-        tmp = pd.read_csv(settings.plot_file)
-        list_to_plot = tmp.SNID.astype(str).tolist()
-        subset_to_plot = filter(lambda x: x[2] in list_to_plot, list_data_test)
-        subset_to_plot = list(subset_to_plot)
+        if os.path.exists(settings.plot_file):
+            tmp = pd.read_csv(settings.plot_file)
+            list_to_plot = tmp.SNID.astype(str).tolist()
+            subset_to_plot = filter(lambda x: x[2] in list_to_plot, list_data_test)
+            subset_to_plot = list(subset_to_plot)
+        else:
+            lu.print_red(f"Not a valid file --plot_file {settings.plot_file}")
+            lu.print_yellow(f"Plotting 2 random lcs")
+            # randomly select lcs to plot
+            list_entries = np.random.randint(0, high=len(list_data_test), size=2)
+            subset_to_plot = [list_data_test[i] for i in list_entries]
     else:
         # randomly select lcs to plot
         list_entries = np.random.randint(0, high=len(list_data_test), size=nb_lcs)

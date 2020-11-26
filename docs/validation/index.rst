@@ -24,11 +24,18 @@ Validation
 
 Assuming a database has been created and models have been trained, a model can be validated as follows:
 
-
+**Using command line:**
 .. code::
 
     python run.py --validate_rnn --dump_dir /path/to/dump_dir
     python run.py --validate_rnn --dump_dir /path/to/dump_dir
+
+**Using Yaml:**
+.. code::
+
+    python run_yaml.py <yaml_file_with_config> --mode validate_rnn 
+
+an example ``<yaml_file_with_config>`` is at ``configs_yml``.
 
 In that case, the model corresponding to the command line arguments will be loaded and validated. Output will be written in ``dump_dir/models/yourmodelname/``.
 

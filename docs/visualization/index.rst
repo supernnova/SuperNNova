@@ -20,7 +20,7 @@ Activate the environment
 
 Exploring the dataset
 ----------------------
-
+**Using command line:**
 .. code::
 
 	python run.py --data --dump_dir tests/dump  # build the database
@@ -39,9 +39,17 @@ Predictions as a function of time
 Assuming you have a trained model stored under ``tests/dump/models/vanilla_S_0_CLF_2_R_None_saltfit_DF_1.0_N_global_lstm_32x2_0.05_128_True_mean``
 and that you have already created the database as above:
 
+**Using command line:**
 .. code::
 
 	python run.py --plot_lcs --dump_dir tests/dump --model_files tests/dump/models/vanilla_S_0_CLF_2_R_None_saltfit_DF_1.0_N_global_lstm_32x2_0.05_128_True_mean/vanilla_S_0_CLF_2_R_None_saltfit_DF_1.0_N_global_lstm_32x2_0.05_128_True_mean.pt
+
+**Using Yaml:**
+.. code::
+
+    python run_yaml.py <yaml_file_with_config> --mode plot_lcs 
+
+an example ``<yaml_file_with_config>`` is at ``configs_yml``.
 
 Outputs: a figure folder under ``tests/dump/lightcurves/vanilla_S_0_CLF_2_R_None_saltfit_DF_1.0_N_global_lstm_32x2_0.05_128_True_mean``.
 
