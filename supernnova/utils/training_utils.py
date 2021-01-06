@@ -15,6 +15,7 @@ from pathlib import Path
 
 from sklearn import metrics
 import matplotlib.pyplot as plt
+from torchcontrib.optim import SWA
 
 plt.switch_backend("agg")
 
@@ -324,14 +325,14 @@ def get_model(settings, input_size):
 
 
 def get_optimizer(settings, model):
-    """Create gradient descent optimizer
+    """Create optimizer (gradient descent or SWA)
 
     Args:
         settings (ExperimentSettings): controls experiment hyperparameters
         model (torch.nn Model): the pytorch model
 
     Returns:
-        (torch.optim) the gradient descent optimizer
+        (torch.optim) the chosen optimizer
     """
 
     optimizer = torch.optim.Adam(
@@ -339,7 +340,8 @@ def get_optimizer(settings, model):
         lr=settings.learning_rate,
         weight_decay=settings.weight_decay,
     )
-
+    # Add SWA which is equivalent to Adam if no SWA eval is called
+    optimizer = SWA(optimizer)
     return optimizer
 
 
@@ -529,9 +531,10 @@ def plot_loss(d_train, d_val, epoch, settings):
         d_val (dict of arrays): validation log losses
         epoch (int): current epoch
         settings (ExperimentSettings): custom class to hold hyperparameters
+        suffix (str): if suffix for independent plot
     """
 
-    for key in d_train.keys():
+    for key in [k for k in d_train.keys() if k != "epoch"]:
 
         plt.figure()
         plt.plot(d_train["epoch"], d_train[key], label="Train %s" % key.title())
@@ -539,11 +542,65 @@ def plot_loss(d_train, d_val, epoch, settings):
         plt.legend(loc="best", fontsize=18)
         plt.xlabel("Step", fontsize=22)
         plt.tight_layout()
-        plt.savefig(
+
+        basename_fig = (
             Path(settings.models_dir)
             / f"{settings.pytorch_model_name}"
-            / f"train_and_val_{key}_{settings.pytorch_model_name}.png"
+            / f"train_and_val_{key}_{settings.pytorch_model_name}"
         )
+        plt.savefig(f"{basename_fig}.png")
+        plt.close()
+        plt.clf()
+
+
+def overplot_loss(d_train1, d_val1, d_train2, d_val2, settings, label1="1", label2="2"):
+    """Overplot loss curves for SWA and std model
+
+    Plot training and validation logloss
+
+    Args:
+        d_train1 (dict of arrays): training log losses for model 1
+        d_val1 (dict of arrays): validation log losses for model 1
+        d_train2 (dict of arrays): training log losses for model 2
+        d_val2 (dict of arrays): validation log losses for model 2
+        settings (ExperimentSettings): custom class to hold hyperparameters
+        label1 (str): tag for model 1
+        label2 (str): tag for model 2
+    """
+
+    for key in [k for k in d_train1.keys() if k != "epoch"]:
+
+        plt.figure()
+        plt.plot(
+            d_train1["epoch"],
+            d_train1[key],
+            label=f"Train {key.title()} model {label1}",
+        )
+        plt.plot(
+            d_val1["epoch"], d_val1[key], label=f"Val {key.title()} model {label1}"
+        )
+        plt.plot(
+            d_train2["epoch"],
+            d_train2[key],
+            label=f"Train {key.title()} model {label2}",
+            linestyle="--",
+        )
+        plt.plot(
+            d_val2["epoch"],
+            d_val2[key],
+            label=f"Val {key.title()} model {label2}",
+            linestyle="--",
+        )
+        plt.legend(loc="best", fontsize=18)
+        plt.xlabel("Step", fontsize=22)
+        plt.tight_layout()
+
+        basename_fig = (
+            Path(settings.models_dir)
+            / f"{settings.pytorch_model_name}"
+            / f"train_and_val_{key}_{settings.pytorch_model_name}_wSWA"
+        )
+        plt.savefig(f"{basename_fig}.png")
         plt.close()
         plt.clf()
 
