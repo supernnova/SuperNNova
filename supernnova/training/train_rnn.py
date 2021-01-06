@@ -215,9 +215,81 @@ def train_cyclic(settings):
                     f"{settings.rnn_dir}/{settings.pytorch_model_name}.pt",
                 )
 
-    training_time = time() - training_start_time
+    last_epoch = epoch
+    # SWA after reaching around min
+    SWA_epochs = 10
+    d_monitor_train_SWA = copy.deepcopy(d_monitor_train)
+    d_monitor_val_SWA = copy.deepcopy(d_monitor_val)
+
+    for epoch in tqdm(
+        range(settings.nb_epoch, last_epoch + SWA_epochs), desc="SWA", ncols=100,
+    ):
+        # Train step : forward backward pass
+        tu.train_step(
+            settings,
+            rnn,
+            packed,
+            target_tensor,
+            criterion,
+            optimizer,
+            target_tensor.size(0),
+            len(list_batches),
+        )
+        # as reference evaluate with the std model
+        d_losses_train = tu.get_evaluation_metrics(
+            settings, list_data_train, rnn, sample_size=len(list_data_val)
+        )
+        d_losses_val = tu.get_evaluation_metrics(
+            settings, list_data_val, rnn, sample_size=None
+        )
+        for key in d_losses_train.keys():
+            d_monitor_train[key].append(d_losses_train[key])
+            d_monitor_val[key].append(d_losses_val[key])
+        d_monitor_train["epoch"].append(epoch + 1)
+        d_monitor_val["epoch"].append(epoch + 1)
+
+        if epoch > last_epoch:
+
+            # Update SWA
+            optimizer.update_swa()
+
+            # Evaluate SWA
+            optimizer.swap_swa_sgd()  # activate
+            d_losses_train_SWA = tu.get_evaluation_metrics(
+                settings, list_data_train, rnn, sample_size=len(list_data_val)
+            )
+            d_losses_val_SWA = tu.get_evaluation_metrics(
+                settings, list_data_val, rnn, sample_size=None
+            )
+
+            for key in d_losses_train.keys():
+                d_monitor_train_SWA[key].append(d_losses_train_SWA[key])
+                d_monitor_val_SWA[key].append(d_losses_val_SWA[key])
+            d_monitor_train_SWA["epoch"].append(epoch + 1)
+            d_monitor_val_SWA["epoch"].append(epoch + 1)
+            optimizer.swap_swa_sgd()  # deactivate
+
+    # plot
+    tu.overplot_loss(
+        d_monitor_train,
+        d_monitor_val,
+        d_monitor_train_SWA,
+        d_monitor_val_SWA,
+        settings,
+        label1="Adam",
+        label2="SWA",
+    )
+
+    # save SWA
+    optimizer.swap_swa_sgd()
+    torch.save(
+        rnn.state_dict(), f"{settings.rnn_dir}/{settings.pytorch_model_name}_SWA.pt",
+    )
+    optimizer.swap_swa_sgd()  # return to old model
 
     lu.print_green("Finished training")
+
+    training_time = time() - training_start_time
 
     tu.save_training_results(settings, d_monitor_val, training_time)
 
@@ -354,7 +426,7 @@ def train(settings):
     # SWA after reaching around min
     SWA_epochs = 10
     d_monitor_train_SWA = copy.deepcopy(d_monitor_train)
-    WTFd_monitor_val_SWA = copy.deepcopy(d_monitor_val)
+    d_monitor_val_SWA = copy.deepcopy(d_monitor_val)
 
     for epoch in tqdm(
         range(settings.nb_epoch, settings.nb_epoch + SWA_epochs), desc="SWA", ncols=100,
@@ -399,9 +471,9 @@ def train(settings):
 
             for key in d_losses_train.keys():
                 d_monitor_train_SWA[key].append(d_losses_train_SWA[key])
-                WTFd_monitor_val_SWA[key].append(d_losses_val_SWA[key])
+                d_monitor_val_SWA[key].append(d_losses_val_SWA[key])
             d_monitor_train_SWA["epoch"].append(epoch + 1)
-            WTFd_monitor_val_SWA["epoch"].append(epoch + 1)
+            d_monitor_val_SWA["epoch"].append(epoch + 1)
             optimizer.swap_swa_sgd()  # deactivate
 
     # plot
@@ -409,7 +481,7 @@ def train(settings):
         d_monitor_train,
         d_monitor_val,
         d_monitor_train_SWA,
-        WTFd_monitor_val_SWA,
+        d_monitor_val_SWA,
         settings,
         label1="Adam",
         label2="SWA",
