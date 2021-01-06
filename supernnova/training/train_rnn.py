@@ -222,7 +222,7 @@ def train_cyclic(settings):
     d_monitor_val_SWA = copy.deepcopy(d_monitor_val)
 
     for epoch in tqdm(
-        range(settings.nb_epoch, last_epoch + SWA_epochs), desc="SWA", ncols=100,
+        range(last_epoch, last_epoch + SWA_epochs), desc="SWA", ncols=100,
     ):
         # Train step : forward backward pass
         tu.train_step(
