@@ -47,7 +47,7 @@ class ExperimentSettings:
             self.setup_dir()
             # Set the database file names
             self.set_database_file_names()
-        
+
             self.randomforest_features = self.get_randomforest_features()
 
             # Set the feature lists
@@ -57,9 +57,11 @@ class ExperimentSettings:
 
             # filter combination
             list_filters_combination = []
-            for i in range(1, len(self.list_filters)+1):
-                tmp = [''.join(t) for t in list(
-                    itertools.combinations(self.list_filters, i))]
+            for i in range(1, len(self.list_filters) + 1):
+                tmp = [
+                    "".join(t)
+                    for t in list(itertools.combinations(self.list_filters, i))
+                ]
                 list_filters_combination = list_filters_combination + tmp
             self.list_filters_combination = list_filters_combination
 
@@ -150,7 +152,7 @@ class ExperimentSettings:
         # deserializing numpy arrays to save as json
         d_tmp = {}
         for k, v in self.__dict__.items():
-            if isinstance(v,np.ndarray):
+            if isinstance(v, np.ndarray):
                 v = v.tolist()
             d_tmp[k] = v
 
@@ -269,8 +271,7 @@ class ExperimentSettings:
                 if f in self.training_features_to_normalize
             ]
 
-            self.d_feat_to_idx = {f: i for i,
-                                  f in enumerate(self.all_features)}
+            self.d_feat_to_idx = {f: i for i, f in enumerate(self.all_features)}
 
             list_norm = []
 
@@ -304,7 +305,6 @@ class ExperimentSettings:
 
 
 class PlasticcSettings(object):
-
     def __init__(self, cli_args):
 
         # Transfer attributes
@@ -462,8 +462,7 @@ class PlasticcSettings(object):
                 if f in self.training_features_to_normalize
             ]
 
-            self.d_feat_to_idx = {f: i for i,
-                                  f in enumerate(self.all_features)}
+            self.d_feat_to_idx = {f: i for i, f in enumerate(self.all_features)}
 
             list_norm = []
 

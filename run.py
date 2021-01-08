@@ -63,6 +63,27 @@ if __name__ == "__main__":
 
             lu.print_blue("Finished rnn training, validating, testing and plotting lcs")
 
+            if settings.SWA:
+                # reset settings and compute
+                model_file = f"{dump_dir}/{settings.pytorch_model_name}_SWA.pt"
+
+                # Restore model settings
+                model_settings = conf.get_settings_from_dump(
+                    settings,
+                    model_file,
+                    override_source_data=settings.override_source_data,
+                )
+                # Get predictions
+                prediction_file = validate_rnn.get_predictions(
+                    model_settings, model_file=model_file
+                )
+                # Compute metrics
+                metrics.get_metrics_singlemodel(
+                    model_settings, prediction_file=prediction_file, model_type="rnn",
+                )
+
+                lu.print_blue("Finished SWA")
+
         if settings.train_rf:
 
             train_randomforest.train(settings)
@@ -90,6 +111,9 @@ if __name__ == "__main__":
                         model_file,
                         override_source_data=settings.override_source_data,
                     )
+                    if 'SWA' in model_file or settings.SWA:
+                        model_settings.pytorch_model_name = f"{model_settings.pytorch_model_name}_SWA"
+                    lu.print_yellow('Validation of the SWA model')
                     # Get predictions
                     prediction_file = validate_rnn.get_predictions(
                         model_settings, model_file=model_file

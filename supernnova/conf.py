@@ -232,6 +232,22 @@ def get_args():
         default="none",
         help="Redshift label to be used instead of HOSTGAL_SPECZ (with _ERR) and SIM_REDSHIFT",
     )
+    parser.add_argument(
+        "--sntypes",
+        default=OrderedDict(
+            {
+                "101": "Ia",
+                "120": "IIP",
+                "121": "IIn",
+                "122": "IIL1",
+                "123": "IIL2",
+                "132": "Ib",
+                "133": "Ic",
+            }
+        ),
+        type=json.loads,
+        help="SN classes in sims (put Ia always first)",
+    )
 
     ######################
     # RNN  parameters
@@ -287,22 +303,6 @@ def get_args():
         "--nb_classes", default=2, type=int, help="Number of classification targets"
     )
     parser.add_argument(
-        "--sntypes",
-        default=OrderedDict(
-            {
-                "101": "Ia",
-                "120": "IIP",
-                "121": "IIn",
-                "122": "IIL1",
-                "123": "IIL2",
-                "132": "Ib",
-                "133": "Ic",
-            }
-        ),
-        type=json.loads,
-        help="SN classes in sims (put Ia always first)",
-    )
-    parser.add_argument(
         "--nb_epoch", default=90, type=int, help="Number of batches per epoch"
     )
     parser.add_argument("--batch_size", default=128, type=int, help="Batch size")
@@ -350,6 +350,9 @@ def get_args():
         "--mean_field_inference",
         action="store_true",
         help="Use mean field inference for bayesian models",
+    )
+    parser.add_argument(
+        "--SWA", action="store_true", help="Get predictions and metrics for SWA",
     )
 
     #########################
