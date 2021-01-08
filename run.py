@@ -65,7 +65,7 @@ if __name__ == "__main__":
 
             if settings.SWA:
                 # reset settings and compute
-                model_file = f"{dump_dir}/{settings.pytorch_model_name}_SWA.pt"
+                model_file = f"{settings.dump_dir}/models/{settings.pytorch_model_name}/{settings.pytorch_model_name}_SWA.pt"
 
                 # Restore model settings
                 model_settings = conf.get_settings_from_dump(
@@ -73,6 +73,7 @@ if __name__ == "__main__":
                     model_file,
                     override_source_data=settings.override_source_data,
                 )
+                model_settings.pytorch_model_name = f"{model_settings.pytorch_model_name}_SWA"
                 # Get predictions
                 prediction_file = validate_rnn.get_predictions(
                     model_settings, model_file=model_file
