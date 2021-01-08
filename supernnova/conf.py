@@ -354,6 +354,13 @@ def get_args():
     parser.add_argument(
         "--SWA", action="store_true", help="Get predictions and metrics for SWA",
     )
+    parser.add_argument(
+        "--SWA_epoch",
+        type=int,
+        default=5,
+        help="Number of samples to use for SWA",
+    )
+    
 
     #########################
     # RandomForest parameters
