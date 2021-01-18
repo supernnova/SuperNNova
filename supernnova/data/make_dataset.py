@@ -577,7 +577,7 @@ def pivot_dataframe_single(filename, settings):
     df = pivot_dataframe_single_from_df(df, settings)
 
     # Save to pickle
-    dump_filename = os.path.splitext(filename)[0] + "_pivot.pickle"
+    dump_filename = filename.split(".pickle")[0] + "_pivot.pickle"
     df.to_pickle(dump_filename)
 
 
