@@ -30,7 +30,10 @@ def plot_lightcurves(df, SNIDs, settings):
         df_temp = df.loc[SNID]
 
         # Prepare plotting data in a dict
-        d = {flt: {"FLUXCAL": [], "FLUXCALERR": [], "MJD": []} for flt in settings.list_filters}
+        d = {
+            flt: {"FLUXCAL": [], "FLUXCALERR": [], "MJD": []}
+            for flt in settings.list_filters
+        }
 
         current_time = 0
         for idx in range(len(df_temp)):
@@ -98,6 +101,7 @@ def plot_lightcurves_from_hdf5(settings, SNID_idxs):
             SNID = hf["SNID"][SNID_idx]
             PEAKMJD = str(hf["PEAKMJD"][SNID_idx])
             PEAKMJDNORM = hf["PEAKMJDNORM"][SNID_idx]
+            typ = hf["SNTYPE"][SNID_idx]
             data = hf["data"][SNID_idx].reshape(-1, n_features)
 
             df = pd.DataFrame(data, columns=features)
@@ -148,7 +152,7 @@ def plot_lightcurves_from_hdf5(settings, SNID_idxs):
             ax.plot(
                 [PEAKMJDNORM, PEAKMJDNORM], [min_y, max_y], color="k", linestyle="--"
             )
-            ax.set_title(f"{SNID} -- {PEAKMJD}", fontsize=18)
+            ax.set_title(f"{SNID} -- {PEAKMJD} -- {typ}", fontsize=18)
             ax.legend(loc="best")
             ax.set_aspect("auto")
 
