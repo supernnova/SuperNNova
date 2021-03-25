@@ -246,8 +246,12 @@ def process_single_FITS(file_path, settings):
     # Remove it so that it does not interfere with arr_ID below
     if df.MJD.values[-1] == -777.0:
         df = df.drop(df.index[-1])
+
     # Keep only columns of interest
     keep_col = ["MJD", "FLUXCAL", "FLUXCALERR", "FLT"]
+    # BAND and FLT are exchangeable
+    if 'FLT' not in df.keys() and 'BAND' in df.keys():
+    	df = df.rename(columns={"BAND":"FLT"})
     df = (
         df[keep_col + [settings.phot_reject]].copy()
         if settings.phot_reject
