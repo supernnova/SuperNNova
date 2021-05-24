@@ -1,4 +1,5 @@
 import os
+import re
 import glob
 import shutil
 import numpy as np
@@ -14,6 +15,11 @@ from concurrent.futures import ProcessPoolExecutor
 from ..utils import data_utils
 from ..utils import logging_utils
 from ..paper.superNNova_plots import datasets_plots
+
+
+def process_fn(inputs):
+    fn, fil = inputs
+    return fn(fil)
 
 
 def build_traintestval_splits(settings):
@@ -38,37 +44,41 @@ def build_traintestval_splits(settings):
         for nb_classes in list(set([2, len(settings.sntypes.keys())]))
     ]
 
-    # Load photometry
+    # Load headers
     # either in HEAD.FITS or csv format
-    list_files_tmp = natsorted(glob.glob(os.path.join(settings.raw_dir, "*HEAD.FITS*")))
-    if len(list_files_tmp) > 0:
-        list_files = list_files_tmp
-        fmat = "FITS"
-    else:
-        list_files = natsorted(glob.glob(os.path.join(settings.raw_dir, "*HEAD.csv*")))
-        fmat = "csv"
-    list_files = list_files[:]
+    list_files = natsorted(Path(settings.raw_dir).glob("**/*HEAD*"))
+    list_fmt = [re.search(r"(FITS|csv)", fil.name).group() for fil in list_files]
+    list_files = [str(fil) for fil in list_files]
+
     print("List files", list_files)
     # use parallelization to speed up processing
     if not settings.debug:
-        if fmat == "FITS":
-            process_fn = partial(
-                data_utils.process_header_FITS,
-                settings=settings,
-                columns=photo_columns + ["SNTYPE"],
-            )
-        else:
-            process_fn = partial(
-                data_utils.process_header_csv,
-                settings=settings,
-                columns=photo_columns + ["SNTYPE"],
-            )
+        process_fn_FITS = partial(
+            data_utils.process_header_FITS,
+            settings=settings,
+            columns=photo_columns + ["SNTYPE"],
+        )
+        process_fn_csv = partial(
+            data_utils.process_header_csv,
+            settings=settings,
+            columns=photo_columns + ["SNTYPE"],
+        )
+
+        list_fn = []
+        for fmt in list_fmt:
+            if fmt == "csv":
+                list_fn.append(process_fn_csv)
+            elif fmt == "FITS":
+                list_fn.append(process_fn_FITS)
+
+        list_pairs = list(zip(list_fn, list_files))
         with ProcessPoolExecutor(max_workers=max_workers) as executor:
-            list_df = executor.map(process_fn, list_files)
+            list_df = executor.map(process_fn, list_pairs)
+
     else:
-        logging_utils.print_yellow("Beware debugging mode (only one file processed)")
+        logging_utils.print_yellow("Beware debugging mode (loop over files)")
         list_df = []
-        for fil in list_files:
+        for fil, fmat in zip(list_files, list_fmt):
             if fmat == "FITS":
                 list_df.append(
                     data_utils.process_header_FITS(
@@ -250,8 +260,8 @@ def process_single_FITS(file_path, settings):
     # Keep only columns of interest
     keep_col = ["MJD", "FLUXCAL", "FLUXCALERR", "FLT"]
     # BAND and FLT are exchangeable
-    if 'FLT' not in df.keys() and 'BAND' in df.keys():
-    	df = df.rename(columns={"BAND":"FLT"})
+    if "FLT" not in df.keys() and "BAND" in df.keys():
+        df = df.rename(columns={"BAND": "FLT"})
     df = (
         df[keep_col + [settings.phot_reject]].copy()
         if settings.phot_reject
@@ -414,7 +424,14 @@ def process_single_FITS(file_path, settings):
 
     # Save for future use
     basename = os.path.basename(file_path)
-    df.to_pickle(f"{settings.preprocessed_dir}/{basename.replace('.FITS', '.pickle')}")
+    folder_name = Path(file_path.split(f"{settings.raw_dir}/")[-1]).parent
+    if folder_name != Path("."):
+        prefix = str(folder_name).replace("/", "_")
+        basename = f"{prefix}_{basename}"
+
+    df.to_pickle(
+        f"{settings.preprocessed_dir}/{basename.replace('.FITS', '.pickle').replace('.gz','')}"
+    )
 
     # getting SNIDs for SNe with Host_spec
     host_spe = df[df["HOSTGAL_SPECZ"] > 0]["SNID"].unique().tolist()
@@ -503,7 +520,9 @@ def process_single_csv(file_path, settings):
 
     # Save for future use
     basename = os.path.basename(file_path)
-    df.to_pickle(f"{settings.preprocessed_dir}/{basename.replace('.FITS', '.pickle')}")
+    df.to_pickle(
+        f"{settings.preprocessed_dir}/{basename.replace('.FITS', '.pickle').replace('.gz','')}"
+    )
 
     # getting SNIDs for SNe with Host_spec
     host_spe = (
@@ -528,15 +547,22 @@ def preprocess_data(settings):
     """
 
     # Get the list of FITS files
-    list_files = natsorted(glob.glob(os.path.join(settings.raw_dir, f"*PHOT.FITS*")))
-    if len(list_files) > 0:
-        # Parameters of multiprocessing below
-        parallel_fn = partial(process_single_FITS, settings=settings)
-        # process_single_FITS(list_files[0],settings)
-    else:
-        list_files = natsorted(glob.glob(os.path.join(settings.raw_dir, f"*PHOT.csv*")))
-        parallel_fn = partial(process_single_csv, settings=settings)
-        # process_single_csv(list_files[0],settings)
+    # Load headers
+    # either in HEAD.FITS or csv format
+    list_files = natsorted(Path(settings.raw_dir).glob("**/*PHOT*"))
+    list_fmt = [re.search(r"(FITS|csv)", fil.name).group() for fil in list_files]
+    list_files = [str(fil) for fil in list_files]
+
+    if not settings.debug:
+        process_fn_FITS = partial(process_single_FITS, settings=settings)
+        process_fn_csv = partial(process_single_csv, settings=settings)
+
+        list_fn = []
+        for fmt in list_fmt:
+            if fmt == "csv":
+                list_fn.append(process_fn_csv)
+            elif fmt == "FITS":
+                list_fn.append(process_fn_FITS)
 
     logging_utils.print_green("List to preprocess ", list_files)
     max_workers = multiprocessing.cpu_count()
@@ -556,9 +582,12 @@ def preprocess_data(settings):
             with ProcessPoolExecutor(max_workers=max_workers) as executor:
                 start, end = chunk_idx[0], chunk_idx[-1] + 1
                 # Need to cast to list because executor returns an iterator
-                host_spe_tmp += list(executor.map(parallel_fn, list_files[start:end]))
+                # host_spe_tmp += list(executor.map(parallel_fn, list_files[start:end]))
+                list_pairs = list(zip(list_fn[start:end], list_files[start:end]))
+                host_spe_tmp += list(executor.map(process_fn, list_pairs))
+
     else:
-        logging_utils.print_yellow("Beware debugging mode")
+        logging_utils.print_yellow("Beware debugging mode (loop over files)")
         # for debugging only (parallelization needs to be commented)
         for i in range(len(list_files)):
             out = (
@@ -748,9 +777,10 @@ def pivot_dataframe_batch(list_files, settings):
                 start, end = chunk_idx[0], chunk_idx[-1] + 1
                 executor.map(parallel_fn, list_files[start:end])
     else:
-        logging_utils.print_yellow("Beware debugging mode (only one file processed)")
+        logging_utils.print_yellow("Beware debugging mode (loop over pivot)")
         # for debugging only, process one file only
-        pivot_dataframe_single(list_files[0], settings)
+        for fil in list_files:
+            pivot_dataframe_single(fil, settings)
 
     logging_utils.print_green("Finished pivot")
 
@@ -805,6 +835,9 @@ def make_dataset(settings):
         )
 
     # Clean preprocessed directory
-    shutil.rmtree(settings.preprocessed_dir)
+    if settings.debug:
+        logging_utils.print_red("Debugging mode, keeping preprocessed data")
+    else:
+        shutil.rmtree(settings.preprocessed_dir)
 
     logging_utils.print_green("Finished making dataset")

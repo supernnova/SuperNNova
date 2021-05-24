@@ -18,6 +18,7 @@ from supernnova.validation import (
     validate_plasticc,
     metrics,
 )
+from supernnova.utils import logging_utils
 
 
 if __name__ == "__main__":
@@ -128,7 +129,10 @@ if __name__ == "__main__":
         # VISUALIZE
         ##################################
         if settings.explore_lightcurves:
-            visualize.visualize(settings)
+            if settings.debug:
+                visualize.visualize(settings)
+            else:
+                logging_utils.print_red("Use --debug for explore_lightcurves")
 
         if settings.plot_lcs:
             if settings.model_files:
