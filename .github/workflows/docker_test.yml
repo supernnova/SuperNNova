@@ -14,10 +14,10 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         include:
-        - os: macos-latest
-          TARGET: x86_64-apple-darwin
-          COMPILER: clang
-          LINKER: clang
+        # - os: macos-latest
+        #   TARGET: x86_64-apple-darwin
+        #   COMPILER: clang
+        #   LINKER: clang
         - os: ubuntu-latest
           TARGET: x86_64-unknown-linux-musl
           COMPILER: gcc
