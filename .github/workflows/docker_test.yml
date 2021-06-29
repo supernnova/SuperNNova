@@ -24,8 +24,6 @@ jobs:
           LINKER: gcc
     steps:
       - uses: actions/checkout@v2
-      - name: Check Disk Space
-        run: df -h && sudo apt-get clean && df -h 
       - name: Docker login
         run: echo '${{ secrets.DOCKER }}' | docker login --username anaismoller --password-stdin
       - name: do fresh docker build
