@@ -46,7 +46,8 @@ RUN wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -
      ~/miniconda.sh -b -p /home/miniconda3 && \
      rm ~/miniconda.sh &&\
     /home/miniconda3/bin/conda update -y conda &&\
-    /home/miniconda3/bin/conda install -y pytorch-cpu torchvision-cpu -c pytorch && \
+    # /home/miniconda3/bin/conda install -y pytorch-cpu torchvision-cpu -c pytorch && \
+    conda install pytorch torchvision torchaudio cpuonly -c pytorch && \
     /home/miniconda3/bin/conda config --add channels conda-forge  &&\
     /home/miniconda3/bin/conda install -y \
      h5py \
