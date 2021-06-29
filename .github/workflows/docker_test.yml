@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    name: Build on Ubuntu and MacOS
+    name: Build on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -23,6 +23,7 @@ jobs:
           COMPILER: gcc
           LINKER: gcc
     steps:
+      - uses: actions/checkout@v2
       - name: Check Disk Space
         run: df -h && sudo apt-get clean && df -h 
       - name: Docker login
