@@ -1,33 +1,48 @@
 name: docker
 
-on: 
-  push:
-    branches:
-      - master
-  pull_request:
+on: [pull_request]
 
 jobs:
-  build:
-    name: Build on ${{ matrix.os }}
+  conda_env_linux:
+    name: Conda env (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest]
-        include:
-        # - os: macos-latest
-        #   TARGET: x86_64-apple-darwin
-        #   COMPILER: clang
-        #   LINKER: clang
-        - os: ubuntu-latest
-          TARGET: x86_64-unknown-linux-musl
-          COMPILER: gcc
-          LINKER: gcc
+        os: ["ubuntu-latest"]
     steps:
       - uses: actions/checkout@v2
-      - name: Docker login
-        run: echo '${{ secrets.DOCKER }}' | docker login --username anaismoller --password-stdin
-      - name: do fresh docker build
-        run: |
-          cd env && make cpu
-      - name: Docker push
-        run: docker push cpu
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          # activate-environment: anaconda-client-env
+          environment-file: env/conda_env_cpu_linux64.yml
+          # auto-activate-base: false
+      - run: |
+          conda info
+          conda list
+
+# jobs:
+#   build:
+#     name: Build on ${{ matrix.os }}
+#     runs-on: ${{ matrix.os }}
+#     strategy:
+#       matrix:
+#         os: [ubuntu-latest]
+#         include:
+#           # - os: macos-latest
+#           #   TARGET: x86_64-apple-darwin
+#           #   COMPILER: clang
+#           #   LINKER: clang
+#           - os: ubuntu-latest
+#             TARGET: x86_64-unknown-linux-musl
+#             COMPILER: gcc
+#             LINKER: gcc
+#     steps:
+#       - uses: actions/checkout@v2
+#       - name: Docker login
+#         run: echo '${{ secrets.DOCKER }}' | docker login --username anaismoller --password-stdin
+#       - name: do fresh docker build
+#         run: |
+#           cd env && make cpu
+#       - name: Docker push
+#         run: docker push cpu

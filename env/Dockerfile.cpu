@@ -42,7 +42,7 @@ RUN curl -o ~/miniconda.sh -O  https://repo.anaconda.com/miniconda/Miniconda3-la
     /home/miniconda3/bin/conda config --add channels conda-forge
 # conda deps
 
-RUN   /home/miniconda3/bin/conda install  -y  h5py \
+RUN   /home/miniconda3/bin/conda install  -y python=3.7  h5py \
     matplotlib \
     colorama \
     tqdm \
@@ -74,9 +74,11 @@ ENV LANG en_US.utf8
 ####################################
 # Set up oh my zsh
 ####################################
-RUN git clone https://github.com/robbyrussell/oh-my-zsh.git ${HOME}/.oh-my-zsh
-COPY zshrc ${HOME}/.zshrc
+RUN sh -c "$(curl -fsSL https://raw.github.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
+# COPY zshrc ${HOME}/.zshrc
 RUN sed -i 's/❯/Docker❯/g' /home/.oh-my-zsh/themes/refined.zsh-theme
+
+RUN /home/miniconda3/bin/conda init zsh
 
 
 ENTRYPOINT ["/bin/zsh"]
