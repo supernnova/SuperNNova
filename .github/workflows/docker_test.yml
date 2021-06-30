@@ -10,6 +10,9 @@ jobs:
       fail-fast: false
       matrix:
         os: ["ubuntu-latest"]
+    defaults:
+      run:
+        shell: bash -l {0}
     steps:
       - uses: actions/checkout@v2
       - uses: conda-incubator/setup-miniconda@v2
@@ -18,7 +21,6 @@ jobs:
           environment-file: env/conda_env_cpu_linux64.yml
           auto-activate-base: false
       - run: |
-          conda activate snn_cpu
           conda info
           conda list
       - run: |
