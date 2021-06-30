@@ -20,6 +20,8 @@ jobs:
       - run: |
           conda info
           conda list
+      - run: |
+          which python
 
 # jobs:
 #   build:
