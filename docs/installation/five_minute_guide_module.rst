@@ -16,6 +16,8 @@ Pip install
 
 	pip install supernnova
 
+Please beware that SuperNNova only runs properly in Unix systems. 
+
 Setup your environment. 3 options
 -----------------------------------
 
