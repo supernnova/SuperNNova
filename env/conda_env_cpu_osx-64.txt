@@ -253,7 +253,7 @@ https://repo.continuum.io/pkgs/main/osx-64/numba-0.36.2-np112py36h37f72b1_0.tar.
 https://repo.continuum.io/pkgs/main/osx-64/numexpr-2.6.4-py36habcfcfe_0.tar.bz2
 https://repo.anaconda.com/pkgs/main/osx-64/pandas-0.23.4-py36h6440ff4_0.tar.bz2
 https://repo.continuum.io/pkgs/main/osx-64/pytest-arraydiff-0.2-py36_0.tar.bz2
-https://conda.anaconda.org/pytorch/osx-64/pytorch-0.4.0-py36_cuda0.0_cudnn0.0_1.tar.bz2
+https://conda.anaconda.org/pytorch/osx-64/pytorch-0.4.1-py36_cuda0.0_cudnn0.0_1.tar.bz2
 https://repo.continuum.io/pkgs/main/osx-64/pywavelets-0.5.2-py36h2710a04_0.tar.bz2
 https://conda.anaconda.org/anaconda/osx-64/scipy-1.1.0-py36h28f7352_1.tar.bz2
 https://repo.continuum.io/pkgs/free/osx-64/tensorflow-1.1.0-np112py36_0.tar.bz2
