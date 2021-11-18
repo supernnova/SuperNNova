@@ -252,6 +252,9 @@ def process_single_FITS(file_path, settings):
     """
     # Load the PHOT file
     df = data_utils.load_pandas_from_fit(file_path)
+
+    if len(df) < 1:
+        logging_utils.print_red("Do not provide empty photometry file", file_path)
     # Last line may be a line with MJD = -777.
     # Remove it so that it does not interfere with arr_ID below
     if df.MJD.values[-1] == -777.0:
@@ -454,6 +457,9 @@ def process_single_csv(file_path, settings):
     """
     # Load the PHOT file
     df = pd.read_csv(file_path)
+    if len(df) < 1:
+        logging_utils.print_red("Do not provide empty photometry file", file_path)
+        raise ValueError
 
     # Keep only columns of interest
     keep_col = ["SNID", "MJD", "FLUXCAL", "FLUXCALERR", "FLT"]
