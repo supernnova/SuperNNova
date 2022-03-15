@@ -307,7 +307,8 @@ def compute_delta_time(df):
     Returns:
         (pandas.DataFrame) dataframe holding lightcurve data with delta_time features
     """
-
+    # in case the photometyr is not time sorted
+    df = df.sort_values(["SNID", "MJD"])
     df["delta_time"] = df["MJD"].diff()
     # Fill the first row with 0 to replace NaN
     df.delta_time = df.delta_time.fillna(0)
