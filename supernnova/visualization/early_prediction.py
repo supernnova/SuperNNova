@@ -7,7 +7,6 @@ import pandas as pd
 import torch.nn as nn
 from tqdm import tqdm
 from pathlib import Path
-import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from ..utils import data_utils as du
@@ -15,6 +14,12 @@ from ..utils import logging_utils as lu
 from ..utils import training_utils as tu
 from ..utils.visualization_utils import FILTER_COLORS, ALL_COLORS, LINE_STYLE
 
+import matplotlib as mpl
+
+mpl.rcParams["font.size"] = 16
+mpl.rcParams["legend.fontsize"] = "medium"
+mpl.rcParams["figure.titlesize"] = "large"
+mpl.rcParams["lines.linewidth"] = 3
 plt.switch_backend("agg")
 
 
@@ -76,8 +81,8 @@ def plot_predictions(
     settings, d_plot, SNID, redshift, peak_MJD, target, arr_time, d_pred, OOD
 ):
 
-    plt.figure()
-    gs = gridspec.GridSpec(2, 1)
+    fig = plt.figure(constrained_layout=True, figsize=(12, 20))
+    gs = gridspec.GridSpec(len(settings.model_files) + 1, 1)
     # Plot the lightcurve
     ax = plt.subplot(gs[0])
     for flt in d_plot.keys():
@@ -91,11 +96,13 @@ def plot_predictions(
                 flux,
                 yerr=fluxerr,
                 fmt="o",
+                markersize=16,
                 label=f"Filter {flt}",
                 color=FILTER_COLORS[flt],
             )
-    ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.0)
-    ax.set_ylabel("FLUXCAL")
+    ax.legend(prop={"size": 20})
+    # ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.0)
+    ax.set_ylabel("normalized FLUXCAL", fontsize=20)
     ylim = ax.get_ylim()
 
     SNtype = du.sntype_decoded(target, settings)
@@ -115,18 +122,17 @@ def plot_predictions(
             ax.plot([peak_MJD, peak_MJD], ylim, "k--", label="Peak MJD")
 
     # Plot the classifications
-    ax = plt.subplot(gs[1])
-    ax.set_ylim(0, 1)
-
     for idx, key in enumerate(d_pred.keys()):
-
+        ax = plt.subplot(gs[idx + 1])
+        ax.set_ylim(0, 1)
         for class_prob in range(settings.nb_classes):
-            color = ALL_COLORS[class_prob + idx * settings.nb_classes]
+            color = ALL_COLORS[class_prob]
             linestyle = LINE_STYLE[class_prob]
             label = du.sntype_decoded(class_prob, settings)
+            label = "Ia" if "Ia" in label else "non-Ia"
 
-            if len(d_pred) > 1:
-                label += f" {key}"
+            # if len(d_pred) > 1:
+            #     label += f" {key}"
 
             ax.plot(
                 arr_time,
@@ -149,18 +155,26 @@ def plot_predictions(
                 color=color,
                 alpha=0.2,
             )
+        ax.set_ylabel("classification probability", fontsize=20)
+        if "vanilla" in key:
+            method = "RNN LSTM"
+        elif "bayesian" in key:
+            method = "BNN Bayes by Backprop (BBB)"
+        elif "variational" in key:
+            method = "BNN MC dropout (MC)"
+        ax.set_title(method)
+    ax.legend(prop={"size": 20})
+    ax.set_xlabel("Observer frame days", fontsize=20)
 
-    ax.set_xlabel("Time (MJD)")
-    ax.set_ylabel("classification probability")
     # Add PEAKMJD
-    if (
-        OOD is None
-        and not settings.data_testing
-        and arr_time.min() < peak_MJD
-        and peak_MJD > arr_time.max()
-    ):
-        ax.plot([peak_MJD, peak_MJD], [0, 1], "k--", label="Peak MJD")
-    ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.0)
+    # if (
+    #     OOD is None
+    #     and not settings.data_testing
+    #     and arr_time.min() < peak_MJD
+    #     and peak_MJD > arr_time.max()
+    # ):
+    #     ax.plot([peak_MJD, peak_MJD], [0, 1], "k--", label="Peak MJD")
+    # ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.0)
 
     prefix = f"OOD_{OOD}_" if OOD is not None else ""
 
@@ -252,7 +266,7 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
             lu.print_red(f"Not a valid file --plot_file {settings.plot_file}")
             lu.print_yellow(f"Plotting 2 random lcs")
             # randomly select lcs to plot
-            list_entries = np.random.randint(0, high=len(list_data_test), size=2)
+            list_entries = np.random.randint(0, high=len(list_data_test), size=nb_lcs)
             subset_to_plot = [list_data_test[i] for i in list_entries]
     else:
         # randomly select lcs to plot
