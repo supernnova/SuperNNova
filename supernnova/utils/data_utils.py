@@ -14,7 +14,13 @@ from . import logging_utils
 
 OFFSETS = [-2, -1, 0, 1, 2]
 OOD_TYPES = ["random", "reverse", "shuffle", "sin"]
-OFFSETS_STR = ["-2", "-1", "", "+1", "+2"]
+OFFSETS_STR = ["-7", "-2", "-1", "", "+1", "+2", "+30"]
+OFFSETS_VAL = []
+for v in OFFSETS_STR:
+    if v == "":
+        OFFSETS_VAL.append(0)
+    else:
+        OFFSETS_VAL.append(int(v.replace("+", "")))
 
 PLASTICC_FILTERS = natsorted(["u", "g", "r", "i", "z", "y"])
 DICT_PLASTICC_FILTERS = {0: "u", 1: "g", 2: "r", 3: "i", 4: "z", 5: "y"}
