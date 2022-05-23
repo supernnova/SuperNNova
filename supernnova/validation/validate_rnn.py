@@ -143,11 +143,13 @@ def get_predictions(settings, model_file=None):
         ).astype(np.float32)
         for key in [
             "all",
+            "PEAKMJD-7",
             "PEAKMJD-2",
             "PEAKMJD-1",
             "PEAKMJD",
             "PEAKMJD+1",
             "PEAKMJD+2",
+            "PEAKMJD+30",
         ]
         + [f"all_{OOD}" for OOD in du.OOD_TYPES]
     }
@@ -223,7 +225,7 @@ def get_predictions(settings, model_file=None):
             #############################
             # Predictions around PEAKMJD
             #############################
-            for offset in [-2, -1, 0, 1, 2]:
+            for offset in [-7, -2, -1, 0, 1, 2, 30]:
                 slice_idxs = [
                     find_idx(times[k], peak_MJDs[k] + offset) for k in range(len(times))
                 ]
