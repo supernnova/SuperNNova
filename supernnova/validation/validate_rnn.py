@@ -192,7 +192,7 @@ def get_predictions(settings, model_file=None):
             packed, _, target_tensor, idxs_rev_sort = tu.get_data_batch(
                 list_data_test, batch_idxs, settings
             )
-
+                        
             for iter_ in tqdm(range(settings.num_inference_samples), ncols=100):
 
                 arr_preds, arr_target = get_batch_predictions(
