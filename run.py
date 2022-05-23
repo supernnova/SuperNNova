@@ -91,6 +91,9 @@ if __name__ == "__main__":
                         model_file,
                         override_source_data=settings.override_source_data,
                     )
+                    # TODO maybe remove
+                    if settings.num_inference_samples != model_settings.num_inference_samples:
+                        model_settings.num_inference_samples = settings.num_inference_samples
                     # Get predictions
                     prediction_file = validate_rnn.get_predictions(
                         model_settings, model_file=model_file
