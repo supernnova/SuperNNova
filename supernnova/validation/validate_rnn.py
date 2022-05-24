@@ -141,14 +141,7 @@ def get_predictions(settings, model_file=None):
         key: np.zeros(
             (num_elem, settings.num_inference_samples, settings.nb_classes)
         ).astype(np.float32)
-        for key in [
-            "all",
-            "PEAKMJD-2",
-            "PEAKMJD-1",
-            "PEAKMJD",
-            "PEAKMJD+1",
-            "PEAKMJD+2",
-        ]
+        for key in ["all"] + [f"PEAKMJD{offset}" for offset in du.OFFSETS_STR]
         + [f"all_{OOD}" for OOD in du.OOD_TYPES]
     }
     d_pred["target"] = np.zeros((num_elem, settings.num_inference_samples)).astype(
@@ -223,7 +216,7 @@ def get_predictions(settings, model_file=None):
             #############################
             # Predictions around PEAKMJD
             #############################
-            for offset in [-2, -1, 0, 1, 2]:
+            for offset in du.OFFSETS_VAL:
                 slice_idxs = [
                     find_idx(times[k], peak_MJDs[k] + offset) for k in range(len(times))
                 ]

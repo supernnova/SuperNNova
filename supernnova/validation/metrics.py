@@ -162,7 +162,7 @@ def get_rnn_performance_metrics_singlemodel(settings, df, host_zspe_list):
     """
 
     # Compute metrics around peak light, and with full lightcurve
-    list_keys = ["-2", "", "+2"] + ["all"]
+    list_keys = ["-7", "-2", "", "+2", "+30"] + ["all"]
     perf_dic = {}
     for key in list_keys:
         # Need to select data (remove NAN) as sometimes, MJD happens too early
