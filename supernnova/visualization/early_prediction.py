@@ -312,7 +312,9 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
                 )
 
             # TODO: IMPROVE
-            df_temp = pd.DataFrame(data=X_unnormed, columns=features)
+            # df_temp = pd.DataFrame(data=X_unnormed, columns=features)
+            # For cosmo norms, in order to plot the original flux values need to use
+            df_temp = pd.DataFrame(data=X_ori, columns=features)
             arr_time = np.cumsum(df_temp.delta_time.values)
             df_temp["time"] = arr_time
             for flt in settings.list_filters:
@@ -382,7 +384,7 @@ def plot_gif(settings, df_plot, SNID, redshift, peak_MJD, target, arr_time, d_pr
         ax.set(
             xlabel="",
             ylabel="flux",
-            title=f"{SNtype} (ID: {SNID}, redshift: {redshift:.3g})",
+            # title=f"{SNtype} (ID: {SNID}, redshift: {redshift:.3g})",
         )
 
         # Plot the classifications
@@ -392,8 +394,12 @@ def plot_gif(settings, df_plot, SNID, redshift, peak_MJD, target, arr_time, d_pr
         ax.set_xlim(-0.5, max(df_plot["time"]) + 2)
         # select classification of same length
         for idx, key in enumerate(d_pred.keys()):
-
-            for class_prob in range(settings.nb_classes):
+            # if binary class just plot SNIa prob
+            if settings.nb_classes == 2:
+                to_plot_prob = 1
+            else:
+                to_plot_prob = settings.nb_classes
+            for class_prob in range(to_plot_prob):
                 color = ALL_COLORS[class_prob + idx * settings.nb_classes]
                 linestyle = LINE_STYLE[class_prob]
                 label = du.sntype_decoded(class_prob, settings)
@@ -422,8 +428,8 @@ def plot_gif(settings, df_plot, SNID, redshift, peak_MJD, target, arr_time, d_pr
                     color=color,
                     alpha=0.2,
                 )
-        ax.set_ylabel("classification probability")
-        ax.set_xlabel("time")
+        ax.set_ylabel(r"$P_{Ia}$")
+        ax.set_xlabel("days")
 
         # Used to return the plot as an image rray
         fig.canvas.draw()  # draw the canvas, cache the renderer
