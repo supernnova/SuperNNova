@@ -303,6 +303,12 @@ def get_args():
         help="SN classes in sims (put Ia always first)",
     )
     parser.add_argument(
+        "--sntype_var",
+        type=str,
+        default="SNTYPE",
+        help="Variable representing event types (e.g. SNTYPE)",
+    )
+    parser.add_argument(
         "--nb_epoch", default=90, type=int, help="Number of batches per epoch"
     )
     parser.add_argument("--batch_size", default=128, type=int, help="Batch size")

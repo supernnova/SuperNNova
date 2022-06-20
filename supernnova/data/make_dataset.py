@@ -56,12 +56,12 @@ def build_traintestval_splits(settings):
         process_fn_FITS = partial(
             data_utils.process_header_FITS,
             settings=settings,
-            columns=photo_columns + ["SNTYPE"],
+            columns=photo_columns + [settings.sntype_var],
         )
         process_fn_csv = partial(
             data_utils.process_header_csv,
             settings=settings,
-            columns=photo_columns + ["SNTYPE"],
+            columns=photo_columns + [settings.sntype_var],
         )
 
         list_fn = []
@@ -82,13 +82,13 @@ def build_traintestval_splits(settings):
             if fmat == "FITS":
                 list_df.append(
                     data_utils.process_header_FITS(
-                        fil, settings, columns=photo_columns + ["SNTYPE"]
+                        fil, settings, columns=photo_columns + [settings.sntype_var]
                     )
                 )
             else:
                 list_df.append(
                     data_utils.process_header_csv(
-                        fil, settings, columns=photo_columns + ["SNTYPE"]
+                        fil, settings, columns=photo_columns + [settings.sntype_var]
                     )
                 )
 
@@ -203,7 +203,11 @@ def build_traintestval_splits(settings):
                     .to_dict()
                 )
                 d_occurences_SNTYPE = (
-                    df["SNTYPE"].iloc[idxs].value_counts().sort_values().to_dict()
+                    df[settings.sntype_var]
+                    .iloc[idxs]
+                    .value_counts()
+                    .sort_values()
+                    .to_dict()
                 )
                 total_samples = sum(d_occurences.values())
                 total_samples_str = logging_utils.str_to_yellowstr(total_samples)
@@ -297,7 +301,7 @@ def process_single_FITS(file_path, settings):
         "SIM_PEAKMAG_g",
         "SIM_PEAKMAG_r",
         "SIM_PEAKMAG_i",
-        "SNTYPE",
+        settings.sntype_var,
     ]
     # check if keys are in header
     keep_col_header = [k for k in keep_col_header if k in df_header.keys()]
@@ -307,6 +311,7 @@ def process_single_FITS(file_path, settings):
     #############################################
     # Photometry window init
     #############################################
+    print(settings.photo_window_files)
     if settings.photo_window_files:
         if Path(settings.photo_window_files[0]).exists():
             # load fits file
@@ -330,8 +335,22 @@ def process_single_FITS(file_path, settings):
                 )
                 raise Exception
         else:
-            logging_utils.print_red("Provide a valid photo_window_file")
+            if settings.photo_window_files[0] == "HEAD":
 
+                # if using a variable from header file
+                if settings.photo_window_var in df_header.keys():
+                    a = 1
+                else:
+                    logging_utils.print_red(
+                        "Provide a valid peak key in header or a photo_window_file"
+                    )
+            else:
+                logging_utils.print_red(
+                    "Provide a valid peak key in header or a photo_window_file"
+                )
+                import ipdb
+
+                ipdb.set_trace()
     #############################################
     # Compute SNID for df and join with df_header
     #############################################
@@ -482,7 +501,7 @@ def process_single_csv(file_path, settings):
         "SIM_PEAKMAG_g",
         "SIM_PEAKMAG_r",
         "SIM_PEAKMAG_i",
-        "SNTYPE",
+        settings.sntype_var,
     ]
     # check if keys are in header
     keep_col_header = [k for k in keep_col_header if k in df_header.keys()]
@@ -687,7 +706,7 @@ def pivot_dataframe_single_from_df(df, settings):
             "PEAKMJD",
             "PEAKMJDNORM",
             "SIM_REDSHIFT_CMB",
-            "SNTYPE",
+            settings.sntype_var,
             "SIM_PEAKMAG_z",
             "SIM_PEAKMAG_g",
             "SIM_PEAKMAG_r",

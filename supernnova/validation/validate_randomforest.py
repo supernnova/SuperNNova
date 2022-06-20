@@ -34,9 +34,7 @@ def get_predictions(settings, model_file=None):
         settings.source_data = settings.override_source_data
         settings.set_pytorch_model_name()
 
-    prediction_file = (
-        f"{dump_dir}/PRED_{settings.randomforest_model_name}.pickle"
-    )
+    prediction_file = f"{dump_dir}/PRED_{settings.randomforest_model_name}.pickle"
 
     # load data
     df_test = data_utils.load_fitfile(settings)
@@ -44,7 +42,7 @@ def get_predictions(settings, model_file=None):
     # Load the dataframe containing  the list of the independent test SNID
     sn_df = data_utils.load_HDF5_SNinfo(settings)
     df_SNID = sn_df[sn_df["dataset_saltfit_2classes"] == 2][
-        ["SNID", "PEAKMJD", "PEAKMJDNORM", "SIM_REDSHIFT_CMB", "SNTYPE"]
+        ["SNID", "PEAKMJD", "PEAKMJDNORM", "SIM_REDSHIFT_CMB", settings.sntype_var]
     ]
 
     # Make sure SNID is of type int

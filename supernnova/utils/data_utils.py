@@ -119,7 +119,7 @@ def tag_type(df, settings, type_column="TYPE"):
 
     if type_column not in df.keys():
         if settings.data_testing:
-            df["SNTYPE"] = np.ones(len(df)).astype(int)
+            df[settings.sntype_var] = np.ones(len(df)).astype(int)
         else:
             logging_utils.print_red(
                 "Please provide SNTYPE with data (else use data_testing option)"
@@ -232,7 +232,9 @@ def process_header_FITS(file_path, settings, columns=None):
     except Exception:
         df["SNID"] = df["SNID"].astype(str)
 
-    df = tag_type(df, settings, type_column="SNTYPE")
+    df[settings.sntype_var] = df[settings.sntype_var].astype(str)
+
+    df = tag_type(df, settings, type_column=settings.sntype_var)
 
     if columns is not None:
         df = df[columns]
@@ -255,7 +257,7 @@ def process_header_csv(file_path, settings, columns=None):
 
     # Data
     df = pd.read_csv(file_path)
-    df = tag_type(df, settings, type_column="SNTYPE")
+    df = tag_type(df, settings, type_column=settings.sntype_var)
 
     if columns is not None:
         df = df[columns]
@@ -382,7 +384,7 @@ def load_HDF5_SNinfo(settings):
     dict_SNinfo = {}
     with h5py.File(file_name, "r") as hf:
 
-        columns_to_keep = ["SNID", "SNTYPE", "mB", "c", "x1"]
+        columns_to_keep = ["SNID", settings.sntype_var, "mB", "c", "x1"]
 
         columns_to_keep += [c for c in hf.keys() if "SIM_" in c]
         columns_to_keep += [c for c in hf.keys() if "dataset_" in c]
@@ -444,7 +446,7 @@ def save_to_HDF5(settings, df):
 
     list_misc_features = [
         "PEAKMJD",
-        "SNTYPE",
+        settings.sntype_var,
         "mB",
         "c",
         "x1",
@@ -488,7 +490,7 @@ def save_to_HDF5(settings, df):
         df_SNID = pd.DataFrame(shuffled_ID, columns=["SNID"])
         logging_utils.print_green("Saving misc features")
         for feat in list_misc_features:
-            if feat == "SNTYPE":
+            if feat == settings.sntype_var:
                 dtype = np.dtype("int32")
             else:
                 dtype = np.dtype("float32")
