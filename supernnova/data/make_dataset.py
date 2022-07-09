@@ -311,7 +311,6 @@ def process_single_FITS(file_path, settings):
     #############################################
     # Photometry window init
     #############################################
-    print(settings.photo_window_files)
     if settings.photo_window_files:
         if Path(settings.photo_window_files[0]).exists():
             # load fits file
@@ -348,9 +347,6 @@ def process_single_FITS(file_path, settings):
                 logging_utils.print_red(
                     "Provide a valid peak key in header or a photo_window_file"
                 )
-                import ipdb
-
-                ipdb.set_trace()
     #############################################
     # Compute SNID for df and join with df_header
     #############################################

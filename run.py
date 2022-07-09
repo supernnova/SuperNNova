@@ -92,8 +92,13 @@ if __name__ == "__main__":
                         override_source_data=settings.override_source_data,
                     )
                     # TODO maybe remove
-                    if settings.num_inference_samples != model_settings.num_inference_samples:
-                        model_settings.num_inference_samples = settings.num_inference_samples
+                    if (
+                        settings.num_inference_samples
+                        != model_settings.num_inference_samples
+                    ):
+                        model_settings.num_inference_samples = (
+                            settings.num_inference_samples
+                        )
                     # Get predictions
                     prediction_file = validate_rnn.get_predictions(
                         model_settings, model_file=model_file
@@ -141,7 +146,7 @@ if __name__ == "__main__":
             if settings.model_files:
                 for model_file in settings.model_files:
                     settings = conf.get_norm_from_model(model_file, settings)
-            early_prediction.make_early_prediction(settings, nb_lcs=20, do_gifs=False)
+            early_prediction.make_early_prediction(settings, nb_lcs=100, do_gifs=False)
 
         if settings.plot_prediction_distribution:
             prediction_distribution.plot_prediction_distribution(settings)
