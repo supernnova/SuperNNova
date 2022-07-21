@@ -1,0 +1,2 @@
+Changes:
+- incorporated --sntype_var SNTYPE (default) SIM_TYPE_INDEX (elasticc)
