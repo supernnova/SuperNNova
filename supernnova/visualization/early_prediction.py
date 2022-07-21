@@ -85,7 +85,7 @@ def plot_predictions(
     SNtype_str,
 ):
 
-    plt.figure(figsize=(20, 10))
+    plt.figure(figsize=(15, 10))
     gs = gridspec.GridSpec(2, 1)
     # Plot the lightcurve
     ax = plt.subplot(gs[0])
@@ -132,6 +132,8 @@ def plot_predictions(
             color = ALL_COLORS[class_prob + idx * settings.nb_classes]
             linestyle = LINE_STYLE[class_prob]
             label = du.sntype_decoded(class_prob, settings)
+            if class_prob != 0 and len(label) > 10:
+                label = "non-Ia"
 
             if len(d_pred) > 1:
                 label += f" {key}"
