@@ -52,8 +52,8 @@ def plot_lightcurves(df, SNIDs, settings):
                 ax.errorbar(time, flux, yerr=fluxerr, label=f"Filter {flt}")
 
         ax.set_title(SNID, fontsize=18)
-        ax.legend(loc="best")
         ax.set_aspect("auto")
+    ax.legend(loc="best")
 
     plt.savefig(Path(settings.explore_dir) / "sample_lightcurves.png")
 
@@ -102,6 +102,7 @@ def plot_lightcurves_from_hdf5(settings, SNID_idxs):
             PEAKMJD = str(hf["PEAKMJD"][SNID_idx])
             PEAKMJDNORM = hf["PEAKMJDNORM"][SNID_idx]
             typ = hf[settings.sntype_var][SNID_idx]
+            typ = settings.sntypes[str(typ)]
             data = hf["data"][SNID_idx].reshape(-1, n_features)
 
             df = pd.DataFrame(data, columns=features)
@@ -152,10 +153,9 @@ def plot_lightcurves_from_hdf5(settings, SNID_idxs):
             ax.plot(
                 [PEAKMJDNORM, PEAKMJDNORM], [min_y, max_y], color="k", linestyle="--"
             )
-            ax.set_title(f"{SNID} -- {PEAKMJD} -- {typ}", fontsize=18)
-            ax.legend(loc="best")
+            ax.set_title(f"{SNID.decode('utf8')} -- {typ}", fontsize=18)
             ax.set_aspect("auto")
-
+        ax.legend(loc="best")
         plt.savefig(Path(settings.explore_dir) / "sample_lightcurves_from_hdf5.png")
 
 
@@ -178,6 +178,7 @@ def visualize(settings):
     with h5py.File(settings.hdf5_file_name, "r") as hf:
         SNID_idxs = np.random.permutation(hf["SNID"].shape[0])[:16]
         SNIDs = hf["SNID"][:][SNID_idxs]
+    SNIDs = [i for i in np.array([k for k in SNIDs]).astype(str)]
 
     plot_random_preprocessed_lightcurves(settings, SNIDs)
     plot_lightcurves_from_hdf5(settings, SNID_idxs)
