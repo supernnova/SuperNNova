@@ -73,7 +73,16 @@ def get_predictions(settings, dict_rnn, X, target, OOD=None):
 
 
 def plot_predictions(
-    settings, d_plot, SNID, redshift, peak_MJD, target, arr_time, d_pred, OOD
+    settings,
+    d_plot,
+    SNID,
+    redshift,
+    peak_MJD,
+    target,
+    arr_time,
+    d_pred,
+    OOD,
+    SNtype_str,
 ):
 
     plt.figure()
@@ -98,13 +107,12 @@ def plot_predictions(
     ax.set_ylabel("FLUXCAL")
     ylim = ax.get_ylim()
 
-    SNtype = du.sntype_decoded(target, settings)
     if settings.data_testing:
         ax.set_title(f"ID: {SNID}")
     elif OOD is not None:
         ax.set_title(f"OOD {OOD} ID: {SNID}")
     else:
-        ax.set_title(SNtype + f" (ID: {SNID}, redshift: {redshift:.3g})")
+        ax.set_title(SNtype_str + f" (ID: {SNID}, redshift: {redshift:.3g})")
         # Add PEAKMJD
         if (
             OOD is None
@@ -266,9 +274,13 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
                 0
             ]
             peak_MJD = SNinfo_df[SNinfo_df["SNID"] == SNID]["PEAKMJDNORM"].values[0]
+            SNtype_str = settings.sntypes[
+                str(SNinfo_df[SNinfo_df["SNID"] == SNID][settings.sntype_var].values[0])
+            ]
         except Exception:
             redshift = 0.0
             peak_MJD = 0.0
+            SNtype_str = "Not found"
 
         # Prepare plotting data in a dict
         d_plot = {
@@ -320,6 +332,7 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
                 arr_time,
                 d_pred,
                 OOD,
+                SNtype_str,
             )
 
             # use to create GIFs
@@ -338,7 +351,8 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
     lu.print_green("Finished plotting lightcurves and predictions ")
 
 
-def plot_gif(settings, df_plot, SNID, redshift, peak_MJD, target, arr_time, d_pred):
+def plot_gif(
+    settings, df_plot, SNID, redshift, peak_MJD, target, arr_time, d_pred):
     """ Create GIFs for classification
     """
     import imageio
