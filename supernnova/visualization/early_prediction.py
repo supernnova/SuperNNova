@@ -204,7 +204,7 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
     # Load features list
     file_name = f"{settings.processed_dir}/database.h5"
     with h5py.File(file_name, "r") as hf:
-        features = hf["features"][settings.idx_features]
+        features = hf["features"][settings.idx_features].astype(str)
 
     # Load RNN model
     dict_rnn = {}

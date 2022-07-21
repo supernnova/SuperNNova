@@ -244,8 +244,9 @@ def load_HDF5(settings, test=False):
             idxs_train = idxs_train[: int(settings.data_fraction * len(idxs_train))]
 
         n_features = hf["data"].attrs["n_features"]
-
-        training_features = " ".join(hf["features"][:][settings.idx_features])
+        training_features = " ".join(
+            hf["features"][:][settings.idx_features].astype(str)
+        )
         lu.print_green("Features used", training_features)
 
         arr_data = hf["data"][:]
@@ -258,7 +259,7 @@ def load_HDF5(settings, test=False):
                 arr_target = hf["target_2classes"][:]
         else:
             arr_target = hf[target_key][:]
-        arr_SNID = hf["SNID"][:]
+        arr_SNID = hf["SNID"][:].astype(str)
 
         if test is True:
             return fill_data_list(

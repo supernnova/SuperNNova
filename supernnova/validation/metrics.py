@@ -132,7 +132,7 @@ def get_metrics_singlemodel(settings, prediction_file=None, model_type="rnn"):
             )
         )
 
-    df_metrics = pd.concat(list_df_metrics, 1)
+    df_metrics = pd.concat(list_df_metrics, axis=1)
 
     df_metrics["model_name"] = model_name
     df_metrics["source_data"] = source_data
