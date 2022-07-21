@@ -220,10 +220,6 @@ def load_HDF5(settings, test=False):
         dataset_split_key = f"dataset_{config_name}"
         target_key = f"target_{settings.nb_classes}classes"
 
-        if any([settings.train_plasticc, settings.predict_plasticc]):
-            target_key = "target"
-            dataset_split_key = "dataset"
-
         if test:
             # ridiculous failsafe in case we have different classes in dataset/model
             # we will always have 2 classes

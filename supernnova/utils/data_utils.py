@@ -22,27 +22,6 @@ for v in OFFSETS_STR:
     else:
         OFFSETS_VAL.append(int(v.replace("+", "")))
 
-PLASTICC_FILTERS = natsorted(["u", "g", "r", "i", "z", "y"])
-DICT_PLASTICC_FILTERS = {0: "u", 1: "g", 2: "r", 3: "i", 4: "z", 5: "y"}
-DICT_PLASTICC_CLASS = OrderedDict(
-    {
-        6: 0,
-        15: 1,
-        16: 2,
-        42: 3,
-        52: 4,
-        53: 5,
-        62: 6,
-        64: 7,
-        65: 8,
-        67: 9,
-        88: 10,
-        90: 11,
-        92: 12,
-        95: 13,
-        99: 14,
-    }
-)
 LogStandardized = namedtuple("LogStandardized", ["arr_min", "arr_mean", "arr_std"])
 
 

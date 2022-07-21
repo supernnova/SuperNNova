@@ -100,35 +100,6 @@ def get_args():
         help="Debug database creation: one file processed only",
     )
 
-    #######################
-    # PLASTICC parameters
-    #######################
-    parser.add_argument(
-        "--viz_plasticc",
-        action="store_true",
-        help="Visualize data PLASTICC competition",
-    )
-    parser.add_argument(
-        "--train_plasticc",
-        action="store_true",
-        help="Train model for PLASTICC competition",
-    )
-    parser.add_argument(
-        "--predict_plasticc",
-        action="store_true",
-        help="Make predictions for PLASTICC competition",
-    )
-    parser.add_argument(
-        "--data_plasticc_train",
-        action="store_true",
-        help="Create dataset for PLASTICC competition",
-    )
-    parser.add_argument(
-        "--data_plasticc_test",
-        action="store_true",
-        help="Create dataset for PLASTICC competition",
-    )
-
     ########################
     # Data parameters
     ########################
@@ -254,7 +225,7 @@ def get_args():
     parser.add_argument(
         "--random_redshift",
         action="store_true",
-        help="In PLASTICC, randomly set spectroscopic redshift to -1 (i.e. unknown)",
+        help="randomly set spectroscopic redshift to -1 (i.e. unknown)",
     )
     parser.add_argument(
         "--weight_decay",
@@ -397,18 +368,7 @@ def get_settings(args=None):
         args = get_args()
 
     # Initialize a settings instance
-    if any(
-        [
-            args.train_plasticc,
-            args.viz_plasticc,
-            args.predict_plasticc,
-            args.data_plasticc_train,
-            args.data_plasticc_test,
-        ]
-    ):
-        settings = experiment_settings.PlasticcSettings(args)
-    else:
-        settings = experiment_settings.ExperimentSettings(args)
+    settings = experiment_settings.ExperimentSettings(args)
 
     assert args.rho_scale_lower >= args.rho_scale_upper
 

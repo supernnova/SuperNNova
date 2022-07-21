@@ -85,7 +85,7 @@ def plot_predictions(
     SNtype_str,
 ):
 
-    plt.figure()
+    plt.figure(figsize=(20, 10))
     gs = gridspec.GridSpec(2, 1)
     # Plot the lightcurve
     ax = plt.subplot(gs[0])
@@ -351,8 +351,7 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
     lu.print_green("Finished plotting lightcurves and predictions ")
 
 
-def plot_gif(
-    settings, df_plot, SNID, redshift, peak_MJD, target, arr_time, d_pred):
+def plot_gif(settings, df_plot, SNID, redshift, peak_MJD, target, arr_time, d_pred):
     """ Create GIFs for classification
     """
     import imageio

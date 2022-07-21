@@ -4,18 +4,16 @@ import supernnova.conf as conf
 from supernnova.utils import logging_utils as lu
 from supernnova.visualization import (
     visualize,
-    visualize_plasticc,
     early_prediction,
     prediction_distribution,
 )
 from supernnova.training import train_rnn, train_randomforest
 from supernnova.paper import superNNova_plots as sp
 from supernnova.paper import superNNova_thread as st
-from supernnova.data import make_dataset, make_dataset_plasticc
+from supernnova.data import make_dataset
 from supernnova.validation import (
     validate_rnn,
     validate_randomforest,
-    validate_plasticc,
     metrics,
 )
 from supernnova.utils import logging_utils
@@ -183,28 +181,6 @@ if __name__ == "__main__":
         # Speec benchmarks
         if settings.speed:
             validate_rnn.get_predictions_for_speed_benchmark(settings)
-
-        ################
-        # PLASTICC
-        ################
-
-        if settings.viz_plasticc:
-            visualize_plasticc.visualize_plasticc(settings)
-
-        if settings.data_plasticc_train:
-            make_dataset_plasticc.make_dataset(settings)
-
-        if settings.data_plasticc_test:
-            make_dataset_plasticc.make_test_dataset(settings)
-
-        if settings.train_plasticc:
-            if settings.cyclic:
-                train_rnn.train_cyclic(settings)
-            else:
-                train_rnn.train(settings)
-
-        if settings.predict_plasticc:
-            validate_plasticc.get_predictions(settings)
 
         if settings.done_file:
             with open(Path(settings.done_file), "w") as the_file:

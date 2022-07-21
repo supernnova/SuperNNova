@@ -255,14 +255,7 @@ def train(settings):
     list_data_train, list_data_val = tu.load_HDF5(settings, test=False)
     # Model specification
     rnn = tu.get_model(settings, len(settings.training_features))
-    if settings.__class__.__name__ == "PlasticcSettings":
-        criterion = nn.CrossEntropyLoss(
-            weight=torch.from_numpy(
-                np.array([1, 2, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1]).astype(np.float32)
-            )
-        )
-    else:
-        criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss()
     optimizer = tu.get_optimizer(settings, rnn)
 
     # Prepare for GPU if required
