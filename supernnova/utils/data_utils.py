@@ -371,11 +371,11 @@ def load_HDF5_SNinfo(settings):
 
         for key in columns_to_keep:
             dict_SNinfo[key] = hf[key][:]
+
     df_SNinfo = pd.DataFrame(dict_SNinfo)
-
     # bytes
-    df_SNinfo["SNID"] = df_SNinfo["SNID"].str.decode("utf8")
-
+    if isinstance(df_SNinfo["SNID"].values[0], bytes):
+        df_SNinfo["SNID"] = df_SNinfo["SNID"].str.decode("utf8")
     return df_SNinfo
 
 
