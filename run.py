@@ -151,7 +151,7 @@ if __name__ == "__main__":
 
         if settings.science_plots:
             # Provide a prediction_files argument to carry out plot
-            sp.science_plots(settings)
+            sp.science_plots(settings, onlycnf=True)
 
         if settings.calibration:
             # Provide a metric_files arguments to carry out plot

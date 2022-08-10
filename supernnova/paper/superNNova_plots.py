@@ -312,7 +312,7 @@ def plot_confusion_matrix(
 
     plt.imshow(cm, interpolation="nearest", cmap=cmap)
     cbar = plt.colorbar()
-    cbar.set_clim(0, 1.0)
+    # cbar.set_clim(0, 1.0)
     tick_marks = np.arange(len(classes))
     plt.xticks(tick_marks, classes, rotation=45)
     plt.yticks(tick_marks, classes)
@@ -1114,12 +1114,14 @@ def cnf_matrix(df, model_name, settings):
         settings (ExperimentSettings): custom class to hold hyperparameters
     """
 
-    df_r = pu.reformat_df(df,"all",settings)
+    df_r = pu.reformat_df(df, "all", settings)
     cnf_matrix = confusion_matrix(df_r["target"], df_r["predicted_target"])
 
     plt.figure()
     settings.nb_classes = len(df_r["target"].unique())
-    class_names = [du.sntype_decoded(i, settings) for i in df_r["target"].unique()]
+    class_names = [
+        du.sntype_decoded(i, settings, simplify=True) for i in df_r["target"].unique()
+    ]
     plot_confusion_matrix(
         settings, cnf_matrix, classes=class_names, normalize=True, nameout=model_name
     )
@@ -1396,42 +1398,45 @@ def science_plots(settings, onlycnf=False):
     # Load data
     df_SNinfo = du.load_HDF5_SNinfo(settings)
 
-    # Get extra info from fits (for distance modulus)
-    fits = du.load_fitfile(settings)
-    if len(fits) != 0:
-        fits = fits[["SNID", "cERR", "mBERR", "x1ERR"]]
+    # check if files are there
+    tmp_not_found = [m for m in settings.prediction_files if not os.path.exists(m)]
+    if len(tmp_not_found) > 0:
+        print(lu.str_to_redstr(f"Files not found {tmp_not_found}"))
+        tmp_prediction_files = [
+            m for m in settings.prediction_files if os.path.exists(m)
+        ]
+        settings.prediction_files = tmp_prediction_files
 
-        # check if files are there
-        tmp_not_found = [m for m in settings.prediction_files if not os.path.exists(m)]
-        if len(tmp_not_found) > 0:
-            print(lu.str_to_redstr(f"Files not found {tmp_not_found}"))
-            tmp_prediction_files = [
-                m for m in settings.prediction_files if os.path.exists(m)
-            ]
-            settings.prediction_files = tmp_prediction_files
-
-        for f in settings.prediction_files:
+    for f in settings.prediction_files:
+        if Path(f).suffix == ".pickle":
             df = pd.read_pickle(f)
-            model_name = Path(f).stem
+        elif Path(f).suffix == ".csv":
+            df = pd.read_csv(f)
+            df["SNID"] = df["SNID"].astype(str)
+        model_name = Path(f).stem
 
-            cols_to_merge = [
-                "SNID",
-                "SIM_REDSHIFT_CMB",
-                settings.sntype_var,
-                "mB",
-                "x1",
-                "c",
-            ]
-            cols_to_merge += [c for c in df_SNinfo.columns if "unique_nights" in c]
-            cols_to_merge += [c for c in df_SNinfo.columns if "_num_" in c]
+        cols_to_merge = [
+            "SNID",
+            "SIM_REDSHIFT_CMB",
+            settings.sntype_var,
+            "mB",
+            "x1",
+            "c",
+        ]
+        cols_to_merge += [c for c in df_SNinfo.columns if "unique_nights" in c]
+        cols_to_merge += [c for c in df_SNinfo.columns if "_num_" in c]
 
-            df = df.merge(df_SNinfo.reset_index()[cols_to_merge], how="left", on="SNID")
+        df = df.merge(df_SNinfo.reset_index()[cols_to_merge], how="left", on="SNID")
 
-            if onlycnf:
-                cnf_matrix(df, model_name, settings)
-            else:
-                # Science plots
-                purity_vs_z(df, model_name, settings)
-                # cadence_acc_matrix(df, model_name, settings)
+        if onlycnf:
+            cnf_matrix(df, model_name, settings)
+        else:
+            # Science plots
+            purity_vs_z(df, model_name, settings)
+            # cadence_acc_matrix(df, model_name, settings)
+            # Get extra info from fits (for distance modulus)
+            fits = du.load_fitfile(settings)
+            if len(fits) != 0:
+                fits = fits[["SNID", "cERR", "mBERR", "x1ERR"]]
                 hubble_residuals(df, model_name, fits, settings)
-                cnf_matrix(df, model_name, settings)
+            cnf_matrix(df, model_name, settings)

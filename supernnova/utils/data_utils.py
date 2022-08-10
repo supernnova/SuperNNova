@@ -40,13 +40,14 @@ def load_pandas_from_fit(fit_file_path):
     return df
 
 
-def sntype_decoded(target, settings):
+def sntype_decoded(target, settings, simplify=False):
     """Match the target class (integer in {0, ..., 6} to the name
     of the class, i.e. something like "SN Ia" or "SN CC"
 
     Args:
         target (int): specifies the classification target
         settings (ExperimentSettings): custom class to hold hyperparameters
+        simplify (Boolean): if True do not show all classes
 
     Returns:
         (str) the name of the class
@@ -73,6 +74,8 @@ def sntype_decoded(target, settings):
                 SNtype = f"SN {'|'.join(set([k for k in settings.sntypes.values() if 'Ia' not in k]))}"
             else:
                 SNtype = f"SN {'|'.join(list(settings.sntypes.values())[1:])}"
+            if simplify:
+                SNtype = "non SN Ia"
     return SNtype
 
 
