@@ -432,6 +432,7 @@ def save_to_HDF5(settings, df):
     list_misc_features = [
         "PEAKMJD",
         settings.sntype_var,
+        settings.photo_window_var,
         "mB",
         "c",
         "x1",

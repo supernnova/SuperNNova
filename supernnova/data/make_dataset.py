@@ -499,6 +499,7 @@ def process_single_csv(file_path, settings):
         "SIM_PEAKMAG_r",
         "SIM_PEAKMAG_i",
         settings.sntype_var,
+        settings.photo_window_var,
     ]
     # check if keys are in header
     keep_col_header = [k for k in keep_col_header if k in df_header.keys()]
@@ -708,6 +709,7 @@ def pivot_dataframe_single_from_df(df, settings):
             "SIM_PEAKMAG_g",
             "SIM_PEAKMAG_r",
             "SIM_PEAKMAG_i",
+            settings.photo_window_var,
         ]
         + [k for k in df.keys() if "HOST" in k]
         + class_columns
