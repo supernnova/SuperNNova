@@ -406,7 +406,7 @@ def get_data_batch(list_data, idxs, settings, max_lengths=None, OOD=None):
             assert settings.random_redshift is False
             X = X[: max_lengths[pos]]
         if settings.random_length:
-            random_length = np.random.randint(1, X.shape[0] + 1)
+            random_length = np.random.randint(3, X.shape[0] + 1)
             X = X[:random_length]
         if settings.redshift == "zspe" and settings.random_redshift:
             if np.random.binomial(1, 0.5) == 0:
