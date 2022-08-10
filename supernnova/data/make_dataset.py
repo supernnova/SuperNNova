@@ -302,6 +302,7 @@ def process_single_FITS(file_path, settings):
         "SIM_PEAKMAG_r",
         "SIM_PEAKMAG_i",
         settings.sntype_var,
+        settings.photo_window_var,
     ]
     # check if keys are in header
     keep_col_header = [k for k in keep_col_header if k in df_header.keys()]
