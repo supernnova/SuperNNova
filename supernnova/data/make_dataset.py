@@ -302,8 +302,9 @@ def process_single_FITS(file_path, settings):
         "SIM_PEAKMAG_r",
         "SIM_PEAKMAG_i",
         settings.sntype_var,
-        settings.photo_window_var,
     ]
+    if settings.photo_window_var not in keep_col_header:
+        keep_col_header += [settings.photo_window_var]
     if settings.additional_train_var:
         keep_col_header += list(settings.additional_train_var)
         print(f"Adding additional variables to dataset {settings.additional_train_var}")
@@ -502,8 +503,9 @@ def process_single_csv(file_path, settings):
         "SIM_PEAKMAG_r",
         "SIM_PEAKMAG_i",
         settings.sntype_var,
-        settings.photo_window_var,
     ]
+    if settings.photo_window_var not in keep_col_header:
+        keep_col_header += [settings.photo_window_var]
     if settings.additional_train_var:
         keep_col_header += list(settings.additional_train_var)
         print(f"Adding additional variables to dataset {settings.additional_train_var}")
@@ -715,11 +717,12 @@ def pivot_dataframe_single_from_df(df, settings):
             "SIM_PEAKMAG_g",
             "SIM_PEAKMAG_r",
             "SIM_PEAKMAG_i",
-            settings.photo_window_var,
         ]
         + [k for k in df.keys() if "HOST" in k]
         + class_columns
     )
+    if settings.photo_window_var not in group_features_list:
+        group_features_list += [settings.photo_window_var]
     if settings.additional_train_var:
         group_features_list += list(settings.additional_train_var)
     # check if keys are in header

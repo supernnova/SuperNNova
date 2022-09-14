@@ -434,7 +434,6 @@ def save_to_HDF5(settings, df):
     list_misc_features = [
         "PEAKMJD",
         settings.sntype_var,
-        settings.photo_window_var,
         "mB",
         "c",
         "x1",
@@ -444,6 +443,9 @@ def save_to_HDF5(settings, df):
         "SIM_PEAKMAG_r",
         "SIM_PEAKMAG_i",
     ]
+
+    if settings.photo_window_var not in list_misc_features:
+        list_misc_features += settings.photo_window_var
 
     list_misc_features = [k for k in list_misc_features if k in df.keys()]
 
