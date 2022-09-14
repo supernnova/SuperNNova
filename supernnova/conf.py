@@ -280,6 +280,12 @@ def get_args():
         help="Variable representing event types (e.g. SNTYPE)",
     )
     parser.add_argument(
+        "--additional_train_var",
+        nargs="+",
+        help="Additional training variables",
+    )
+
+    parser.add_argument(
         "--nb_epoch", default=90, type=int, help="Number of batches per epoch"
     )
     parser.add_argument("--batch_size", default=128, type=int, help="Batch size")

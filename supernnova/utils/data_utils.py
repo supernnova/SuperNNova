@@ -428,6 +428,8 @@ def save_to_HDF5(settings, df):
         "HOSTGAL_SPECZ",
         "HOSTGAL_SPECZ_ERR",
     ]
+    if settings.additional_train_var:
+        list_training_features += list(settings.additional_train_var)
 
     list_misc_features = [
         "PEAKMJD",
@@ -442,6 +444,7 @@ def save_to_HDF5(settings, df):
         "SIM_PEAKMAG_r",
         "SIM_PEAKMAG_i",
     ]
+
     list_misc_features = [k for k in list_misc_features if k in df.keys()]
 
     assert df.index.name == "SNID", "Must set SNID as index"

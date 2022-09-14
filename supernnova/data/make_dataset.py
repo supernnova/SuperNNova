@@ -304,6 +304,9 @@ def process_single_FITS(file_path, settings):
         settings.sntype_var,
         settings.photo_window_var,
     ]
+    if settings.additional_train_var:
+        keep_col_header += list(settings.additional_train_var)
+        print(f"Adding additional variables to dataset {settings.additional_train_var}")
     # check if keys are in header
     keep_col_header = [k for k in keep_col_header if k in df_header.keys()]
     df_header = df_header[keep_col_header].copy()
@@ -501,6 +504,9 @@ def process_single_csv(file_path, settings):
         settings.sntype_var,
         settings.photo_window_var,
     ]
+    if settings.additional_train_var:
+        keep_col_header += list(settings.additional_train_var)
+        print(f"Adding additional variables to dataset {settings.additional_train_var}")
     # check if keys are in header
     keep_col_header = [k for k in keep_col_header if k in df_header.keys()]
     df_header = df_header[keep_col_header].copy()
@@ -714,6 +720,8 @@ def pivot_dataframe_single_from_df(df, settings):
         + [k for k in df.keys() if "HOST" in k]
         + class_columns
     )
+    if settings.additional_train_var:
+        group_features_list += list(settings.additional_train_var)
     # check if keys are in header
     group_features_list = [k for k in group_features_list if k in df.keys()]
     # Pivot so that for a given MJD, we have info on all available fluxes / error
@@ -845,7 +853,6 @@ def make_dataset(settings):
     logging_utils.print_green("Concatenating pivot")
 
     df = pd.concat([pd.read_pickle(f) for f in list_files], axis=0)
-
     # Save to HDF5
     data_utils.save_to_HDF5(settings, df)
 
