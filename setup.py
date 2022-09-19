@@ -1,8 +1,9 @@
 import setuptools
+import supernnova
 
 setuptools.setup(
     name="supernnova",
-    version="1.3",
+    version=supernnova.__version__,
     author="Anais Moller and Thibault de Boissiere",
     author_email="anais.moller@clermont.in2p3.fr",
     description="framework for Bayesian, Neural Network based supernova light-curve classification",
