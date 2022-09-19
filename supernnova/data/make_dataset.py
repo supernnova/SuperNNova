@@ -41,7 +41,10 @@ def build_traintestval_splits(settings):
     max_workers = multiprocessing.cpu_count()
     photo_columns = ["SNID"] + [
         f"target_{nb_classes}classes"
-        for nb_classes in list(set([2, len(settings.sntypes.keys())]))
+        # for nb_classes in list(set([2, len(settings.sntypes.keys())]))
+        for nb_classes in list(
+            set([2, len(set([k for k in dict(settings.sntypes).values()]))])
+        )
     ]
 
     # Load headers
@@ -133,7 +136,10 @@ def build_traintestval_splits(settings):
     # Save a dataframe to record train/test/val split for
     # binary, ternary and all-classes classification
     for dataset in ["saltfit", "photometry"]:
-        for nb_classes in list(set([2, len(settings.sntypes.keys())])):
+        # for nb_classes in list(set([2, len(settings.sntypes.keys())])):
+        for nb_classes in list(
+            set([2, len(set([k for k in dict(settings.sntypes).values()]))])
+        ):
             logging_utils.print_green(
                 f"Computing {dataset} splits for {nb_classes}-way classification"
             )
@@ -307,7 +313,6 @@ def process_single_FITS(file_path, settings):
         keep_col_header += [settings.photo_window_var]
     if settings.additional_train_var:
         keep_col_header += list(settings.additional_train_var)
-        print(f"Adding additional variables to dataset {settings.additional_train_var}")
     # check if keys are in header
     keep_col_header = [k for k in keep_col_header if k in df_header.keys()]
     df_header = df_header[keep_col_header].copy()
@@ -439,7 +444,9 @@ def process_single_FITS(file_path, settings):
     # Merge left on df: len(df) will not change and will now include
     # relevant columns from df_SNID
     merge_columns = ["SNID"]
-    for c_ in list(set([2, len(settings.sntypes.keys())])):
+    # for c_ in list(set([2, len(settings.sntypes.keys())])):
+    distinct_classes = len(set([k for k in dict(settings.sntypes).values()]))
+    for c_ in list(set([2, distinct_classes])):
         merge_columns += [f"target_{c_}classes"]
         for dataset in ["photometry", "saltfit"]:
             merge_columns += [f"dataset_{dataset}_{c_}classes"]
@@ -543,7 +550,9 @@ def process_single_csv(file_path, settings):
     # Merge left on df: len(df) will not change and will now include
     # relevant columns from df_SNID
     merge_columns = ["SNID"]
-    for c_ in list(set([2, len(settings.sntypes.keys())])):
+    # for c_ in list(set([2, len(settings.sntypes.keys())])):
+    distinct_classes = len(set([k for k in dict(settings.sntypes).values()]))
+    for c_ in list(set([2, distinct_classes])):
         merge_columns += [f"target_{c_}classes"]
         for dataset in ["photometry", "saltfit"]:
             merge_columns += [f"dataset_{dataset}_{c_}classes"]
@@ -701,7 +710,9 @@ def pivot_dataframe_single_from_df(df, settings):
     # drop columns that won"t be used onwards
     df = df.drop(labels=["MJD", "delta_time"], axis=1)
     class_columns = []
-    for c_ in list(set([2, len(settings.sntypes.keys())])):
+    # for c_ in list(set([2, len(settings.sntypes.keys())])):
+    distinct_classes = len(set([k for k in dict(settings.sntypes).values()]))
+    for c_ in list(set([2, distinct_classes])):
         class_columns += [f"target_{c_}classes"]
         for dataset in ["photometry", "saltfit"]:
             class_columns += [f"dataset_{dataset}_{c_}classes"]

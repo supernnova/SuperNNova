@@ -94,11 +94,7 @@ def tag_type(df, settings, type_column="TYPE"):
         (pandas.DataFrame) the dataframe, with new target columns
     """
 
-    # 2 classes
-    # taking the first type vs. others
-
-    list_types = list(set([x for x in settings.sntypes.values()]))
-
+    # SNTYPE checks
     if type_column not in df.keys():
         if settings.data_testing:
             df[settings.sntype_var] = np.ones(len(df)).astype(int)
@@ -108,6 +104,8 @@ def tag_type(df, settings, type_column="TYPE"):
             )
             raise Exception
 
+    # 2 classes: Ia vs non Ia
+    list_types = list(set([x for x in settings.sntypes.values()]))
     if "Ia" in list_types:
         df[type_column] = df[type_column].astype(str)
         # get keys of Ias, the rest tag them as CC
@@ -122,21 +120,30 @@ def tag_type(df, settings, type_column="TYPE"):
         ).astype(np.uint8)
 
     # All classes
+    used = set()
+    unique_classes = [
+        x for x in settings.sntypes.values() if x not in used and (used.add(x) or True)
+    ]
+    classes_to_use = dict([(y, x) for x, y in enumerate(unique_classes)])
+    map_keys_to_classes = {}
+    for k, v in settings.sntypes.items():
+        map_keys_to_classes[k] = classes_to_use[v]
+
     # check if all types are given in input dictionary
-    tmp = df[~df[type_column].isin(settings.sntypes.keys())][type_column]
+    tmp = df[~df[type_column].isin(settings.sntypes.keys())]
+    n = 0
     if len(tmp) > 0:
         logging_utils.print_red(
-            "Missing sntypes", f"{tmp.unique()} tagging as: {len(settings.sntypes)}"
+            "Missing sntypes",
+            f"{tmp[type_column].unique()} 2classes as 1, NOT included >2classes",
         )
+        extra_tag = max(map_keys_to_classes.values()) + 1
+        for mtyp in tmp[type_column].unique():
+            map_keys_to_classes[mtyp] = extra_tag
+    n_unique_classes = len(unique_classes) + n
 
-    classes_to_use = {}
-    for i, k in enumerate(settings.sntypes.keys()):
-        classes_to_use[k] = i
-    for kk in tmp.unique():
-        classes_to_use[kk] = len(settings.sntypes)
-
-    df[f"target_{len(settings.sntypes)}classes"] = df[type_column].apply(
-        lambda x: classes_to_use[x]
+    df[f"target_{len(unique_classes)}classes"] = df[type_column].apply(
+        lambda x: map_keys_to_classes[x]
     )
 
     return df
@@ -471,7 +478,13 @@ def save_to_HDF5(settings, df):
     with h5py.File(settings.hdf5_file_name, "w") as hf:
 
         n_samples = len(list_start_end)
-        list_classes = list(set([2, len(settings.sntypes.keys())]))
+        used = set()
+        unique_classes = [
+            x
+            for x in settings.sntypes.values()
+            if x not in used and (used.add(x) or True)
+        ]
+        list_classes = list(set([2, len(unique_classes)]))
         list_names = ["target", "dataset_photometry", "dataset_saltfit"]
 
         # These arrays can be filled in one shot
