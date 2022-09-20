@@ -280,9 +280,7 @@ def get_args():
         help="Variable representing event types (e.g. SNTYPE)",
     )
     parser.add_argument(
-        "--additional_train_var",
-        nargs="+",
-        help="Additional training variables",
+        "--additional_train_var", nargs="+", help="Additional training variables",
     )
 
     parser.add_argument(
@@ -414,6 +412,13 @@ def get_settings_from_dump(
     # and device
     cli_args["use_cuda"] = settings.use_cuda
     cli_args["device"] = settings.device
+
+    # Backward compatibility
+    keys_not_in_model_settings = [
+        k for k in settings.cli_args.keys() if k not in cli_args.keys()
+    ]
+    for k in keys_not_in_model_settings:
+        cli_args[k] = settings.cli_args[k]
 
     settings = experiment_settings.ExperimentSettings(cli_args)
 

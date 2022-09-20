@@ -240,10 +240,11 @@ def load_HDF5(settings, test=False):
             idxs_train = idxs_train[: int(settings.data_fraction * len(idxs_train))]
 
         n_features = hf["data"].attrs["n_features"]
-        training_features = " ".join(
-            hf["features"][:][settings.idx_features].astype(str)
-        )
-        lu.print_green("Features used", training_features)
+        training_features_data = hf["features"][:].astype(str)
+        training_features = settings.training_features
+        # check if all model features are in db
+        assert set(training_features) <= set(training_features_data)
+        lu.print_green("Features used", " ".join(training_features))
 
         arr_data = hf["data"][:]
         if test:

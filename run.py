@@ -1,6 +1,6 @@
 import numpy as np
 from pathlib import Path
-import supernnova.conf as conf
+from supernnova import conf
 from supernnova.utils import logging_utils as lu
 from supernnova.visualization import (
     visualize,
@@ -25,7 +25,6 @@ if __name__ == "__main__":
 
         # Get conf parameters
         settings = conf.get_settings()
-
         # setting random seeds
         np.random.seed(settings.seed)
         import torch
@@ -89,7 +88,6 @@ if __name__ == "__main__":
                         model_file,
                         override_source_data=settings.override_source_data,
                     )
-                    # TODO maybe remove
                     if (
                         settings.num_inference_samples
                         != model_settings.num_inference_samples

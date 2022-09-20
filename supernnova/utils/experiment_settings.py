@@ -50,7 +50,8 @@ class ExperimentSettings:
             self.randomforest_features = self.get_randomforest_features()
 
             # Set the feature lists
-            self.set_feature_lists()
+            if "all_features" not in cli_args:
+                self.set_feature_lists()
 
             self.overwrite = not self.no_overwrite
 
