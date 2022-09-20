@@ -7,6 +7,7 @@ from natsort import natsorted
 from collections import OrderedDict
 from distutils.util import strtobool
 from .utils import experiment_settings
+from supernnova.utils import logging_utils as lu
 
 
 def get_args():
@@ -419,6 +420,10 @@ def get_settings_from_dump(
     ]
     for k in keys_not_in_model_settings:
         cli_args[k] = settings.cli_args[k]
+
+    # Warning for redshift
+    if cli_args["redshift"] != settings.redshift:
+        lu.print_red("Model forces redshift to be set as", cli_args["redshift"])
 
     settings = experiment_settings.ExperimentSettings(cli_args)
 
