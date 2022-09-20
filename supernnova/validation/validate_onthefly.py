@@ -53,7 +53,8 @@ def get_settings(model_file):
     # Backward compatibility (hardcoded...)
     dic_missing_keys = {"sntype_var": "SNTYPE", "additional_train_var": None}
     for k, v in dic_missing_keys.items():
-        cli_args[k] = v
+        if k not in cli_args.keys():
+            cli_args[k] = v
 
     settings = experiment_settings.ExperimentSettings(cli_args)
 
@@ -81,7 +82,6 @@ def format_data(df, settings):
 
     # pivot
     df = pivot_dataframe_single_from_df(df, settings)
-
     # onehot
     # Fit a one hot encoder for FLT
     # to have the same onehot for all datasets

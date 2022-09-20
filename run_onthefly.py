@@ -136,6 +136,7 @@ if __name__ == "__main__":
     # reformat to df
     preds_df = reformat_to_df(pred_probs, ids=df.SNID.unique())
     preds_df.to_csv(f"Predictions_{Path(args.filename).name}")
+    print(preds_df)
 
     # To implement
     # Early prediction visualization
