@@ -106,6 +106,7 @@ def classify_lcs(df, model_file, device):
         idx (list): light-curve indices after classification (they are resorted)
         preds (np.array): predictions for this model (shape= len(idx),model_nb_class)
     """
+
     # init
     settings = get_settings(model_file)
     settings.use_cuda = True if "cuda" in str(device) else False
@@ -116,6 +117,11 @@ def classify_lcs(df, model_file, device):
     ]
     settings.random_length = False
     settings.random_redshift = False
+
+    # Set the random seed manually for reproducibility.
+    np.random.seed(settings.seed)
+    torch.manual_seed(settings.seed)
+
     if "vanilla" in settings.pytorch_model_name:
         settings.num_inference_samples = 1
 
