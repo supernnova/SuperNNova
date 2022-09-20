@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from pathlib import Path
+from supernnova import conf
 from supernnova.utils import data_utils
 from supernnova.conf import get_norm_from_model
 from supernnova.utils import experiment_settings
@@ -26,10 +27,33 @@ def get_settings(model_file):
     cli_file = model_dir / "cli_args.json"
     with open(cli_file, "r") as f:
         cli_args = json.load(f)
+        # Unset general arguments
+        for arg in [
+            "data",
+            "train_rnn",
+            "validate_rnn",
+            "train_rf",
+            "validate_rf",
+            "explore_lightcurves",
+            "dryrun",
+            "metrics",
+            "performance",
+            "calibration",
+            "plot_lcs",
+            "prediction_files",
+        ]:
+            cli_args[arg] = False
 
     # for on the fly predictions
     cli_args["no_dump"] = True
     cli_args["models_dir"] = Path(model_file).parent.as_posix()
+
+    settings = experiment_settings.ExperimentSettings(cli_args)
+
+    # Backward compatibility (hardcoded...)
+    dic_missing_keys = {"sntype_var": "SNTYPE", "additional_train_var": None}
+    for k, v in dic_missing_keys.items():
+        cli_args[k] = v
 
     settings = experiment_settings.ExperimentSettings(cli_args)
 
