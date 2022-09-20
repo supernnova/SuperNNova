@@ -62,7 +62,7 @@ To make predictions on an independent database than the one used to train a give
 
     python run.py --dump_dir  /path/to/dump_dir --validate_rnn --model_files path/to/modelfile/modelfile.pt
 
-In this case it will run the model provided in ``model_files`` with the normalization of the model on the database available in ``dump_dir/processed``. Predictions will be saved in ``dump_dir/models/modelname/``.
+In this case it will run the model provided in ``model_files`` with the features and normalization of the model on the database available in ``dump_dir/processed``. Predictions will be saved in ``dump_dir/models/modelname/``. If uncertain about the model features, take a look at the ``cli_args.json`` in the model directory.
 
 Predictions format
 ~~~~~~~~~~~~~~~~~~~~~

@@ -46,11 +46,12 @@ Creating a debugging database
 **Using command line:**
 .. code::
 
-    python run.py --data --dump_dir tests/dump --raw_dir tests/raw --fits_dir tests/fits
+    python run.py --data --dump_dir tests/dump --raw_dir tests/raw 
 
 - This creates a database for a very small subset of all available data
 - This is intended for debugging purposes (training, validation can run very fast with this small database)
 - The database is saved to the specified ``tests/dump/processed``
+- An additional SALT2 fits can be provided as ``--fits_dir tests/fits`` for training of RF and interpretation
 
 **Using yaml:** 
 .. code::
@@ -64,7 +65,10 @@ Creating a database
 **Using command line:**
 .. code::
 
-    python run.py --data --dump_dir <path/to/full/database/> --raw_dir <path/to/raw/data/> --fits_dir <path/to/fits/>
+    python run.py --data --dump_dir <path/to/full/database/> --raw_dir <path/to/raw/data/> 
+
+- An additional SALT2 fits can be provided as ``--fits_dir <path/to/fits/>`` for training of RF and interpretation
+
 
 **Using yaml:** modify the configuration file
 .. code::
@@ -122,6 +126,16 @@ The default redshift label is either ``HOSTGAL_SPECZ``/``HOSTGAL_PHOTOZ`` (with 
 
 e.g. ``--redshift_label REDSHIFT_FINAL``. 
 
+Using a different sntype label
+------------------------------
+The default sntype label is ``SNTYPE``. If you want to use your own label, you'll need to specify it. 
+
+.. code::
+
+    python run.py --dump_dir <path/to/save/database/> --data --raw_dir <path/to/raw/data/>  --sntype_var <your/label>
+
+e.g. ``--redshift_label SIM_SNTYPE``. 
+
 Masking photometry
 ------------------------------
 The default is to use all available photometry for classification. However, we support masking photometric epochs with a power of two mask. Any combination of these power of two integers, and with other numbers, will be eliminated from the database.
@@ -131,6 +145,17 @@ The default is to use all available photometry for classification. However, we s
     python run.py --dump_dir <path/to/save/database/> --data --raw_dir <path/to/raw/data/>  --phot_reject <your/label> --phot_reject_list <list/to/reject>
 
 e.g. ``--phot_reject PHOTFLAG --phot_reject_list 8 16 32 64 128 256 512``. 
+
+
+Adding another training variable
+------------------------------
+You may want to add another feature for training and classification from the metadata (HEAD for .fits)
+
+.. code::
+
+    python run.py --dump_dir <path/to/save/database/> --data --raw_dir <path/to/raw/data/>  --additional_train_var <additional_column_name>
+
+e.g. ``--additional_train_var MWEBV``. 
 
 Under the hood
 -------------------------------

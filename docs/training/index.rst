@@ -23,7 +23,7 @@ Training an RNN model
 **Using command line:**
 .. code::
 
-    python run.py --data --dump_dir /path/to/your/dump/dir # build the data
+    python run.py --data --dump_dir /path/to/your/dump/dir --raw_dir tests/raw  # build the data
     python run.py --train_rnn --dump_dir /path/to/your/dump/dir # train and validate
 
 **Using Yaml:**
