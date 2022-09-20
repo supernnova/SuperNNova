@@ -298,6 +298,13 @@ def train(settings):
             packed, _, target_tensor, idxs_rev_sort = tu.get_data_batch(
                 list_data_train, batch_idxs, settings
             )
+            # Exception for multiclass
+            if settings.nb_classes <= int(target_tensor.max()):
+                print("")
+                lu.print_red(
+                    "All sntypes where not defined during database creation (multiclass fails)"
+                )
+                raise ValueError
             # Train step : forward backward pass
             tu.train_step(
                 settings,

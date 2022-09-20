@@ -135,8 +135,10 @@ def tag_type(df, settings, type_column="TYPE"):
     if len(tmp) > 0:
         logging_utils.print_red(
             "Missing sntypes",
-            f"{tmp[type_column].unique()} binary tagged as class 1 but NOT included in multi-class",
+            f"{tmp[type_column].unique()} binary tagged as class 1",
         )
+        logging_utils.print_red(
+            "nb_classes !=2 will NOT work")
         extra_tag = max(map_keys_to_classes.values()) + 1
         for mtyp in tmp[type_column].unique():
             map_keys_to_classes[mtyp] = extra_tag
