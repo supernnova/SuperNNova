@@ -11,11 +11,11 @@ SuperNNova is a framework for lightcurve classification which uses supervised le
 
 - **Do you have a paper describing SuperNNova? How can I cite you?**
 
-The paper has been acccepted by `MNRAS`_. A copy of the paper can be found here `ArXiv`_. 
+The paper has been published by `MNRAS`_. A copy of the paper can be found here `ArXiv`_. 
 
 - **How can I install it?**
 
-You can either ``clone`` our `GitHub`_ or use ``pip`` for modular installation. Beware, the supported version of GitHub repository is this `GitHub`_!!!! (previous version was hosted in a different webpage).
+You can ``clone`` our `GitHub`_. Beware, the supported version of GitHub repository is this `GitHub`_!!!! (previous version was hosted in a different webpage). Previous pip installation it is not updated. If you have a compelling case to bring it back let me know! SuperNNova works in Unix based systems only.
 
 - **What data do I need?**
 
@@ -26,7 +26,7 @@ You only need lightcurves (photometric time-series) to use SuperNNova. Additiona
 Yes it is! `SuperNNovaSimulations`_
 We want to foster reproducibility so you can copy the data and reproduce all our experiments with ``run_paper.py`` in the ``paper`` branch. Beware, it will take while!
 
-- **How did you create the simulations used in the paper?**
+- **How did you create the simulations used in the method paper?**
 
 We used `SNANA`_ to generate the supernovae lightcurves. Our data is similar to the Supernova Photometric Classification Challenge (SPCC) data with updated models used in the DES simulations.
 
@@ -40,8 +40,11 @@ Please do! But beware: you need to have a large amount of lightcurves (simulated
 
 - **How can I use SuperNNova for my classification problem?**
 
-It may require a little bit of code modification depending on your data. You can load data from SNANA formats (``.FITS`` and ``FITRES``, the latter is an ascii file) or ``.csv`` files (like the one from the Kaggle challenge, PlastiCC). Observations are grouped per night, so if you are looking for fast transients, you may need to create your own data pipeline or modify SuperNNova time grouping. Contact us if you have questions anais.moller@clermont.in2p3.fr and please report any issues!
+It may require a little bit of code modification depending on your data. You can load data from SNANA formats (``.FITS`` and ``FITRES``, the latter is an ascii file) or ``.csv`` files (like the one from the Kaggle challenge, PlastiCC). Observations are grouped per night, so if you are looking for fast transients, you may need to create your own data pipeline or modify SuperNNova time grouping. Contact us if you have questions amoller@swin.edu.au and please report any issues!
 
+- **Has SuperNNova been used for scientific analyses?**
+
+Yes! It has been used both for supernova classification in the Dark Energy Survey `5-year photometric sample`_ and `Fink broker`_ with ZTF data. More analyses with different transients in progress!
 
 Technical questions
 --------------------
@@ -55,11 +58,6 @@ Currently we have a Baseline RNN and two Bayesian RNNs. The Bayesian RNNs are ba
 If you have a GPU, you can activate training on GPU with the ``--use_cuda`` flag.
 Alternatively, you may select a smaller data fraction ``--data_fraction 0.1`` to train on a smaller set.
 
-
-- **OSError: Unable to open file (unable to open file: name = '/home/snndump/processed/DES_database.h5'**
-
-You have probably forgotten to set your ``dump_dir`` correctly. Provide the ``--dump_dir`` argument correctly.
-
 - **Where do I find the model naming scheme?**
 
 You can find it in ``SuperNNova/utils/ExperimentSettings.py`` under ``model_name``. A start guide can be found in our :ref:`Start`.
@@ -72,6 +70,19 @@ You can give add to your terminal command ``--dump_dir foldername``. This folder
 
 Yes, you need to call ``python run.py --performance``. It will be created in ``{dump_dir}/stats`` as ``summary_stats.csv``. It will compute various metrics which can be averaged over multiple random seeds. By default, this command will also generate all statistics (latex tables as well printout stats) and plots featured in our SuperNNova paper. To deactivate this, just comment in ``run.py`` the two lines below ``# Stats and plots in paper``.
 
+
+Common issues
+--------------------
+- **OSError: Unable to open file (unable to open file: name = '/home/snndump/processed/DES_database.h5'**
+
+You have probably forgotten to set your ``dump_dir`` correctly. Provide the ``--dump_dir`` argument correctly.
+
+- **ValueError: No objects to concatenate in Database creation**
+Check that you provided the appropriate ``raw_dir`` and that the files are either .FITS tables or .csv with the proper format (see data tab). Another possibility is that you are using a different survey than DES and you need to specify the appropriate ``list_filters``.
+
+- **Your error not here? Please open an issue in GitHub! **
+
+
 .. _ArXiv: https://arxiv.org/abs/1901.06384
 .. _MNRAS: https://academic.oup.com/mnras/advance-article-abstract/doi/10.1093/mnras/stz3312/5651173
 .. _SuperNNovaSimulations: https://zenodo.org/record/3265189#.XRo2mS2B1TY
@@ -80,3 +91,5 @@ Yes, you need to call ``python run.py --performance``. It will be created in ``{
 .. _SALT2: https://arxiv.org/pdf/astro-ph/0701828.pdf
 .. _SNANA: https://arxiv.org/abs/0908.4280
 .. _GitHub: https://github.com/supernnova/SuperNNova
+.. _5-year photometric sample: https://ui.adsabs.harvard.edu/abs/2022MNRAS.514.5159M/abstract
+.. _Fink broker: https://ui.adsabs.harvard.edu/abs/2021MNRAS.501.3272M/abstract 

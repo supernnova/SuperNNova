@@ -108,7 +108,7 @@ Photometric measurements may span over a larger time range than the one desired 
 
 Creating a database with different survey
 ------------------------------
-The default filter set is the one from the Dark Energy Survey Supernova ``g,r,i,z``. If you want to use your own survey, you'll need to specify your filters (Beware! as from 12/11/19 the input of possible combination of filters has been deprecated!).
+The default filter set is the one from the Dark Energy Survey Supernova Survey ``g,r,i,z``. If you want to use your own survey, you'll need to specify your filters.
 
 .. code::
 
