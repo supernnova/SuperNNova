@@ -77,7 +77,10 @@ def get_metrics_singlemodel(settings, prediction_file=None, model_type="rnn"):
     """
 
     df_SNinfo = du.load_HDF5_SNinfo(settings)
-    host = pd.read_pickle(f"{settings.processed_dir}/hostspe_SNID.pickle")
+    if Path(f"{settings.processed_dir}/hostspe_SNID.csv").exists():
+        host = pd.read_csv(f"{settings.processed_dir}/hostspe_SNID.csv")
+    else:
+        host = pd.read_pickle(f"{settings.processed_dir}/hostspe_SNID.pickle")
     host_zspe_list = host["SNID"].tolist()
 
     if prediction_file is not None:
@@ -420,8 +423,7 @@ def get_classification_stats_singlemodel(df, nb_classes):
         pred_class = np.argmax(arr_preds, axis=1)
         list_clf_stats = [len(np.where(pred_class == i)[0]) for i in range(nb_classes)]
         # percentage of non-classified lcs
-        threshold = {2: 0.6, 3: 0.4, 7: 0.2}  # choosing half of the score
-        idx = np.where(np.max(arr_preds, axis=1) < threshold[nb_classes])[0]
+        idx = np.where(np.max(arr_preds, axis=1) < 1 / nb_classes)[0]
         percentage = len(idx) * 100.0 / len(arr_preds)
         list_clf_stats.append(percentage)
 

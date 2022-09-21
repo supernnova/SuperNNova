@@ -149,6 +149,7 @@ if __name__ == "__main__":
 
         if settings.science_plots:
             # Provide a prediction_files argument to carry out plot
+            lu.print_yellow("Will fail if --prediction_files not specified")
             sp.science_plots(settings, onlycnf=True)
 
         if settings.calibration:
