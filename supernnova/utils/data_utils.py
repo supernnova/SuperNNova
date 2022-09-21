@@ -53,15 +53,14 @@ def sntype_decoded(target, settings, simplify=False):
         (str) the name of the class
 
     """
-    if settings.nb_classes > 3:
-        SNtype = list(settings.sntypes.values())[target]
-    elif settings.nb_classes == 3:
-        if target == 0:
-            SNtype = f"SN {list(settings.sntypes.values())[0]}"
-        elif target == 1:
-            SNtype = f"SN CC Ix"
-        else:
-            SNtype = "SN CC IIx"
+    if settings.nb_classes > 2:
+        used = set()
+        unique_classes = [
+            x
+            for x in settings.sntypes.values()
+            if x not in used and (used.add(x) or True)
+        ]
+        SNtype = list(unique_classes)[target]
     else:
         list_types = list(set([x for x in settings.sntypes.values()]))
         if target == 0:
@@ -134,11 +133,9 @@ def tag_type(df, settings, type_column="TYPE"):
     n = 0
     if len(tmp) > 0:
         logging_utils.print_red(
-            "Missing sntypes",
-            f"{tmp[type_column].unique()} binary tagged as class 1",
+            "Missing sntypes", f"{tmp[type_column].unique()} binary tagged as class 1",
         )
-        logging_utils.print_red(
-            "nb_classes !=2 will NOT work")
+        logging_utils.print_red("nb_classes !=2 will NOT work")
         extra_tag = max(map_keys_to_classes.values()) + 1
         for mtyp in tmp[type_column].unique():
             map_keys_to_classes[mtyp] = extra_tag
