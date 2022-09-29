@@ -80,7 +80,7 @@ def plot_predictions(
     gs = gridspec.GridSpec(2, 1)
     # Plot the lightcurve
     ax = plt.subplot(gs[0])
-    for flt in d_plot.keys():
+    for n, flt in enumerate(d_plot.keys()):
         flt_time = d_plot[flt]["MJD"]
         # Only plot a time series if it's non empty
         if len(flt_time) > 0:
@@ -92,7 +92,9 @@ def plot_predictions(
                 yerr=fluxerr,
                 fmt="o",
                 label=f"Filter {flt}",
-                color=FILTER_COLORS[flt],
+                color=FILTER_COLORS[flt]
+                if flt in FILTER_COLORS.keys()
+                else ALL_COLORS[n],
             )
     ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.0)
     ax.set_ylabel("FLUXCAL")
@@ -355,14 +357,16 @@ def plot_gif(settings, df_plot, SNID, redshift, peak_MJD, target, arr_time, d_pr
 
         # slice for gif
         df_sel = df_plot[df_plot["time"] <= time]
-        for flt in settings.list_filters:
+        for n, flt in enumerate(settings.list_filters):
             ax.errorbar(
                 df_sel["time"],
                 df_sel[f"FLUXCAL_{flt}"],
                 yerr=df_sel[f"FLUXCALERR_{flt}"],
                 fmt="o",
                 label=f"Filter {flt}",
-                color=FILTER_COLORS[flt],
+                color=FILTER_COLORS[flt]
+                if flt in FILTER_COLORS.keys()
+                else ALL_COLORS[n],
             )
 
         ax.set(
