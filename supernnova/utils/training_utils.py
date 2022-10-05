@@ -433,7 +433,7 @@ def get_data_batch(list_data, idxs, settings, max_lengths=None, OOD=None):
             X_tensor[: X.shape[0], i, :] = torch.FloatTensor(X)
         except Exception:
             X_tensor[: X.shape[0], i, :] = torch.FloatTensor(
-                torch.from_numpy(np.flip(X, axis=0).copy())
+                torch.from_numpy(np.flip(X, axis=0).copy().astype(np.float32))
             )
         list_target.append(target)
         lengths.append(list_len[idx])
