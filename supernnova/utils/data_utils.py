@@ -565,7 +565,10 @@ def save_to_HDF5(settings, df):
             dtype=np.dtype("float32"),
         )
 
-        df.drop(columns=["time", "SNID", "PEAKMJDNORM"], inplace=True)
+        df.drop(
+            columns=["time", "SNID", "PEAKMJDNORM", settings.photo_window_var],
+            inplace=True,
+        )
 
         ########################
         # Normalize per feature
