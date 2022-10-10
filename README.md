@@ -85,7 +85,7 @@ For more detailed instructions, check the full [setup instructions](https://supe
 When cloning this repository:
 
     # Create data
-    python run.py --data  --dump_dir tests/dump --raw_dir tests/raw --fits_dir tests/fits
+    python run.py --data  --dump_dir tests/dump --raw_dir tests/raw
 
     # Train a baseline RNN
     python run.py --train_rnn --dump_dir tests/dump
