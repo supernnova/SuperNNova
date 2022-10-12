@@ -132,7 +132,7 @@ def plot_predictions(
             color = ALL_COLORS[class_prob + idx * settings.nb_classes]
             linestyle = LINE_STYLE[class_prob]
             label = du.sntype_decoded(class_prob, settings)
-            if class_prob != 0 and len(label) > 10:
+            if class_prob != 0 and settings.nb_classes < 3:
                 label = "non-Ia"
 
             if len(d_pred) > 1:
@@ -398,7 +398,6 @@ def plot_gif(settings, df_plot, SNID, redshift, peak_MJD, target, arr_time, d_pr
                 color = ALL_COLORS[class_prob + idx * settings.nb_classes]
                 linestyle = LINE_STYLE[class_prob]
                 label = du.sntype_decoded(class_prob, settings)
-
                 if len(d_pred) > 1:
                     label += f" {key}"
 
