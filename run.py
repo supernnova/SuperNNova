@@ -141,8 +141,14 @@ if __name__ == "__main__":
         if settings.plot_lcs:
             if settings.model_files:
                 for model_file in settings.model_files:
-                    settings = conf.get_norm_from_model(model_file, settings)
-            early_prediction.make_early_prediction(settings, nb_lcs=100, do_gifs=False)
+                    model_settings = conf.get_settings_from_dump(
+                        settings,
+                        model_file,
+                        override_source_data=settings.override_source_data,
+                    )
+            early_prediction.make_early_prediction(
+                model_settings, nb_lcs=100, do_gifs=False
+            )
 
         if settings.plot_prediction_distribution:
             prediction_distribution.plot_prediction_distribution(settings)

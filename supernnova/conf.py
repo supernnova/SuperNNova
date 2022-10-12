@@ -413,6 +413,8 @@ def get_settings_from_dump(
     # and device
     cli_args["use_cuda"] = settings.use_cuda
     cli_args["device"] = settings.device
+    # model files
+    cli_args["model_files"] = settings.model_files
 
     # Backward compatibility
     keys_not_in_model_settings = [
