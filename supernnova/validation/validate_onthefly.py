@@ -82,6 +82,7 @@ def format_data(df, settings):
 
     # pivot
     df = pivot_dataframe_single_from_df(df, settings)
+
     # onehot
     # Fit a one hot encoder for FLT
     # to have the same onehot for all datasets
@@ -132,7 +133,8 @@ def classify_lcs(df, model_file, device):
     list_lcs = []
     for idx in df.index.unique():
         sel = df[df.index == idx]
-        X_all = sel[settings.training_features].values
+        ordered_features = [k for k in settings.all_features if k in sel.keys()]
+        X_all = sel[ordered_features].values
         # check if normalization converges
         # using clipping in case of min<model_min
         X_clip = X_all.copy()
