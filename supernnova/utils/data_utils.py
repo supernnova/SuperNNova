@@ -564,10 +564,13 @@ def save_to_HDF5(settings, df):
             data=df["PEAKMJDNORM"].values[start_idxs],
             dtype=np.dtype("float32"),
         )
-
+        cols_to_drop = [
+            k
+            for k in ["time", "SNID", "PEAKMJDNORM", settings.photo_window_var]
+            if k in df.keys()
+        ]
         df.drop(
-            columns=["time", "SNID", "PEAKMJDNORM", settings.photo_window_var],
-            inplace=True,
+            columns=list(set(cols_to_drop)), inplace=True,
         )
 
         ########################
