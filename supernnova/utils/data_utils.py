@@ -184,7 +184,8 @@ def load_fitfile(settings, verbose=True):
 
         # Rename CID to SNID
         # SNID is CID in FITOPT000.FITRES
-        df = df.rename(columns={"CID": "SNID"})
+        if "SNID" not in df.keys():
+            df = df.rename(columns={"CID": "SNID"})
 
         # Save to pickle for later use and fast reload
         df.to_pickle(f"{settings.preprocessed_dir}/FITOPT000.FITRES.pickle")

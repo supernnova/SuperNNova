@@ -330,14 +330,22 @@ def process_single_FITS(file_path, settings):
                 delimiter=" ",
                 skipinitialspace=True,
             )
-            df_peak["SNID"] = df_peak["CID"].astype(str)
+            if "SNID" not in df_peak.keys():
+                df_peak["SNID"] = df_peak["CID"].astype(str)
+            else:
+                df_peak["SNID"] = df_peak["SNID"].astype(str)
+
             try:
                 df_peak = df_peak[["SNID", settings.photo_window_var]]
             except Exception:
                 logging_utils.print_red("Provide a correct photo_window variable")
                 raise Exception
             # merge with header
-            df_header = pd.merge(df_header, df_peak, on="SNID")
+            df_header_tmp = pd.merge(df_header, df_peak, on="SNID")
+            if len(df_header) == len(df_header_tmp):
+                df_header = df_header_tmp
+            else:
+                raise Exception
             if len(df_header) < 1:
                 logging_utils.print_red(
                     "Provide a matching photo_window_file (not a common SNID found) "
