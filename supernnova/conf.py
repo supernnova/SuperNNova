@@ -415,6 +415,8 @@ def get_settings_from_dump(
     cli_args["device"] = settings.device
     # model files
     cli_args["model_files"] = settings.model_files
+    # model files
+    cli_args["plot_file"] = settings.plot_file
 
     # Backward compatibility
     keys_not_in_model_settings = [
