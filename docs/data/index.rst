@@ -77,7 +77,7 @@ Creating a database
 
 - You **DO NEED** to download the raw data for this database or point where your data is.
 - This creates a database for all the available data with 80/10/10 train/validate/test splits. 
-- Splits can be changed using ``--data_training`` or ``--data_testing`` commands. For yaml just add ``data_training: True`` or ``--data_testing: True``.
+- Splits can be changed using ``--data_training`` (use data only for raining and validation) or ``--data_testing`` (use data only for testing) commands. For yaml just add ``data_training: True`` or ``--data_testing: True``.
 - The database is saved to the specified ``dump_dir``, in the ``processed`` subfolder.
 - There is no need to specify salt2fits file to make the dataset. It can be used if available but it is not needed ``--fits_dir <empty/path/>``.
 - Raw data can be in csv format with columns:
@@ -96,6 +96,17 @@ This is how to create a database with only lightcurves to evaluate.
 Note that:
 - using ``--data_testing`` option will generate a 100% testing set (see below for more details).
 **Using command yaml:** modify the configuration file with ``data_testing: True`` and use the ``--mode data``.
+
+
+Creating a database using some SNIDs for testing and the rest for training and validating
+------------------------------
+This is how to create a database using a list of SNIDs for testing. 
+
+.. code::
+
+    python run.py --dump_dir <path/to/save/database/> --data --raw_dir <path/to/raw/data/> --testing_ids <path/to/ids/file>
+
+You can provide the SNIDs in ``.csv`` or ``.npy`` format. The ``.csv`` must contain a column ``SNID``.
 
 
 Creating a database with photometry limited to a time window

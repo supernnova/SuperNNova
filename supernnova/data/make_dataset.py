@@ -149,6 +149,29 @@ def build_traintestval_splits(settings):
             else:
                 g = df.groupby(f"target_{nb_classes}classes")
 
+            if settings.testing_ids:
+                if Path(settings.testing_ids).suffix == ".csv":
+                    df_ids_test = pd.read_csv(settings.testing_ids)
+                    try:
+                        ids_test = df_ids_test["SNID"].astype(str).values
+                    except Exception:
+                        logging_utils.print_red(
+                            f"Provide a {settings.testing_ids} with SNID column"
+                        )
+                        raise ValueError
+                elif Path(settings.testing_ids).suffix == ".npy":
+                    ids_test = np.load(settings.testing_ids)
+                    ids_test = [f"{k}" for k in ids_test]
+                else:
+                    logging_utils.print_red(f"Provide a csv or numpy testing_ids file")
+                    raise ValueError
+
+                g_wo_test = df[~df.SNID.isin(ids_test)].groupby(
+                    f"target_{nb_classes}classes"
+                )
+                g_test = df[df.SNID.isin(ids_test)].groupby(
+                    f"target_{nb_classes}classes"
+                )
             # Line below: we have grouped df by target, we find out which of those
             # group has the smallest size with g.size().min(), then we sample randomly
             # from this group and reset the index. We then sample with frac=1 to shuffle
@@ -157,28 +180,45 @@ def build_traintestval_splits(settings):
             if settings.data_testing:
                 # when just classifying data balancing is not necessary
                 g = g.apply(lambda x: x).reset_index(drop=True).sample(frac=1)
+            elif settings.testing_ids:
+                g_wo_test = (
+                    g_wo_test.apply(lambda x: x).reset_index(drop=True).sample(frac=1)
+                )
+                g_test = g_test.apply(lambda x: x).reset_index(drop=True).sample(frac=1)
             else:
                 g = (
                     g.apply(lambda x: x.sample(g.size().min()))
                     .reset_index(drop=True)
                     .sample(frac=1)
                 )
-            sampled_SNIDs = g["SNID"].values
-            n_samples = len(sampled_SNIDs)
-            # Now create train/test/validation indices
-            if settings.data_training:
-                SNID_train = sampled_SNIDs[: int(0.99 * n_samples)]
-                SNID_val = sampled_SNIDs[int(0.99 * n_samples) : int(0.995 * n_samples)]
-                SNID_test = sampled_SNIDs[int(0.995 * n_samples) :]
-            elif settings.data_testing:
-                SNID_test = sampled_SNIDs[:]
-                # the train and val sets wont be used in this case
-                SNID_train = [sampled_SNIDs[0]]
-                SNID_val = [sampled_SNIDs[0]]
+            if settings.testing_ids:
+                sampled_SNIDs_wo_test = g_wo_test["SNID"].values
+                n_samples = len(sampled_SNIDs_wo_test)
+                SNID_train = sampled_SNIDs_wo_test[: int(0.9 * n_samples)]
+                SNID_val = sampled_SNIDs_wo_test[int(0.9 * n_samples) : int(n_samples)]
+                sampled_SNIDs_test = g_test["SNID"].values
+                SNID_test = sampled_SNIDs_test[:]
             else:
-                SNID_train = sampled_SNIDs[: int(0.8 * n_samples)]
-                SNID_val = sampled_SNIDs[int(0.8 * n_samples) : int(0.9 * n_samples)]
-                SNID_test = sampled_SNIDs[int(0.9 * n_samples) :]
+                sampled_SNIDs = g["SNID"].values
+                n_samples = len(sampled_SNIDs)
+                # Now create train/test/validation indices
+                if settings.data_training:
+                    SNID_train = sampled_SNIDs[: int(0.99 * n_samples)]
+                    SNID_val = sampled_SNIDs[
+                        int(0.99 * n_samples) : int(0.995 * n_samples)
+                    ]
+                    SNID_test = sampled_SNIDs[int(0.995 * n_samples) :]
+                elif settings.data_testing:
+                    SNID_test = sampled_SNIDs[:]
+                    # the train and val sets wont be used in this case
+                    SNID_train = [sampled_SNIDs[0]]
+                    SNID_val = [sampled_SNIDs[0]]
+                else:
+                    SNID_train = sampled_SNIDs[: int(0.8 * n_samples)]
+                    SNID_val = sampled_SNIDs[
+                        int(0.8 * n_samples) : int(0.9 * n_samples)
+                    ]
+                    SNID_test = sampled_SNIDs[int(0.9 * n_samples) :]
 
             # Find the indices of our train test val splits
             idxs_train = np.where(df.SNID.isin(SNID_train))[0]
@@ -237,6 +277,7 @@ def build_traintestval_splits(settings):
                 )
 
                 logging_utils.print_green(f"{split_name} set", str_)
+
     # Save to pickle
     df.to_pickle(f"{settings.processed_dir}/SNID.pickle")
 

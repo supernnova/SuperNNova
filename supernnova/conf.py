@@ -162,6 +162,12 @@ def get_args():
         action="store_true",
         help="Create database with only validation set",
     )
+    parser.add_argument(
+        "--testing_ids",
+        default=None,
+        help="Filename with SNIDs to be used for testing (.csv with SNID column or .npy)",
+    )
+
     # Photometry window
     parser.add_argument(
         "--photo_window_files", nargs="+", help="Path to fits with PEAKMJD estimation"
@@ -281,7 +287,9 @@ def get_args():
         help="Variable representing event types (e.g. SNTYPE)",
     )
     parser.add_argument(
-        "--additional_train_var", nargs="+", help="Additional training variables",
+        "--additional_train_var",
+        nargs="+",
+        help="Additional training variables",
     )
 
     parser.add_argument(
