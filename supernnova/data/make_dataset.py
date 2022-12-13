@@ -145,9 +145,20 @@ def build_traintestval_splits(settings):
             )
             # Randomly sample SNIDs such that all class have the same number of occurences
             if dataset == "saltfit":
-                g = df[df.is_salt == 1].groupby(f"target_{nb_classes}classes")
+                g = df[df.is_salt == 1].groupby(
+                    f"target_{nb_classes}classes", group_keys=False
+                )
             else:
-                g = df.groupby(f"target_{nb_classes}classes")
+                g = df.groupby(f"target_{nb_classes}classes", group_keys=False)
+            dic_targets = (
+                g[settings.sntype_var].apply(lambda x: list(np.unique(x))).to_dict()
+            )
+            print(f"target {settings.sntype_var}")
+            settings.data_types_training = [
+                f"{k} {settings.sntypes[v[0]]} {[int(dt) for dt in dic_targets[k]]}"
+                for k, v in dic_targets.items()
+            ]
+            print(settings.data_types_training)
 
             if settings.testing_ids:
                 if Path(settings.testing_ids).suffix == ".csv":
@@ -167,10 +178,10 @@ def build_traintestval_splits(settings):
                     raise ValueError
 
                 g_wo_test = df[~df.SNID.isin(ids_test)].groupby(
-                    f"target_{nb_classes}classes"
+                    f"target_{nb_classes}classes", group_keys=False
                 )
                 g_test = df[df.SNID.isin(ids_test)].groupby(
-                    f"target_{nb_classes}classes"
+                    f"target_{nb_classes}classes", group_keys=False
                 )
             # Line below: we have grouped df by target, we find out which of those
             # group has the smallest size with g.size().min(), then we sample randomly

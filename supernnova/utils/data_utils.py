@@ -133,7 +133,8 @@ def tag_type(df, settings, type_column="TYPE"):
     n = 0
     if len(tmp) > 0:
         logging_utils.print_red(
-            "Missing sntypes", f"{tmp[type_column].unique()} binary tagged as class 1",
+            "Missing sntypes",
+            f"{tmp[type_column].unique()} binary tagged as class 1",
         )
         logging_utils.print_red("nb_classes !=2 will NOT work")
         extra_tag = max(map_keys_to_classes.values()) + 1
@@ -571,7 +572,8 @@ def save_to_HDF5(settings, df):
             if k in df.keys()
         ]
         df.drop(
-            columns=list(set(cols_to_drop)), inplace=True,
+            columns=list(set(cols_to_drop)),
+            inplace=True,
         )
 
         ########################
@@ -668,3 +670,6 @@ def save_to_HDF5(settings, df):
         ):
             arr = arr_feat[idx_pair[0] : idx_pair[1]]
             hf["data"][idx] = np.ravel(arr)
+
+        # save data types for training
+        hf["data_types_training"] = settings.data_types_training

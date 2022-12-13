@@ -246,6 +246,8 @@ def load_HDF5(settings, test=False):
         assert set(training_features) <= set(training_features_data)
         lu.print_green("Features used", " ".join(training_features))
 
+        settings.data_types_training = hf["data_types_training"][:].astype(str)
+
         arr_data = hf["data"][:]
         if test:
             # ridiculous failsafe in case we have different classes in dataset/model
@@ -673,6 +675,8 @@ def save_training_results(settings, d_monitor, training_time):
         else:
             d_results[key] = max(d_monitor[key]) if None not in d_monitor[key] else None
     d_results["loss"] = min(d_monitor["loss"])
+
+    d_results["data_types_training"] = np.array2string(settings.data_types_training)
 
     try:
         with open(Path(settings.rnn_dir) / "training_log.json", "r") as f:
