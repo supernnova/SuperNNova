@@ -38,7 +38,8 @@ Using command line
 Build the database
 .. code::
 
-    python run.py --data --dump_dir tests/dump --raw_dir tests/raw 
+
+an additional argument ``--fits_dir tests/fits`` can provide a SALT2 fits file for random forest training and interpretation.
 
 
 Train an RNN

@@ -41,7 +41,10 @@ def build_traintestval_splits(settings):
     max_workers = multiprocessing.cpu_count()
     photo_columns = ["SNID"] + [
         f"target_{nb_classes}classes"
-        for nb_classes in list(set([2, len(settings.sntypes.keys())]))
+        # for nb_classes in list(set([2, len(settings.sntypes.keys())]))
+        for nb_classes in list(
+            set([2, len(set([k for k in dict(settings.sntypes).values()]))])
+        )
     ]
 
     # Load headers
@@ -56,12 +59,12 @@ def build_traintestval_splits(settings):
         process_fn_FITS = partial(
             data_utils.process_header_FITS,
             settings=settings,
-            columns=photo_columns + ["SNTYPE"],
+            columns=photo_columns + [settings.sntype_var],
         )
         process_fn_csv = partial(
             data_utils.process_header_csv,
             settings=settings,
-            columns=photo_columns + ["SNTYPE"],
+            columns=photo_columns + [settings.sntype_var],
         )
 
         list_fn = []
@@ -82,13 +85,13 @@ def build_traintestval_splits(settings):
             if fmat == "FITS":
                 list_df.append(
                     data_utils.process_header_FITS(
-                        fil, settings, columns=photo_columns + ["SNTYPE"]
+                        fil, settings, columns=photo_columns + [settings.sntype_var]
                     )
                 )
             else:
                 list_df.append(
                     data_utils.process_header_csv(
-                        fil, settings, columns=photo_columns + ["SNTYPE"]
+                        fil, settings, columns=photo_columns + [settings.sntype_var]
                     )
                 )
 
@@ -133,16 +136,53 @@ def build_traintestval_splits(settings):
     # Save a dataframe to record train/test/val split for
     # binary, ternary and all-classes classification
     for dataset in ["saltfit", "photometry"]:
-        for nb_classes in list(set([2, len(settings.sntypes.keys())])):
+        # for nb_classes in list(set([2, len(settings.sntypes.keys())])):
+        for nb_classes in list(
+            set([2, len(set([k for k in dict(settings.sntypes).values()]))])
+        ):
             logging_utils.print_green(
                 f"Computing {dataset} splits for {nb_classes}-way classification"
             )
             # Randomly sample SNIDs such that all class have the same number of occurences
             if dataset == "saltfit":
-                g = df[df.is_salt == 1].groupby(f"target_{nb_classes}classes")
+                g = df[df.is_salt == 1].groupby(
+                    f"target_{nb_classes}classes", group_keys=False
+                )
             else:
-                g = df.groupby(f"target_{nb_classes}classes")
+                g = df.groupby(f"target_{nb_classes}classes", group_keys=False)
+            dic_targets = (
+                g[settings.sntype_var].apply(lambda x: list(np.unique(x))).to_dict()
+            )
+            print(f"target {settings.sntype_var}")
+            settings.data_types_training = [
+                f"{k} {settings.sntypes[v[0]]} {[int(dt) for dt in dic_targets[k]]}"
+                for k, v in dic_targets.items()
+            ]
+            print(settings.data_types_training)
 
+            if settings.testing_ids:
+                if Path(settings.testing_ids).suffix == ".csv":
+                    df_ids_test = pd.read_csv(settings.testing_ids)
+                    try:
+                        ids_test = df_ids_test["SNID"].astype(str).values
+                    except Exception:
+                        logging_utils.print_red(
+                            f"Provide a {settings.testing_ids} with SNID column"
+                        )
+                        raise ValueError
+                elif Path(settings.testing_ids).suffix == ".npy":
+                    ids_test = np.load(settings.testing_ids)
+                    ids_test = [f"{k}" for k in ids_test]
+                else:
+                    logging_utils.print_red(f"Provide a csv or numpy testing_ids file")
+                    raise ValueError
+
+                g_wo_test = df[~df.SNID.isin(ids_test)].groupby(
+                    f"target_{nb_classes}classes", group_keys=False
+                )
+                g_test = df[df.SNID.isin(ids_test)].groupby(
+                    f"target_{nb_classes}classes", group_keys=False
+                )
             # Line below: we have grouped df by target, we find out which of those
             # group has the smallest size with g.size().min(), then we sample randomly
             # from this group and reset the index. We then sample with frac=1 to shuffle
@@ -151,28 +191,45 @@ def build_traintestval_splits(settings):
             if settings.data_testing:
                 # when just classifying data balancing is not necessary
                 g = g.apply(lambda x: x).reset_index(drop=True).sample(frac=1)
+            elif settings.testing_ids:
+                g_wo_test = (
+                    g_wo_test.apply(lambda x: x).reset_index(drop=True).sample(frac=1)
+                )
+                g_test = g_test.apply(lambda x: x).reset_index(drop=True).sample(frac=1)
             else:
                 g = (
                     g.apply(lambda x: x.sample(g.size().min()))
                     .reset_index(drop=True)
                     .sample(frac=1)
                 )
-            sampled_SNIDs = g["SNID"].values
-            n_samples = len(sampled_SNIDs)
-            # Now create train/test/validation indices
-            if settings.data_training:
-                SNID_train = sampled_SNIDs[: int(0.99 * n_samples)]
-                SNID_val = sampled_SNIDs[int(0.99 * n_samples) : int(0.995 * n_samples)]
-                SNID_test = sampled_SNIDs[int(0.995 * n_samples) :]
-            elif settings.data_testing:
-                SNID_test = sampled_SNIDs[:]
-                # the train and val sets wont be used in this case
-                SNID_train = [sampled_SNIDs[0]]
-                SNID_val = [sampled_SNIDs[0]]
+            if settings.testing_ids:
+                sampled_SNIDs_wo_test = g_wo_test["SNID"].values
+                n_samples = len(sampled_SNIDs_wo_test)
+                SNID_train = sampled_SNIDs_wo_test[: int(0.9 * n_samples)]
+                SNID_val = sampled_SNIDs_wo_test[int(0.9 * n_samples) : int(n_samples)]
+                sampled_SNIDs_test = g_test["SNID"].values
+                SNID_test = sampled_SNIDs_test[:]
             else:
-                SNID_train = sampled_SNIDs[: int(0.8 * n_samples)]
-                SNID_val = sampled_SNIDs[int(0.8 * n_samples) : int(0.9 * n_samples)]
-                SNID_test = sampled_SNIDs[int(0.9 * n_samples) :]
+                sampled_SNIDs = g["SNID"].values
+                n_samples = len(sampled_SNIDs)
+                # Now create train/test/validation indices
+                if settings.data_training:
+                    SNID_train = sampled_SNIDs[: int(0.99 * n_samples)]
+                    SNID_val = sampled_SNIDs[
+                        int(0.99 * n_samples) : int(0.995 * n_samples)
+                    ]
+                    SNID_test = sampled_SNIDs[int(0.995 * n_samples) :]
+                elif settings.data_testing:
+                    SNID_test = sampled_SNIDs[:]
+                    # the train and val sets wont be used in this case
+                    SNID_train = [sampled_SNIDs[0]]
+                    SNID_val = [sampled_SNIDs[0]]
+                else:
+                    SNID_train = sampled_SNIDs[: int(0.8 * n_samples)]
+                    SNID_val = sampled_SNIDs[
+                        int(0.8 * n_samples) : int(0.9 * n_samples)
+                    ]
+                    SNID_test = sampled_SNIDs[int(0.9 * n_samples) :]
 
             # Find the indices of our train test val splits
             idxs_train = np.where(df.SNID.isin(SNID_train))[0]
@@ -203,7 +260,11 @@ def build_traintestval_splits(settings):
                     .to_dict()
                 )
                 d_occurences_SNTYPE = (
-                    df["SNTYPE"].iloc[idxs].value_counts().sort_values().to_dict()
+                    df[settings.sntype_var]
+                    .iloc[idxs]
+                    .value_counts()
+                    .sort_values()
+                    .to_dict()
                 )
                 total_samples = sum(d_occurences.values())
                 total_samples_str = logging_utils.str_to_yellowstr(total_samples)
@@ -227,6 +288,7 @@ def build_traintestval_splits(settings):
                 )
 
                 logging_utils.print_green(f"{split_name} set", str_)
+
     # Save to pickle
     df.to_pickle(f"{settings.processed_dir}/SNID.pickle")
 
@@ -297,8 +359,12 @@ def process_single_FITS(file_path, settings):
         "SIM_PEAKMAG_g",
         "SIM_PEAKMAG_r",
         "SIM_PEAKMAG_i",
-        "SNTYPE",
+        settings.sntype_var,
     ]
+    if settings.photo_window_var not in keep_col_header:
+        keep_col_header += [settings.photo_window_var]
+    if settings.additional_train_var:
+        keep_col_header += list(settings.additional_train_var)
     # check if keys are in header
     keep_col_header = [k for k in keep_col_header if k in df_header.keys()]
     df_header = df_header[keep_col_header].copy()
@@ -316,22 +382,41 @@ def process_single_FITS(file_path, settings):
                 delimiter=" ",
                 skipinitialspace=True,
             )
-            df_peak["SNID"] = df_peak["CID"].astype(str)
+            if "SNID" not in df_peak.keys():
+                df_peak["SNID"] = df_peak["CID"].astype(str)
+            else:
+                df_peak["SNID"] = df_peak["SNID"].astype(str)
+
             try:
                 df_peak = df_peak[["SNID", settings.photo_window_var]]
             except Exception:
                 logging_utils.print_red("Provide a correct photo_window variable")
                 raise Exception
             # merge with header
-            df_header = pd.merge(df_header, df_peak, on="SNID")
+            df_header_tmp = pd.merge(df_header, df_peak, on="SNID")
+            if len(df_header) == len(df_header_tmp):
+                df_header = df_header_tmp
+            else:
+                raise Exception
             if len(df_header) < 1:
                 logging_utils.print_red(
                     "Provide a matching photo_window_file (not a common SNID found) "
                 )
                 raise Exception
         else:
-            logging_utils.print_red("Provide a valid photo_window_file")
+            if settings.photo_window_files[0] == "HEAD":
 
+                # if using a variable from header file
+                if settings.photo_window_var in df_header.keys():
+                    a = 1
+                else:
+                    logging_utils.print_red(
+                        "Provide a valid peak key in header or a photo_window_file"
+                    )
+            else:
+                logging_utils.print_red(
+                    "Provide a valid peak key in header or a photo_window_file"
+                )
     #############################################
     # Compute SNID for df and join with df_header
     #############################################
@@ -419,7 +504,9 @@ def process_single_FITS(file_path, settings):
     # Merge left on df: len(df) will not change and will now include
     # relevant columns from df_SNID
     merge_columns = ["SNID"]
-    for c_ in list(set([2, len(settings.sntypes.keys())])):
+    # for c_ in list(set([2, len(settings.sntypes.keys())])):
+    distinct_classes = len(set([k for k in dict(settings.sntypes).values()]))
+    for c_ in list(set([2, distinct_classes])):
         merge_columns += [f"target_{c_}classes"]
         for dataset in ["photometry", "saltfit"]:
             merge_columns += [f"dataset_{dataset}_{c_}classes"]
@@ -482,8 +569,13 @@ def process_single_csv(file_path, settings):
         "SIM_PEAKMAG_g",
         "SIM_PEAKMAG_r",
         "SIM_PEAKMAG_i",
-        "SNTYPE",
+        settings.sntype_var,
     ]
+    if settings.photo_window_var not in keep_col_header:
+        keep_col_header += [settings.photo_window_var]
+    if settings.additional_train_var:
+        keep_col_header += list(settings.additional_train_var)
+        print(f"Adding additional variables to dataset {settings.additional_train_var}")
     # check if keys are in header
     keep_col_header = [k for k in keep_col_header if k in df_header.keys()]
     df_header = df_header[keep_col_header].copy()
@@ -518,7 +610,9 @@ def process_single_csv(file_path, settings):
     # Merge left on df: len(df) will not change and will now include
     # relevant columns from df_SNID
     merge_columns = ["SNID"]
-    for c_ in list(set([2, len(settings.sntypes.keys())])):
+    # for c_ in list(set([2, len(settings.sntypes.keys())])):
+    distinct_classes = len(set([k for k in dict(settings.sntypes).values()]))
+    for c_ in list(set([2, distinct_classes])):
         merge_columns += [f"target_{c_}classes"]
         for dataset in ["photometry", "saltfit"]:
             merge_columns += [f"dataset_{dataset}_{c_}classes"]
@@ -670,13 +764,15 @@ def pivot_dataframe_single_from_df(df, settings):
     # The correct PEAKMJDNORM is the first one hence the use of first after groupby
     df_PEAKMJDNORM = df[["SNID", "PEAKMJDNORM"]].groupby("SNID").first().reset_index()
     # Remove PEAKMJDNORM
-    df = df.drop("PEAKMJDNORM", 1)
+    df = df.drop(labels="PEAKMJDNORM", axis=1)
     # Add PEAKMJDNORM back to df with a merge on SNID
     df = df.merge(df_PEAKMJDNORM, how="left", on="SNID")
     # drop columns that won"t be used onwards
-    df = df.drop(["MJD", "delta_time"], 1)
+    df = df.drop(labels=["MJD", "delta_time"], axis=1)
     class_columns = []
-    for c_ in list(set([2, len(settings.sntypes.keys())])):
+    # for c_ in list(set([2, len(settings.sntypes.keys())])):
+    distinct_classes = len(set([k for k in dict(settings.sntypes).values()]))
+    for c_ in list(set([2, distinct_classes])):
         class_columns += [f"target_{c_}classes"]
         for dataset in ["photometry", "saltfit"]:
             class_columns += [f"dataset_{dataset}_{c_}classes"]
@@ -687,7 +783,7 @@ def pivot_dataframe_single_from_df(df, settings):
             "PEAKMJD",
             "PEAKMJDNORM",
             "SIM_REDSHIFT_CMB",
-            "SNTYPE",
+            settings.sntype_var,
             "SIM_PEAKMAG_z",
             "SIM_PEAKMAG_g",
             "SIM_PEAKMAG_r",
@@ -696,6 +792,10 @@ def pivot_dataframe_single_from_df(df, settings):
         + [k for k in df.keys() if "HOST" in k]
         + class_columns
     )
+    if settings.photo_window_var not in group_features_list:
+        group_features_list += [settings.photo_window_var]
+    if settings.additional_train_var:
+        group_features_list += list(settings.additional_train_var)
     # check if keys are in header
     group_features_list = [k for k in group_features_list if k in df.keys()]
     # Pivot so that for a given MJD, we have info on all available fluxes / error
@@ -722,7 +822,7 @@ def pivot_dataframe_single_from_df(df, settings):
     for flt in list_filters[1:]:
         df["FLT"] += df[flt]
     # Drop some irrelevant columns
-    df = df.drop(list_filters, 1)
+    df = df.drop(labels=list_filters, axis=1)
     # Finally replace NaN with 0
     df = df.fillna(0)
     # Add delta_time back. We removed all delta time columns above as they get
@@ -827,7 +927,6 @@ def make_dataset(settings):
     logging_utils.print_green("Concatenating pivot")
 
     df = pd.concat([pd.read_pickle(f) for f in list_files], axis=0)
-
     # Save to HDF5
     data_utils.save_to_HDF5(settings, df)
 

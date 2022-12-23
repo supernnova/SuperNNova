@@ -23,6 +23,7 @@ COLUMN_NAMES = [
     "HOSTGAL_SPECZ",
     "HOSTGAL_PHOTOZ_ERR",
     "HOSTGAL_SPECZ_ERR",
+    "MWEBV",
 ]
 
 
@@ -45,6 +46,7 @@ def manual_lc():
     df["HOSTGAL_PHOTOZ"] = [0.1, 0.1, 0.5, 0.5]
     df["HOSTGAL_SPECZ_ERR"] = [0.001, 0.001, 0.001, 0.001]
     df["HOSTGAL_PHOTOZ_ERR"] = [0.01, 0.01, 0.01, 0.01]
+    df["MWEBV"] = [0.01, 0.01, 0.01, 0.01]
 
     return df
 
@@ -136,7 +138,7 @@ if __name__ == "__main__":
     # reformat to df
     preds_df = reformat_to_df(pred_probs, ids=df.SNID.unique())
     preds_df.to_csv(f"Predictions_{Path(args.filename).name}")
-    print(preds_df)
 
+    print(preds_df)
     # To implement
     # Early prediction visualization

@@ -312,7 +312,7 @@ def plot_confusion_matrix(
 
     plt.imshow(cm, interpolation="nearest", cmap=cmap)
     cbar = plt.colorbar()
-    cbar.set_clim(0, 1.0)
+    # cbar.set_clim(0, 1.0)
     tick_marks = np.arange(len(classes))
     plt.xticks(tick_marks, classes, rotation=45)
     plt.yticks(tick_marks, classes)
@@ -452,7 +452,7 @@ def multiplot_violin_paper(df, fname, settings):
 
     # redshift
     g = sns.violinplot(
-        x="SNTYPE",
+        x=settings.sntype_var,
         y="SIM_REDSHIFT_CMB",
         hue="salt",
         data=df,
@@ -776,7 +776,7 @@ def seaborn_formatting_mag(df, settings):
         df (DataFrame): reformatted
     """
     df["salt"] = df["dataset_saltfit_2classes"] != -1
-    df = du.tag_type(df, settings, type_column="SNTYPE")
+    df = du.tag_type(df, settings, type_column=settings.sntype_var)
     # because it doesn't like my normal df
     df_skimmed = pd.DataFrame()
     for f in ["g", "r", "i", "z"]:
@@ -787,7 +787,9 @@ def seaborn_formatting_mag(df, settings):
     df_skimmed["SIM_REDSHIFT_CMB"] = np.array(
         [k for k in df["SIM_REDSHIFT_CMB"].values]
     )
-    df_skimmed["SNTYPE"] = np.array([k for k in df["SNTYPE"].values])
+    df_skimmed[settings.sntype_var] = np.array(
+        [k for k in df[settings.sntype_var].values]
+    )
     # skimm
     for f in ["g", "r", "i", "z"]:
         var = "SIM_PEAKMAG_" + f
@@ -829,6 +831,7 @@ def make_measurements_df(df, settings, group_bayesian=False):
         tmp_df = pu.reformat_df(
             tmp_df,
             key,
+            settings,
             keep=[f"num_{band}" for band in settings.list_filters],
             group_bayesian=group_bayesian,
         )
@@ -980,7 +983,7 @@ def purity_vs_z(df, model_name, settings):
         modelname (str): name of model to be used
         settings (ExperimentSettings): custom class to hold hyperparameters
     """
-    df = pu.reformat_df(df, "all", keep=None, group_bayesian=True)
+    df = pu.reformat_df(df, "all", settings, keep=None, group_bayesian=True)
 
     bin_centers, purity_arr = pu.get_quantity_vs_variable(
         "purity", "SIM_REDSHIFT_CMB", df, settings
@@ -1062,18 +1065,18 @@ def hubble_residuals(df, model_name, fits, settings):
     plot_path = f"{settings.figures_dir}/HDresiduals"
     os.makedirs(plot_path, exist_ok=True)
 
-    def reformat_df_HR(df, model_name, keep_list=["mB", "x1", "c"]):
+    def reformat_df_HR(df, model_name, settings, keep_list=["mB", "x1", "c"]):
         """format and add distance modulus info
         including error bars
         """
-        df = pu.reformat_df(df, "all", keep=keep_list, group_bayesian=True)
+        df = pu.reformat_df(df, "all", settings, keep=keep_list, group_bayesian=True)
         df = pd.merge(df, fits, on="SNID")
         df = distance_modulus(df)
         df = df[~np.isnan(df["mu"])]
         return df
 
     # Hresiduals with probability thresholds
-    merged = reformat_df_HR(df, model_name, keep_list=["mB", "x1", "c"])
+    merged = reformat_df_HR(df, model_name, settings, keep_list=["mB", "x1", "c"])
     nameout = f"{plot_path}/{model_name}.png"
     plot_HDres_histos_vs_z(
         merged,
@@ -1090,7 +1093,7 @@ def hubble_residuals(df, model_name, fits, settings):
         sigma_df = create_sigma_df(df_grouped)
         df_tmp = pd.merge(df, sigma_df, on="SNID")
         merged = reformat_df_HR(
-            df_tmp, model_name, keep_list=["mB", "x1", "c", "sigma_all"]
+            df_tmp, model_name, settings, keep_list=["mB", "x1", "c", "sigma_all"]
         )
         nameout = f"{plot_path}/{model_name}_cut_uncertainty.png"
         plot_HDres_histos_vs_z(
@@ -1111,12 +1114,14 @@ def cnf_matrix(df, model_name, settings):
         settings (ExperimentSettings): custom class to hold hyperparameters
     """
 
-    df_r = pu.reformat_df(df, key="all")
+    df_r = pu.reformat_df(df, "all", settings)
     cnf_matrix = confusion_matrix(df_r["target"], df_r["predicted_target"])
 
     plt.figure()
     settings.nb_classes = len(df_r["target"].unique())
-    class_names = [du.sntype_decoded(i, settings) for i in df_r["target"].unique()]
+    class_names = [
+        du.sntype_decoded(i, settings, simplify=True) for i in df_r["target"].unique()
+    ]
     plot_confusion_matrix(
         settings, cnf_matrix, classes=class_names, normalize=True, nameout=model_name
     )
@@ -1393,35 +1398,45 @@ def science_plots(settings, onlycnf=False):
     # Load data
     df_SNinfo = du.load_HDF5_SNinfo(settings)
 
-    # Get extra info from fits (for distance modulus)
-    fits = du.load_fitfile(settings)
-    if len(fits) !=0:
-        fits = fits[["SNID", "cERR", "mBERR", "x1ERR"]]
+    # check if files are there
+    tmp_not_found = [m for m in settings.prediction_files if not os.path.exists(m)]
+    if len(tmp_not_found) > 0:
+        print(lu.str_to_redstr(f"Files not found {tmp_not_found}"))
+        tmp_prediction_files = [
+            m for m in settings.prediction_files if os.path.exists(m)
+        ]
+        settings.prediction_files = tmp_prediction_files
 
-        # check if files are there
-        tmp_not_found = [m for m in settings.prediction_files if not os.path.exists(m)]
-        if len(tmp_not_found) > 0:
-            print(lu.str_to_redstr(f"Files not found {tmp_not_found}"))
-            tmp_prediction_files = [
-                m for m in settings.prediction_files if os.path.exists(m)
-            ]
-            settings.prediction_files = tmp_prediction_files
-
-        for f in settings.prediction_files:
+    for f in settings.prediction_files:
+        if Path(f).suffix == ".pickle":
             df = pd.read_pickle(f)
-            model_name = Path(f).stem
+        elif Path(f).suffix == ".csv":
+            df = pd.read_csv(f)
+            df["SNID"] = df["SNID"].astype(str)
+        model_name = Path(f).stem
 
-            cols_to_merge = ["SNID", "SIM_REDSHIFT_CMB", "SNTYPE", "mB", "x1", "c"]
-            cols_to_merge += [c for c in df_SNinfo.columns if "unique_nights" in c]
-            cols_to_merge += [c for c in df_SNinfo.columns if "_num_" in c]
+        cols_to_merge = [
+            "SNID",
+            "SIM_REDSHIFT_CMB",
+            settings.sntype_var,
+            "mB",
+            "x1",
+            "c",
+        ]
+        cols_to_merge += [c for c in df_SNinfo.columns if "unique_nights" in c]
+        cols_to_merge += [c for c in df_SNinfo.columns if "_num_" in c]
 
-            df = df.merge(df_SNinfo.reset_index()[cols_to_merge], how="left", on="SNID")
+        df = df.merge(df_SNinfo.reset_index()[cols_to_merge], how="left", on="SNID")
 
-            if onlycnf:
-                cnf_matrix(df, model_name, settings)
-            else:
-                # Science plots
-                purity_vs_z(df, model_name, settings)
-                # cadence_acc_matrix(df, model_name, settings)
+        if onlycnf:
+            cnf_matrix(df, model_name, settings)
+        else:
+            # Science plots
+            purity_vs_z(df, model_name, settings)
+            # cadence_acc_matrix(df, model_name, settings)
+            # Get extra info from fits (for distance modulus)
+            fits = du.load_fitfile(settings)
+            if len(fits) != 0:
+                fits = fits[["SNID", "cERR", "mBERR", "x1ERR"]]
                 hubble_residuals(df, model_name, fits, settings)
-                cnf_matrix(df, model_name, settings)
+            cnf_matrix(df, model_name, settings)

@@ -18,7 +18,9 @@ def performance_metrics(df, sample_target=0):
     n_targets = len(np.unique(df["target"]))
 
     # Accuracy & AUC
-    accuracy = metrics.balanced_accuracy_score(df["target"].astype(int), df["predicted_target"])
+    accuracy = metrics.balanced_accuracy_score(
+        df["target"].astype(int), df["predicted_target"]
+    )
     accuracy = round(accuracy * 100, 2)
     if n_targets == 2:  # valid for biclass only
         auc = round(metrics.roc_auc_score(df["target"], df["class1"]), 4)
@@ -60,7 +62,7 @@ def contamination_by_SNTYPE(df, settings, sample_target=0):
     contribution_arr = []
     type_arr = []
     for typ in [int(t) for t in settings.sntypes.keys() if t != 101]:
-        df_selection = df_cont[df_cont["SNTYPE"] == typ]
+        df_selection = df_cont[df_cont[settings.sntype_var] == typ]
         if sample_size > 1:
             contribution_arr.append(round(100 * len(df_selection) / sample_size, 2))
         else:
@@ -69,7 +71,7 @@ def contamination_by_SNTYPE(df, settings, sample_target=0):
 
     # Save contamination into df
     df_contamination_by_type = pd.DataFrame()
-    df_contamination_by_type["SNTYPE"] = np.array(type_arr)
+    df_contamination_by_type[settings.sntype_var] = np.array(type_arr)
     df_contamination_by_type["contamination_percentage"] = np.array(contribution_arr)
 
     return df_contamination_by_type
@@ -121,7 +123,7 @@ def get_quantity_vs_variable(
         if quantity == "contamination":
             cont_df = contamination_by_SNTYPE(selected, settings)
             if contamination_by:
-                quant = cont_df[cont_df["SNTYPE"] == contamination_by][
+                quant = cont_df[cont_df[settings.sntype_var] == contamination_by][
                     "contamination_percentage"
                 ].values[0]
             else:
@@ -146,7 +148,7 @@ def get_quantity_vs_variable(
     return np.array(varbins_list), np.array(quantity_list)
 
 
-def reformat_df(df, key, keep=None, group_bayesian=False):
+def reformat_df(df, key, settings, keep=None, group_bayesian=False):
     """Change column names to format used by performance functions
 
     Args:
@@ -169,7 +171,9 @@ def reformat_df(df, key, keep=None, group_bayesian=False):
     tmp_df[[k.split("_")[-1] for k in ori_class_columns]] = df[ori_class_columns].copy()
     # get the rest of features
     cols_to_keep = [
-        k for k in ["target", "SNTYPE", "SNID", "SIM_REDSHIFT_CMB"] if k in df.keys()
+        k
+        for k in ["target", settings.sntype_var, "SNID", "SIM_REDSHIFT_CMB"]
+        if k in df.keys()
     ]
     if keep:
         cols_to_keep += keep

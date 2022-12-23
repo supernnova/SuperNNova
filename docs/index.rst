@@ -59,7 +59,7 @@ Welcome to SuperNNova's documentation!
 .. toctree::
    :glob:
    :maxdepth: 1
-   :caption: Paper reproduction
+   :caption: Method paper reproduction
 
    paper/index.rst
    paper/paper.rst

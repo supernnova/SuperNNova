@@ -77,7 +77,10 @@ def get_metrics_singlemodel(settings, prediction_file=None, model_type="rnn"):
     """
 
     df_SNinfo = du.load_HDF5_SNinfo(settings)
-    host = pd.read_pickle(f"{settings.processed_dir}/hostspe_SNID.pickle")
+    if Path(f"{settings.processed_dir}/hostspe_SNID.csv").exists():
+        host = pd.read_csv(f"{settings.processed_dir}/hostspe_SNID.csv")
+    else:
+        host = pd.read_pickle(f"{settings.processed_dir}/hostspe_SNID.pickle")
     host_zspe_list = host["SNID"].tolist()
 
     if prediction_file is not None:
@@ -98,12 +101,8 @@ def get_metrics_singlemodel(settings, prediction_file=None, model_type="rnn"):
         )
 
         dump_dir = f"{settings.models_dir}/{model_name}"
-        prediction_file = (
-            f"{dump_dir}/" f"PRED_{model_name}.pickle"
-        )
-        metrics_file = (
-            f"{dump_dir}/" f"METRICS_{model_name}.pickle"
-        )
+        prediction_file = f"{dump_dir}/" f"PRED_{model_name}.pickle"
+        metrics_file = f"{dump_dir}/" f"METRICS_{model_name}.pickle"
         source_data = settings.source_data
 
     assert os.path.isfile(prediction_file), lu.str_to_redstr(
@@ -111,7 +110,7 @@ def get_metrics_singlemodel(settings, prediction_file=None, model_type="rnn"):
     )
 
     df = pd.read_pickle(prediction_file)
-    df = pd.merge(df, df_SNinfo[["SNID", "SNTYPE"]], on="SNID", how="left")
+    df = pd.merge(df, df_SNinfo[["SNID", settings.sntype_var]], on="SNID", how="left")
 
     list_df_metrics = []
 
@@ -136,7 +135,7 @@ def get_metrics_singlemodel(settings, prediction_file=None, model_type="rnn"):
             )
         )
 
-    df_metrics = pd.concat(list_df_metrics, 1)
+    df_metrics = pd.concat(list_df_metrics, axis=1)
 
     df_metrics["model_name"] = model_name
     df_metrics["source_data"] = source_data
@@ -179,7 +178,7 @@ def get_rnn_performance_metrics_singlemodel(settings, df, host_zspe_list):
         # general metrics
         # TODO refactor
         reformatted_selection = pu.reformat_df(
-            selection, key, group_bayesian=group_bayesian
+            selection, key, settings, group_bayesian=group_bayesian
         )
         accuracy, auc, purity, efficiency, _ = pu.performance_metrics(
             reformatted_selection
@@ -202,10 +201,16 @@ def get_rnn_performance_metrics_singlemodel(settings, df, host_zspe_list):
         # Reweighted for SNe with zspe
         zspe_df = selection[selection["SNID"].isin(host_zspe_list)]
         if len(zspe_df) > 0:
-            zspe_df = pu.reformat_df(zspe_df, key, group_bayesian=group_bayesian)
-            accuracy_zspe, auc_zspe, purity_zspe, efficiency_zspe, _ = pu.performance_metrics(
-                zspe_df
+            zspe_df = pu.reformat_df(
+                zspe_df, key, settings, group_bayesian=group_bayesian
             )
+            (
+                accuracy_zspe,
+                auc_zspe,
+                purity_zspe,
+                efficiency_zspe,
+                _,
+            ) = pu.performance_metrics(zspe_df)
         else:
             accuracy_zspe, auc_zspe, purity_zspe, efficiency_zspe = (0.0, 0.0, 0.0, 0.0)
 
@@ -234,16 +239,20 @@ def get_randomforest_performance_metrics_singlemodel(settings, df, host_zspe_lis
     """
 
     # Compute metrics
-    zspe_df = pu.reformat_df(df, "all")
+    zspe_df = pu.reformat_df(df, "all", settings)
     accuracy, auc, purity, efficiency, _ = pu.performance_metrics(zspe_df)
     contamination_df = pu.contamination_by_SNTYPE(zspe_df, settings)
 
     # Reweighted for SNe with zspe
     zspe_df = zspe_df[zspe_df["SNID"].isin(host_zspe_list)]
     if len(zspe_df) > 0:
-        accuracy_zspe, auc_zspe, purity_zspe, efficiency_zspe, _ = pu.performance_metrics(
-            zspe_df
-        )
+        (
+            accuracy_zspe,
+            auc_zspe,
+            purity_zspe,
+            efficiency_zspe,
+            _,
+        ) = pu.performance_metrics(zspe_df)
     else:
         accuracy_zspe, auc_zspe, purity_zspe, efficiency_zspe = (0.0, 0.0, 0.0, 0.0)
 
@@ -414,9 +423,8 @@ def get_classification_stats_singlemodel(df, nb_classes):
         pred_class = np.argmax(arr_preds, axis=1)
         list_clf_stats = [len(np.where(pred_class == i)[0]) for i in range(nb_classes)]
         # percentage of non-classified lcs
-        threshold = {2: 0.6, 3: 0.4, 7: 0.2}  # choosing half of the score
-        idx = np.where(np.max(arr_preds, axis=1) < threshold[nb_classes])[0]
-        percentage = len(idx) * 100. / len(arr_preds)
+        idx = np.where(np.max(arr_preds, axis=1) < 1 / nb_classes)[0]
+        percentage = len(idx) * 100.0 / len(arr_preds)
         list_clf_stats.append(percentage)
 
         data = np.array(list_clf_stats).reshape(1, -1)

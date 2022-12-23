@@ -46,11 +46,12 @@ Creating a debugging database
 **Using command line:**
 .. code::
 
-    python run.py --data --dump_dir tests/dump --raw_dir tests/raw --fits_dir tests/fits
+    python run.py --data --dump_dir tests/dump --raw_dir tests/raw 
 
 - This creates a database for a very small subset of all available data
 - This is intended for debugging purposes (training, validation can run very fast with this small database)
 - The database is saved to the specified ``tests/dump/processed``
+- An additional SALT2 fits can be provided as ``--fits_dir tests/fits`` for training of RF and interpretation
 
 **Using yaml:** 
 .. code::
@@ -64,7 +65,10 @@ Creating a database
 **Using command line:**
 .. code::
 
-    python run.py --data --dump_dir <path/to/full/database/> --raw_dir <path/to/raw/data/> --fits_dir <path/to/fits/>
+    python run.py --data --dump_dir <path/to/full/database/> --raw_dir <path/to/raw/data/> 
+
+- An additional SALT2 fits can be provided as ``--fits_dir <path/to/fits/>`` for training of RF and interpretation
+
 
 **Using yaml:** modify the configuration file
 .. code::
@@ -73,7 +77,7 @@ Creating a database
 
 - You **DO NEED** to download the raw data for this database or point where your data is.
 - This creates a database for all the available data with 80/10/10 train/validate/test splits. 
-- Splits can be changed using ``--data_training`` or ``--data_testing`` commands. For yaml just add ``data_training: True`` or ``--data_testing: True``.
+- Splits can be changed using ``--data_training`` (use data only for raining and validation) or ``--data_testing`` (use data only for testing) commands. For yaml just add ``data_training: True`` or ``--data_testing: True``.
 - The database is saved to the specified ``dump_dir``, in the ``processed`` subfolder.
 - There is no need to specify salt2fits file to make the dataset. It can be used if available but it is not needed ``--fits_dir <empty/path/>``.
 - Raw data can be in csv format with columns:
@@ -94,6 +98,17 @@ Note that:
 **Using command yaml:** modify the configuration file with ``data_testing: True`` and use the ``--mode data``.
 
 
+Creating a database using some SNIDs for testing and the rest for training and validating
+------------------------------
+This is how to create a database using a list of SNIDs for testing. 
+
+.. code::
+
+    python run.py --dump_dir <path/to/save/database/> --data --raw_dir <path/to/raw/data/> --testing_ids <path/to/ids/file>
+
+You can provide the SNIDs in ``.csv`` or ``.npy`` format. The ``.csv`` must contain a column ``SNID``.
+
+
 Creating a database with photometry limited to a time window
 ------------------------------
 Photometric measurements may span over a larger time range than the one desired for classification. For example, a year of photometry is much larger than the usual SN timespan. Therefore, it may be desirable to just use a subset of this photometry (observed epochs cuts). To do so:
@@ -104,7 +119,7 @@ Photometric measurements may span over a larger time range than the one desired 
 
 Creating a database with different survey
 ------------------------------
-The default filter set is the one from the Dark Energy Survey Supernova ``g,r,i,z``. If you want to use your own survey, you'll need to specify your filters (Beware! as from 12/11/19 the input of possible combination of filters has been deprecated!).
+The default filter set is the one from the Dark Energy Survey Supernova Survey ``g,r,i,z``. If you want to use your own survey, you'll need to specify your filters.
 
 .. code::
 
@@ -122,6 +137,16 @@ The default redshift label is either ``HOSTGAL_SPECZ``/``HOSTGAL_PHOTOZ`` (with 
 
 e.g. ``--redshift_label REDSHIFT_FINAL``. 
 
+Using a different sntype label
+------------------------------
+The default sntype label is ``SNTYPE``. If you want to use your own label, you'll need to specify it. 
+
+.. code::
+
+    python run.py --dump_dir <path/to/save/database/> --data --raw_dir <path/to/raw/data/>  --sntype_var <your/label>
+
+e.g. ``--redshift_label SIM_SNTYPE``. 
+
 Masking photometry
 ------------------------------
 The default is to use all available photometry for classification. However, we support masking photometric epochs with a power of two mask. Any combination of these power of two integers, and with other numbers, will be eliminated from the database.
@@ -131,6 +156,17 @@ The default is to use all available photometry for classification. However, we s
     python run.py --dump_dir <path/to/save/database/> --data --raw_dir <path/to/raw/data/>  --phot_reject <your/label> --phot_reject_list <list/to/reject>
 
 e.g. ``--phot_reject PHOTFLAG --phot_reject_list 8 16 32 64 128 256 512``. 
+
+
+Adding another training variable
+------------------------------
+You may want to add another feature for training and classification from the metadata (HEAD for .fits)
+
+.. code::
+
+    python run.py --dump_dir <path/to/save/database/> --data --raw_dir <path/to/raw/data/>  --additional_train_var <additional_column_name>
+
+e.g. ``--additional_train_var MWEBV``. 
 
 Under the hood
 -------------------------------

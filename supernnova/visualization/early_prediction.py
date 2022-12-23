@@ -73,10 +73,19 @@ def get_predictions(settings, dict_rnn, X, target, OOD=None):
 
 
 def plot_predictions(
-    settings, d_plot, SNID, redshift, peak_MJD, target, arr_time, d_pred, OOD
+    settings,
+    d_plot,
+    SNID,
+    redshift,
+    peak_MJD,
+    target,
+    arr_time,
+    d_pred,
+    OOD,
+    SNtype_str,
 ):
 
-    plt.figure()
+    plt.figure(figsize=(15, 10))
     gs = gridspec.GridSpec(2, 1)
     # Plot the lightcurve
     ax = plt.subplot(gs[0])
@@ -100,13 +109,12 @@ def plot_predictions(
     ax.set_ylabel("FLUXCAL")
     ylim = ax.get_ylim()
 
-    SNtype = du.sntype_decoded(target, settings)
     if settings.data_testing:
         ax.set_title(f"ID: {SNID}")
     elif OOD is not None:
         ax.set_title(f"OOD {OOD} ID: {SNID}")
     else:
-        ax.set_title(SNtype + f" (ID: {SNID}, redshift: {redshift:.3g})")
+        ax.set_title(SNtype_str + f" (ID: {SNID}, redshift: {redshift:.3g})")
         # Add PEAKMJD
         if (
             OOD is None
@@ -126,6 +134,8 @@ def plot_predictions(
             color = ALL_COLORS[class_prob + idx * settings.nb_classes]
             linestyle = LINE_STYLE[class_prob]
             label = du.sntype_decoded(class_prob, settings)
+            if class_prob != 0 and settings.nb_classes < 3:
+                label = "non-Ia"
 
             if len(d_pred) > 1:
                 label += f" {key}"
@@ -206,7 +216,7 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
     # Load features list
     file_name = f"{settings.processed_dir}/database.h5"
     with h5py.File(file_name, "r") as hf:
-        features = hf["features"][settings.idx_features]
+        features = hf["features"][settings.idx_features].astype(str)
 
     # Load RNN model
     dict_rnn = {}
@@ -268,9 +278,13 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
                 0
             ]
             peak_MJD = SNinfo_df[SNinfo_df["SNID"] == SNID]["PEAKMJDNORM"].values[0]
+            SNtype_str = settings.sntypes[
+                str(SNinfo_df[SNinfo_df["SNID"] == SNID][settings.sntype_var].values[0])
+            ]
         except Exception:
             redshift = 0.0
             peak_MJD = 0.0
+            SNtype_str = "Not found"
 
         # Prepare plotting data in a dict
         d_plot = {
@@ -285,23 +299,6 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
             # X here has been normalized. We unnormalize X
             try:
                 X_unnormed = tu.unnormalize_arr(X_normed, settings)
-
-                # Check we do recover X_ori when OOD is None
-                if OOD is None and "cosmo" not in settings.norm:
-                    # check if normalization converges
-                    # using clipping in case of min<model_min
-                    X_clip = X_ori.copy()
-                    X_clip = np.clip(
-                        X_clip[:, settings.idx_features_to_normalize],
-                        settings.arr_norm[:, 0],
-                        np.inf,
-                    )
-                    X_ori[:, settings.idx_features_to_normalize] = X_clip
-                    assert np.all(
-                        np.all(
-                            np.isclose(np.ravel(X_ori), np.ravel(X_unnormed), atol=1e-1)
-                        )
-                    )
 
                 # TODO: IMPROVE
                 df_temp = pd.DataFrame(data=X_unnormed, columns=features)
@@ -326,6 +323,7 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
                     arr_time,
                     d_pred,
                     OOD,
+                    SNtype_str,
                 )
 
                 # use to create GIFs
@@ -394,7 +392,6 @@ def plot_gif(settings, df_plot, SNID, redshift, peak_MJD, target, arr_time, d_pr
                 color = ALL_COLORS[class_prob + idx * settings.nb_classes]
                 linestyle = LINE_STYLE[class_prob]
                 label = du.sntype_decoded(class_prob, settings)
-
                 if len(d_pred) > 1:
                     label += f" {key}"
 

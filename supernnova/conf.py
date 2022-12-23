@@ -7,6 +7,7 @@ from natsort import natsorted
 from collections import OrderedDict
 from distutils.util import strtobool
 from .utils import experiment_settings
+from supernnova.utils import logging_utils as lu
 
 
 def get_args():
@@ -100,35 +101,6 @@ def get_args():
         help="Debug database creation: one file processed only",
     )
 
-    #######################
-    # PLASTICC parameters
-    #######################
-    parser.add_argument(
-        "--viz_plasticc",
-        action="store_true",
-        help="Visualize data PLASTICC competition",
-    )
-    parser.add_argument(
-        "--train_plasticc",
-        action="store_true",
-        help="Train model for PLASTICC competition",
-    )
-    parser.add_argument(
-        "--predict_plasticc",
-        action="store_true",
-        help="Make predictions for PLASTICC competition",
-    )
-    parser.add_argument(
-        "--data_plasticc_train",
-        action="store_true",
-        help="Create dataset for PLASTICC competition",
-    )
-    parser.add_argument(
-        "--data_plasticc_test",
-        action="store_true",
-        help="Create dataset for PLASTICC competition",
-    )
-
     ########################
     # Data parameters
     ########################
@@ -190,6 +162,12 @@ def get_args():
         action="store_true",
         help="Create database with only validation set",
     )
+    parser.add_argument(
+        "--testing_ids",
+        default=None,
+        help="Filename with SNIDs to be used for testing (.csv with SNID column or .npy)",
+    )
+
     # Photometry window
     parser.add_argument(
         "--photo_window_files", nargs="+", help="Path to fits with PEAKMJD estimation"
@@ -254,7 +232,7 @@ def get_args():
     parser.add_argument(
         "--random_redshift",
         action="store_true",
-        help="In PLASTICC, randomly set spectroscopic redshift to -1 (i.e. unknown)",
+        help="randomly set spectroscopic redshift to -1 (i.e. unknown)",
     )
     parser.add_argument(
         "--weight_decay",
@@ -302,6 +280,18 @@ def get_args():
         type=json.loads,
         help="SN classes in sims (put Ia always first)",
     )
+    parser.add_argument(
+        "--sntype_var",
+        type=str,
+        default="SNTYPE",
+        help="Variable representing event types (e.g. SNTYPE)",
+    )
+    parser.add_argument(
+        "--additional_train_var",
+        nargs="+",
+        help="Additional training variables",
+    )
+
     parser.add_argument(
         "--nb_epoch", default=90, type=int, help="Number of batches per epoch"
     )
@@ -391,18 +381,7 @@ def get_settings(args=None):
         args = get_args()
 
     # Initialize a settings instance
-    if any(
-        [
-            args.train_plasticc,
-            args.viz_plasticc,
-            args.predict_plasticc,
-            args.data_plasticc_train,
-            args.data_plasticc_test,
-        ]
-    ):
-        settings = experiment_settings.PlasticcSettings(args)
-    else:
-        settings = experiment_settings.ExperimentSettings(args)
+    settings = experiment_settings.ExperimentSettings(args)
 
     assert args.rho_scale_lower >= args.rho_scale_upper
 
@@ -442,6 +421,21 @@ def get_settings_from_dump(
     # and device
     cli_args["use_cuda"] = settings.use_cuda
     cli_args["device"] = settings.device
+    # model files
+    cli_args["model_files"] = settings.model_files
+    # model files
+    cli_args["plot_file"] = settings.plot_file
+
+    # Backward compatibility
+    keys_not_in_model_settings = [
+        k for k in settings.cli_args.keys() if k not in cli_args.keys()
+    ]
+    for k in keys_not_in_model_settings:
+        cli_args[k] = settings.cli_args[k]
+
+    # Warning for redshift
+    if cli_args["redshift"] != settings.redshift:
+        lu.print_red("Model forces redshift to be set as", cli_args["redshift"])
 
     settings = experiment_settings.ExperimentSettings(cli_args)
 

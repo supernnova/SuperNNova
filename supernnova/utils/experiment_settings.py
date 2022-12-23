@@ -5,7 +5,6 @@ import itertools
 import numpy as np
 from pathlib import Path
 from collections import OrderedDict
-from .data_utils import PLASTICC_FILTERS
 
 
 class ExperimentSettings:
@@ -51,7 +50,8 @@ class ExperimentSettings:
             self.randomforest_features = self.get_randomforest_features()
 
             # Set the feature lists
-            self.set_feature_lists()
+            if "all_features" not in cli_args:
+                self.set_feature_lists()
 
             self.overwrite = not self.no_overwrite
 
@@ -263,197 +263,6 @@ class ExperimentSettings:
 
             self.idx_delta_time = [
                 i for (i, f) in enumerate(self.training_features) if "delta_time" in f
-            ]
-
-            self.idx_features_to_normalize = [
-                i
-                for (i, f) in enumerate(self.all_features)
-                if f in self.training_features_to_normalize
-            ]
-
-            self.d_feat_to_idx = {f: i for i, f in enumerate(self.all_features)}
-
-            list_norm = []
-
-            with h5py.File(self.hdf5_file_name, "r") as hf:
-
-                for f in self.training_features_to_normalize:
-
-                    if self.norm == "perfilter":
-
-                        minv = np.array(hf[f"normalizations/{f}/min"])
-                        meanv = np.array(hf[f"normalizations/{f}/mean"])
-                        stdv = np.array(hf[f"normalizations/{f}/std"])
-
-                        list_norm.append([minv, meanv, stdv])
-
-                    else:
-
-                        if "FLUX" in f:
-                            prefix = f.split("_")[0]
-                            minv = np.array(hf[f"normalizations_global/{prefix}/min"])
-                            meanv = np.array(hf[f"normalizations_global/{prefix}/mean"])
-                            stdv = np.array(hf[f"normalizations_global/{prefix}/std"])
-                        else:
-                            minv = np.array(hf[f"normalizations/{f}/min"])
-                            meanv = np.array(hf[f"normalizations/{f}/mean"])
-                            stdv = np.array(hf[f"normalizations/{f}/std"])
-
-                        list_norm.append([minv, meanv, stdv])
-
-            self.arr_norm = np.array(list_norm)
-
-
-class PlasticcSettings(object):
-    def __init__(self, cli_args):
-
-        # Transfer attributes
-        if isinstance(cli_args, dict):
-            self.__dict__.update(cli_args)
-        else:
-            self.__dict__.update(cli_args.__dict__)
-
-        self.dump_dir = os.path.join(self.dump_dir, "plasticc")
-        self.nb_classes = 14
-
-        self.device = "cpu"
-        if self.use_cuda:
-            self.device = "cuda"
-
-        if self.model == "variational":
-            self.weight_decay = self.weight_decay
-        else:
-            self.weight_decay = 0.0
-
-        # Load simulation and training settings and prepare directories
-        self.setup_dir()
-
-        self.pytorch_model_name = self.get_pytorch_model_name()
-
-        # Set the filters used in the study
-        self.list_filters = PLASTICC_FILTERS
-
-        # Set the database file names
-        self.set_database_file_names()
-
-        # Set the feature lists
-        self.set_feature_lists()
-
-        # Get the feature normalization dict
-        self.load_normalization()
-
-        # TODO
-        # Set SN types for multiclass classification
-
-        self.overwrite = not self.no_overwrite
-
-    def check_data_exists(self):
-
-        database_file = f"{self.processed_dir}/database.h5"
-        assert os.path.isfile(database_file)
-
-    def setup_dir(self):
-
-        # Check raw data exists in the dump_dir
-        assert os.path.exists(self.raw_dir)
-
-        for path in [
-            f"{self.dump_dir}/explore",
-            f"{self.dump_dir}/stats",
-            f"{self.dump_dir}/figures",
-            f"{self.dump_dir}/latex",
-            f"{self.dump_dir}/processed",
-            f"{self.dump_dir}/preprocessed",
-            f"{self.dump_dir}/models",
-        ]:
-
-            setattr(self, Path(path).name, path)
-
-            Path(path).mkdir(exist_ok=True, parents=True)
-
-    def get_pytorch_model_name(self):
-
-        name = f"{self.model}_S_{self.seed}_CLF_{self.nb_classes}"
-        name += f"_R_{self.redshift}"
-        name += f"_{self.source_data}_DF_{self.data_fraction}_N_{self.norm}"
-        name += f"_{self.layer_type}_{self.hidden_dim}x{self.num_layers}"
-        name += f"_{self.dropout}"
-        name += f"_{self.batch_size}"
-        name += f"_{self.bidirectional}"
-        name += f"_{self.rnn_output_option}"
-        if "bayesian" in self.model:
-            name += (
-                f"_Bayes_{self.pi}_{self.log_sigma1}_{self.log_sigma2}_{self.rho_scale_lower}_{self.rho_scale_upper}"
-                f"_{self.log_sigma1_output}_{self.log_sigma2_output}_{self.rho_scale_lower_output}_{self.rho_scale_upper_output}"
-            )
-        if self.cyclic:
-            name += "_C"
-        if self.weight_decay > 0:
-            name += f"_WD_{self.weight_decay}"
-
-        if self.train_plasticc:
-            os.makedirs(os.path.join(self.models_dir, name), exist_ok=True)
-
-        return name
-
-    def set_feature_lists(self):
-
-        self.training_features_to_normalize = [
-            f"FLUXCAL_{f}" for f in self.list_filters
-        ]
-        self.training_features_to_normalize += [
-            f"FLUXCALERR_{f}" for f in self.list_filters
-        ]
-        self.training_features_to_normalize += ["delta_time"]
-
-        if self.train_plasticc or self.predict_plasticc:
-            # If the database has been created, add the list of all features
-            with h5py.File(self.hdf5_file_name, "r") as hf:
-                self.all_features = hf["features"][:].astype(str)
-
-                # Optionally add redshift
-                self.redshift_features = []
-                if self.redshift == "zpho":
-                    # use only photometric redshift features
-                    self.redshift_features = [
-                        f for f in self.all_features if "HOSTGAL_PHOTOZ" in f
-                    ]
-                elif self.redshift == "zspe":
-                    # Use all redshift features
-                    self.redshift_features = [
-                        f for f in self.all_features if "HOST" in f
-                    ]
-
-                self.non_redshift_features = [
-                    f for f in self.all_features if "HOST" not in f
-                ]
-
-                self.training_features = (
-                    self.non_redshift_features + self.redshift_features
-                )
-                self.training_features = [
-                    f for f in self.all_features if f in self.training_features
-                ]
-
-    def set_database_file_names(self):
-        out_file = f"{self.processed_dir}/database"
-        self.pickle_file_name = out_file + ".pickle"
-        self.hdf5_file_name = out_file + ".h5"
-
-    def load_normalization(self):
-
-        if self.train_plasticc or self.predict_plasticc:
-
-            self.idx_features = [
-                i
-                for (i, f) in enumerate(self.all_features)
-                if f in self.training_features
-            ]
-
-            self.idx_specz = [
-                i
-                for (i, f) in enumerate(self.training_features)
-                if "HOSTGAL_SPECZ" in f
             ]
 
             self.idx_features_to_normalize = [

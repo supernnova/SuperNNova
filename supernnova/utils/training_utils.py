@@ -220,10 +220,6 @@ def load_HDF5(settings, test=False):
         dataset_split_key = f"dataset_{config_name}"
         target_key = f"target_{settings.nb_classes}classes"
 
-        if any([settings.train_plasticc, settings.predict_plasticc]):
-            target_key = "target"
-            dataset_split_key = "dataset"
-
         if test:
             # ridiculous failsafe in case we have different classes in dataset/model
             # we will always have 2 classes
@@ -244,9 +240,13 @@ def load_HDF5(settings, test=False):
             idxs_train = idxs_train[: int(settings.data_fraction * len(idxs_train))]
 
         n_features = hf["data"].attrs["n_features"]
+        training_features_data = hf["features"][:].astype(str)
+        training_features = settings.training_features
+        # check if all model features are in db
+        assert set(training_features) <= set(training_features_data)
+        lu.print_green("Features used", " ".join(training_features))
 
-        training_features = " ".join(hf["features"][:][settings.idx_features])
-        lu.print_green("Features used", training_features)
+        settings.data_types_training = hf["data_types_training"][:].astype(str)
 
         arr_data = hf["data"][:]
         if test:
@@ -258,7 +258,7 @@ def load_HDF5(settings, test=False):
                 arr_target = hf["target_2classes"][:]
         else:
             arr_target = hf[target_key][:]
-        arr_SNID = hf["SNID"][:]
+        arr_SNID = hf["SNID"][:].astype(str)
 
         if test is True:
             return fill_data_list(
@@ -409,7 +409,7 @@ def get_data_batch(list_data, idxs, settings, max_lengths=None, OOD=None):
             assert settings.random_redshift is False
             X = X[: max_lengths[pos]]
         if settings.random_length:
-            random_length = np.random.randint(1, X.shape[0] + 1)
+            random_length = np.random.randint(3, X.shape[0] + 1)
             X = X[:random_length]
         if settings.redshift == "zspe" and settings.random_redshift:
             if np.random.binomial(1, 0.5) == 0:
@@ -675,6 +675,8 @@ def save_training_results(settings, d_monitor, training_time):
         else:
             d_results[key] = max(d_monitor[key]) if None not in d_monitor[key] else None
     d_results["loss"] = min(d_monitor["loss"])
+
+    d_results["data_types_training"] = np.array2string(settings.data_types_training)
 
     try:
         with open(Path(settings.rnn_dir) / "training_log.json", "r") as f:

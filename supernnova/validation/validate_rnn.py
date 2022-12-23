@@ -119,9 +119,7 @@ def get_predictions(settings, model_file=None):
         settings.source_data = settings.override_source_data
         settings.set_pytorch_model_name()
 
-    prediction_file = (
-        f"{dump_dir}/PRED_{settings.pytorch_model_name}.pickle"
-    )
+    prediction_file = f"{dump_dir}/PRED_{settings.pytorch_model_name}.pickle"
 
     rnn_state = torch.load(model_file, map_location=lambda storage, loc: storage)
     rnn.load_state_dict(rnn_state)
@@ -130,26 +128,25 @@ def get_predictions(settings, model_file=None):
 
     # Load the data
     list_data_test = tu.load_HDF5(settings, test=True)
-    
+
     # Batching stuff together
     num_elem = len(list_data_test)
     num_batches = num_elem / min(num_elem, settings.batch_size)
     list_batches = np.array_split(np.arange(num_elem), num_batches)
-    
+
     # Prepare output arrays
     d_pred = {
         key: np.zeros(
             (num_elem, settings.num_inference_samples, settings.nb_classes)
         ).astype(np.float32)
-        for key in ["all"] + [f"PEAKMJD{offset}" for offset in du.OFFSETS_STR]
+        for key in ["all"]
+        + [f"PEAKMJD{offset}" for offset in du.OFFSETS_STR]
         + [f"all_{OOD}" for OOD in du.OOD_TYPES]
     }
     d_pred["target"] = np.zeros((num_elem, settings.num_inference_samples)).astype(
         np.int64
     )
-    d_pred["SNID"] = np.zeros((num_elem, settings.num_inference_samples)).astype(
-        np.str
-    )
+    d_pred["SNID"] = np.zeros((num_elem, settings.num_inference_samples)).astype(np.str)
 
     d_pred_MFE = {
         key: np.zeros((num_elem, 1, settings.nb_classes)).astype(np.float32)
@@ -185,7 +182,7 @@ def get_predictions(settings, model_file=None):
             packed, _, target_tensor, idxs_rev_sort = tu.get_data_batch(
                 list_data_test, batch_idxs, settings
             )
-                        
+
             for iter_ in tqdm(range(settings.num_inference_samples), ncols=100):
 
                 arr_preds, arr_target = get_batch_predictions(
@@ -226,12 +223,15 @@ def get_predictions(settings, model_file=None):
                 oob_idxs = np.where(np.array(slice_idxs) < 1)[0]
                 inb_idxs = np.where(np.array(slice_idxs) >= 1)[0]
 
-                if len(inb_idxs)>0:
+                if len(inb_idxs) > 0:
                     # We only carry out prediction for samples in ``inb_idxs``
                     offset_batch_idxs = [batch_idxs[b] for b in inb_idxs]
                     max_lengths = [slice_idxs[b] for b in inb_idxs]
                     packed, _, target_tensor, idxs_rev_sort = tu.get_data_batch(
-                        list_data_test, offset_batch_idxs, settings, max_lengths=max_lengths
+                        list_data_test,
+                        offset_batch_idxs,
+                        settings,
+                        max_lengths=max_lengths,
                     )
 
                     for iter_ in tqdm(range(settings.num_inference_samples), ncols=100):
@@ -310,15 +310,15 @@ def get_predictions(settings, model_file=None):
     df_pred.to_pickle(prediction_file)
 
     # Saving aggregated preds for bayesian models
-    if settings.model == 'variational' or settings.model == 'bayesian':
+    if settings.model == "variational" or settings.model == "bayesian":
         med_pred = df_pred.groupby("SNID").median()
-        med_pred.columns = [str(col) + '_median' for col in med_pred.columns]
+        med_pred.columns = [str(col) + "_median" for col in med_pred.columns]
         std_pred = df_pred.groupby("SNID").std()
-        std_pred.columns = [str(col) + '_std' for col in std_pred.columns]
-        df_bayes = pd.merge(med_pred,std_pred,on="SNID")
+        std_pred.columns = [str(col) + "_std" for col in std_pred.columns]
+        df_bayes = pd.merge(med_pred, std_pred, on="SNID")
         df_bayes["SNID"] = df_bayes.index
         df_bayes["target"] = df_bayes["target_median"]
-        bay_pred_file = prediction_file.replace(".pickle","_aggregated.pickle")
+        bay_pred_file = prediction_file.replace(".pickle", "_aggregated.pickle")
         df_bayes.to_pickle(bay_pred_file)
 
     g_pred = df_pred.groupby("SNID").median()

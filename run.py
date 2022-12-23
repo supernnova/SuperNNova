@@ -1,21 +1,19 @@
 import numpy as np
 from pathlib import Path
-import supernnova.conf as conf
+from supernnova import conf
 from supernnova.utils import logging_utils as lu
 from supernnova.visualization import (
     visualize,
-    visualize_plasticc,
     early_prediction,
     prediction_distribution,
 )
 from supernnova.training import train_rnn, train_randomforest
 from supernnova.paper import superNNova_plots as sp
 from supernnova.paper import superNNova_thread as st
-from supernnova.data import make_dataset, make_dataset_plasticc
+from supernnova.data import make_dataset
 from supernnova.validation import (
     validate_rnn,
     validate_randomforest,
-    validate_plasticc,
     metrics,
 )
 from supernnova.utils import logging_utils
@@ -27,7 +25,6 @@ if __name__ == "__main__":
 
         # Get conf parameters
         settings = conf.get_settings()
-
         # setting random seeds
         np.random.seed(settings.seed)
         import torch
@@ -91,9 +88,13 @@ if __name__ == "__main__":
                         model_file,
                         override_source_data=settings.override_source_data,
                     )
-                    # TODO maybe remove
-                    if settings.num_inference_samples != model_settings.num_inference_samples:
-                        model_settings.num_inference_samples = settings.num_inference_samples
+                    if (
+                        settings.num_inference_samples
+                        != model_settings.num_inference_samples
+                    ):
+                        model_settings.num_inference_samples = (
+                            settings.num_inference_samples
+                        )
                     # Get predictions
                     prediction_file = validate_rnn.get_predictions(
                         model_settings, model_file=model_file
@@ -140,15 +141,22 @@ if __name__ == "__main__":
         if settings.plot_lcs:
             if settings.model_files:
                 for model_file in settings.model_files:
-                    settings = conf.get_norm_from_model(model_file, settings)
-            early_prediction.make_early_prediction(settings, nb_lcs=20, do_gifs=False)
+                    model_settings = conf.get_settings_from_dump(
+                        settings,
+                        model_file,
+                        override_source_data=settings.override_source_data,
+                    )
+            early_prediction.make_early_prediction(
+                model_settings, nb_lcs=100, do_gifs=False
+            )
 
         if settings.plot_prediction_distribution:
             prediction_distribution.plot_prediction_distribution(settings)
 
         if settings.science_plots:
             # Provide a prediction_files argument to carry out plot
-            sp.science_plots(settings)
+            lu.print_yellow("Will fail if --prediction_files not specified")
+            sp.science_plots(settings, onlycnf=True)
 
         if settings.calibration:
             # Provide a metric_files arguments to carry out plot
@@ -178,28 +186,6 @@ if __name__ == "__main__":
         # Speec benchmarks
         if settings.speed:
             validate_rnn.get_predictions_for_speed_benchmark(settings)
-
-        ################
-        # PLASTICC
-        ################
-
-        if settings.viz_plasticc:
-            visualize_plasticc.visualize_plasticc(settings)
-
-        if settings.data_plasticc_train:
-            make_dataset_plasticc.make_dataset(settings)
-
-        if settings.data_plasticc_test:
-            make_dataset_plasticc.make_test_dataset(settings)
-
-        if settings.train_plasticc:
-            if settings.cyclic:
-                train_rnn.train_cyclic(settings)
-            else:
-                train_rnn.train(settings)
-
-        if settings.predict_plasticc:
-            validate_plasticc.get_predictions(settings)
 
         if settings.done_file:
             with open(Path(settings.done_file), "w") as the_file:

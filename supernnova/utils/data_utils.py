@@ -22,27 +22,6 @@ for v in OFFSETS_STR:
     else:
         OFFSETS_VAL.append(int(v.replace("+", "")))
 
-PLASTICC_FILTERS = natsorted(["u", "g", "r", "i", "z", "y"])
-DICT_PLASTICC_FILTERS = {0: "u", 1: "g", 2: "r", 3: "i", 4: "z", 5: "y"}
-DICT_PLASTICC_CLASS = OrderedDict(
-    {
-        6: 0,
-        15: 1,
-        16: 2,
-        42: 3,
-        52: 4,
-        53: 5,
-        62: 6,
-        64: 7,
-        65: 8,
-        67: 9,
-        88: 10,
-        90: 11,
-        92: 12,
-        95: 13,
-        99: 14,
-    }
-)
 LogStandardized = namedtuple("LogStandardized", ["arr_min", "arr_mean", "arr_std"])
 
 
@@ -61,27 +40,27 @@ def load_pandas_from_fit(fit_file_path):
     return df
 
 
-def sntype_decoded(target, settings):
+def sntype_decoded(target, settings, simplify=False):
     """Match the target class (integer in {0, ..., 6} to the name
     of the class, i.e. something like "SN Ia" or "SN CC"
 
     Args:
         target (int): specifies the classification target
         settings (ExperimentSettings): custom class to hold hyperparameters
+        simplify (Boolean): if True do not show all classes
 
     Returns:
         (str) the name of the class
 
     """
-    if settings.nb_classes > 3:
-        SNtype = list(settings.sntypes.values())[target]
-    elif settings.nb_classes == 3:
-        if target == 0:
-            SNtype = f"SN {list(settings.sntypes.values())[0]}"
-        elif target == 1:
-            SNtype = f"SN CC Ix"
-        else:
-            SNtype = "SN CC IIx"
+    if settings.nb_classes > 2:
+        used = set()
+        unique_classes = [
+            x
+            for x in settings.sntypes.values()
+            if x not in used and (used.add(x) or True)
+        ]
+        SNtype = list(unique_classes)[target]
     else:
         list_types = list(set([x for x in settings.sntypes.values()]))
         if target == 0:
@@ -94,6 +73,8 @@ def sntype_decoded(target, settings):
                 SNtype = f"SN {'|'.join(set([k for k in settings.sntypes.values() if 'Ia' not in k]))}"
             else:
                 SNtype = f"SN {'|'.join(list(settings.sntypes.values())[1:])}"
+            if simplify:
+                SNtype = "non SN Ia"
     return SNtype
 
 
@@ -112,20 +93,18 @@ def tag_type(df, settings, type_column="TYPE"):
         (pandas.DataFrame) the dataframe, with new target columns
     """
 
-    # 2 classes
-    # taking the first type vs. others
-
-    list_types = list(set([x for x in settings.sntypes.values()]))
-
+    # SNTYPE checks
     if type_column not in df.keys():
         if settings.data_testing:
-            df["SNTYPE"] = np.ones(len(df)).astype(int)
+            df[settings.sntype_var] = np.ones(len(df)).astype(int)
         else:
             logging_utils.print_red(
                 "Please provide SNTYPE with data (else use data_testing option)"
             )
             raise Exception
 
+    # 2 classes: Ia vs non Ia
+    list_types = list(set([x for x in settings.sntypes.values()]))
     if "Ia" in list_types:
         df[type_column] = df[type_column].astype(str)
         # get keys of Ias, the rest tag them as CC
@@ -140,21 +119,31 @@ def tag_type(df, settings, type_column="TYPE"):
         ).astype(np.uint8)
 
     # All classes
+    used = set()
+    unique_classes = [
+        x for x in settings.sntypes.values() if x not in used and (used.add(x) or True)
+    ]
+    classes_to_use = dict([(y, x) for x, y in enumerate(unique_classes)])
+    map_keys_to_classes = {}
+    for k, v in settings.sntypes.items():
+        map_keys_to_classes[k] = classes_to_use[v]
+
     # check if all types are given in input dictionary
-    tmp = df[~df[type_column].isin(settings.sntypes.keys())][type_column]
+    tmp = df[~df[type_column].isin(settings.sntypes.keys())]
+    n = 0
     if len(tmp) > 0:
         logging_utils.print_red(
-            "Missing sntypes", f"{tmp.unique()} tagging as: {len(settings.sntypes)}"
+            "Missing sntypes",
+            f"{tmp[type_column].unique()} binary tagged as class 1",
         )
+        logging_utils.print_red("nb_classes !=2 will NOT work")
+        extra_tag = max(map_keys_to_classes.values()) + 1
+        for mtyp in tmp[type_column].unique():
+            map_keys_to_classes[mtyp] = extra_tag
+    n_unique_classes = len(unique_classes) + n
 
-    classes_to_use = {}
-    for i, k in enumerate(settings.sntypes.keys()):
-        classes_to_use[k] = i
-    for kk in tmp.unique():
-        classes_to_use[kk] = len(settings.sntypes)
-
-    df[f"target_{len(settings.sntypes)}classes"] = df[type_column].apply(
-        lambda x: classes_to_use[x]
+    df[f"target_{len(unique_classes)}classes"] = df[type_column].apply(
+        lambda x: map_keys_to_classes[x]
     )
 
     return df
@@ -196,7 +185,8 @@ def load_fitfile(settings, verbose=True):
 
         # Rename CID to SNID
         # SNID is CID in FITOPT000.FITRES
-        df = df.rename(columns={"CID": "SNID"})
+        if "SNID" not in df.keys():
+            df = df.rename(columns={"CID": "SNID"})
 
         # Save to pickle for later use and fast reload
         df.to_pickle(f"{settings.preprocessed_dir}/FITOPT000.FITRES.pickle")
@@ -232,7 +222,9 @@ def process_header_FITS(file_path, settings, columns=None):
     except Exception:
         df["SNID"] = df["SNID"].astype(str)
 
-    df = tag_type(df, settings, type_column="SNTYPE")
+    df[settings.sntype_var] = df[settings.sntype_var].astype(str)
+
+    df = tag_type(df, settings, type_column=settings.sntype_var)
 
     if columns is not None:
         df = df[columns]
@@ -255,7 +247,7 @@ def process_header_csv(file_path, settings, columns=None):
 
     # Data
     df = pd.read_csv(file_path)
-    df = tag_type(df, settings, type_column="SNTYPE")
+    df = tag_type(df, settings, type_column=settings.sntype_var)
 
     if columns is not None:
         df = df[columns]
@@ -382,7 +374,7 @@ def load_HDF5_SNinfo(settings):
     dict_SNinfo = {}
     with h5py.File(file_name, "r") as hf:
 
-        columns_to_keep = ["SNID", "SNTYPE", "mB", "c", "x1"]
+        columns_to_keep = ["SNID", settings.sntype_var, "mB", "c", "x1"]
 
         columns_to_keep += [c for c in hf.keys() if "SIM_" in c]
         columns_to_keep += [c for c in hf.keys() if "dataset_" in c]
@@ -390,8 +382,11 @@ def load_HDF5_SNinfo(settings):
 
         for key in columns_to_keep:
             dict_SNinfo[key] = hf[key][:]
-    df_SNinfo = pd.DataFrame(dict_SNinfo)
 
+    df_SNinfo = pd.DataFrame(dict_SNinfo)
+    # bytes
+    if isinstance(df_SNinfo["SNID"].values[0], bytes):
+        df_SNinfo["SNID"] = df_SNinfo["SNID"].str.decode("utf8")
     return df_SNinfo
 
 
@@ -441,10 +436,12 @@ def save_to_HDF5(settings, df):
         "HOSTGAL_SPECZ",
         "HOSTGAL_SPECZ_ERR",
     ]
+    if settings.additional_train_var:
+        list_training_features += list(settings.additional_train_var)
 
     list_misc_features = [
         "PEAKMJD",
-        "SNTYPE",
+        settings.sntype_var,
         "mB",
         "c",
         "x1",
@@ -454,6 +451,10 @@ def save_to_HDF5(settings, df):
         "SIM_PEAKMAG_r",
         "SIM_PEAKMAG_i",
     ]
+
+    if settings.photo_window_var not in list_misc_features:
+        list_misc_features += settings.photo_window_var
+
     list_misc_features = [k for k in list_misc_features if k in df.keys()]
 
     assert df.index.name == "SNID", "Must set SNID as index"
@@ -478,7 +479,13 @@ def save_to_HDF5(settings, df):
     with h5py.File(settings.hdf5_file_name, "w") as hf:
 
         n_samples = len(list_start_end)
-        list_classes = list(set([2, len(settings.sntypes.keys())]))
+        used = set()
+        unique_classes = [
+            x
+            for x in settings.sntypes.values()
+            if x not in used and (used.add(x) or True)
+        ]
+        list_classes = list(set([2, len(unique_classes)]))
         list_names = ["target", "dataset_photometry", "dataset_saltfit"]
 
         # These arrays can be filled in one shot
@@ -488,7 +495,7 @@ def save_to_HDF5(settings, df):
         df_SNID = pd.DataFrame(shuffled_ID, columns=["SNID"])
         logging_utils.print_green("Saving misc features")
         for feat in list_misc_features:
-            if feat == "SNTYPE":
+            if feat == settings.sntype_var:
                 dtype = np.dtype("int32")
             else:
                 dtype = np.dtype("float32")
@@ -559,8 +566,15 @@ def save_to_HDF5(settings, df):
             data=df["PEAKMJDNORM"].values[start_idxs],
             dtype=np.dtype("float32"),
         )
-
-        df.drop(columns=["time", "SNID", "PEAKMJDNORM"], inplace=True)
+        cols_to_drop = [
+            k
+            for k in ["time", "SNID", "PEAKMJDNORM", settings.photo_window_var]
+            if k in df.keys()
+        ]
+        df.drop(
+            columns=list(set(cols_to_drop)),
+            inplace=True,
+        )
 
         ########################
         # Normalize per feature
@@ -656,3 +670,6 @@ def save_to_HDF5(settings, df):
         ):
             arr = arr_feat[idx_pair[0] : idx_pair[1]]
             hf["data"][idx] = np.ravel(arr)
+
+        # save data types for training
+        hf["data_types_training"] = settings.data_types_training
