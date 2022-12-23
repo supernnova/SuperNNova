@@ -89,7 +89,7 @@ def plot_predictions(
     gs = gridspec.GridSpec(2, 1)
     # Plot the lightcurve
     ax = plt.subplot(gs[0])
-    for flt in d_plot.keys():
+    for n, flt in enumerate(d_plot.keys()):
         flt_time = d_plot[flt]["MJD"]
         # Only plot a time series if it's non empty
         if len(flt_time) > 0:
@@ -101,7 +101,9 @@ def plot_predictions(
                 yerr=fluxerr,
                 fmt="o",
                 label=f"Filter {flt}",
-                color=FILTER_COLORS[flt],
+                color=FILTER_COLORS[flt]
+                if flt in FILTER_COLORS.keys()
+                else ALL_COLORS[n],
             )
     ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.0)
     ax.set_ylabel("FLUXCAL")
@@ -297,22 +299,6 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
             # X here has been normalized. We unnormalize X
             try:
                 X_unnormed = tu.unnormalize_arr(X_normed, settings)
-                # Check we do recover X_ori when OOD is None
-                if OOD is None and "cosmo" not in settings.norm:
-                    # check if normalization converges
-                    # using clipping in case of min<model_min
-                    X_clip = X_ori.copy()
-                    X_clip = np.clip(
-                        X_clip[:, settings.idx_features_to_normalize],
-                        settings.arr_norm[:, 0],
-                        np.inf,
-                    )
-                    X_ori[:, settings.idx_features_to_normalize] = X_clip
-                    assert np.all(
-                        np.all(
-                            np.isclose(np.ravel(X_ori), np.ravel(X_unnormed), atol=1e-1)
-                        )
-                    )
 
                 # TODO: IMPROVE
                 df_temp = pd.DataFrame(data=X_unnormed, columns=features)
@@ -355,6 +341,7 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
                         )
             except Exception:
                 lu.print_red(f"SNID {SNID} only has {len(X)} measurement, not plotting")
+
     lu.print_green("Finished plotting lightcurves and predictions ")
 
 
@@ -375,14 +362,16 @@ def plot_gif(settings, df_plot, SNID, redshift, peak_MJD, target, arr_time, d_pr
 
         # slice for gif
         df_sel = df_plot[df_plot["time"] <= time]
-        for flt in settings.list_filters:
+        for n, flt in enumerate(settings.list_filters):
             ax.errorbar(
                 df_sel["time"],
                 df_sel[f"FLUXCAL_{flt}"],
                 yerr=df_sel[f"FLUXCALERR_{flt}"],
                 fmt="o",
                 label=f"Filter {flt}",
-                color=FILTER_COLORS[flt],
+                color=FILTER_COLORS[flt]
+                if flt in FILTER_COLORS.keys()
+                else ALL_COLORS[n],
             )
 
         ax.set(
