@@ -672,4 +672,6 @@ def save_to_HDF5(settings, df):
             hf["data"][idx] = np.ravel(arr)
 
         # save data types for training
-        hf["data_types_training"] = settings.data_types_training
+        hf["data_types_training"] = np.asarray(settings.data_types_training).astype(
+            np.dtype("S100")
+        )

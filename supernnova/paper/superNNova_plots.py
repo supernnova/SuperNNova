@@ -52,8 +52,7 @@ def dist_mu(redshift):
 
 
 def create_sigma_df(df_grouped, class_=0):
-    """From grouped prediction df create a df with sigma values
-    """
+    """From grouped prediction df create a df with sigma values"""
     sigma_all_list = []
     sigma_peak_list = []
     snid_list = []
@@ -340,7 +339,7 @@ def plot_confusion_matrix(
 
 def multiplot_violin_paper(df, fname, settings):
     """Plot data properties as violin plots.
-    
+
     Far from optimized code: seaborn does not make this easy so added
     a lot of formatting using raw matplotlib commands
 
@@ -463,7 +462,9 @@ def multiplot_violin_paper(df, fname, settings):
     g.set_ylabel("simulated redshift", fontsize=14)
     g.set_xlabel("")
     g.set_ylim(0, 1.0)
-    g.set_xticklabels([a for a in settings.sntypes.values()], fontsize=14)
+    g.set_xticklabels(
+        [a.split(" ")[1] for a in settings.data_types_training], fontsize=14
+    )
     g.xaxis.set_tick_params(labelsize=14)
     g.yaxis.set_tick_params(labelsize=14)
     g.legend_.remove()
@@ -766,7 +767,7 @@ def plot_HDres_histos_vs_z(
 
 def seaborn_formatting_mag(df, settings):
     """Seaborn friendly formatting
-    
+
     Basic formatting and eliminating outliers (to avoid rejection by seaborn of pd.DataFrame)
 
     Args:
@@ -868,7 +869,7 @@ def distance_modulus(df):
 
 def sel_eff(merged, threshold, settings):
     """Efficiency curve for different probabilities
-    
+
     Args:
         df (DataFrame): with SALT2 fitted features
     Returns:
@@ -893,7 +894,7 @@ def sel_eff(merged, threshold, settings):
 def datasets_plots(df, settings):
     """Dataset violin plots
     peak magnitudes and redshift distributions of representative and non-representative datasets
-    
+
     Args:
         df (DataFrame): predictions
         settings (ExperimentSettings): custom class to hold hyperparameters
@@ -977,7 +978,7 @@ def performance_plots(settings):
 
 def purity_vs_z(df, model_name, settings):
     """Purity and contamination redshift evolution
-    
+
     Args:
         df (DataFrame):
         modelname (str): name of model to be used
@@ -1020,9 +1021,9 @@ def purity_vs_z(df, model_name, settings):
 
 def cadence_acc_matrix(df, model_name, settings):
     """Matrix with accuracy w.r. number of measurements in a band
-    
+
     Correlation between accuracy and a certain number of observations required per filter
-    
+
     Args:
         df (DataFrame):
         modelname (str): name of model to be used
@@ -1051,9 +1052,9 @@ def cadence_acc_matrix(df, model_name, settings):
 
 def hubble_residuals(df, model_name, fits, settings):
     """Hubble residuals for classified supernovae as type Ia
-    
+
     Uses SALT2 fits to compute the distance modulus, therefore list is not complete if fit failed.
-    
+
     Args:
         df (DataFrame):
         modelname (str): name of model to be used
@@ -1107,7 +1108,7 @@ def hubble_residuals(df, model_name, fits, settings):
 
 def cnf_matrix(df, model_name, settings):
     """Get confusion matrix from predictions
-    
+
     Args:
         df (DataFrame): predictions for a given model
         modelname (str): name of model to be used
@@ -1381,7 +1382,7 @@ def create_OOD_classification_plots(df, list_models, settings):
 
 def science_plots(settings, onlycnf=False):
     """Plots for SuperNNova paper
-    
+
     Saved in settings.figures_dir. Need to provide prediction files and linked settings
 
     Args:
