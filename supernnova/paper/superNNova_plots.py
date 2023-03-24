@@ -462,9 +462,7 @@ def multiplot_violin_paper(df, fname, settings):
     g.set_ylabel("simulated redshift", fontsize=14)
     g.set_xlabel("")
     g.set_ylim(0, 1.0)
-    g.set_xticklabels(
-        [a.split(" ")[1] for a in settings.data_types_training], fontsize=14
-    )
+    g.set_xticklabels([a for a in settings.sntypes.values()], fontsize=14)
     g.xaxis.set_tick_params(labelsize=14)
     g.yaxis.set_tick_params(labelsize=14)
     g.legend_.remove()
