@@ -22,6 +22,16 @@ def process_fn(inputs):
     return fn(fil)
 
 
+def powers_of_two(x):
+    powers = []
+    i = 1
+    while i <= x:
+        if i & x:
+            powers.append(i)
+        i <<= 1
+    return powers
+
+
 def build_traintestval_splits(settings):
     """Build dataset split in the following way
 
@@ -454,15 +464,6 @@ def process_single_FITS(file_path, settings):
     # quality
     if settings.phot_reject:
         # only valid for powers of two combinations
-        def powers_of_two(x):
-            powers = []
-            i = 1
-            while i <= x:
-                if i & x:
-                    powers.append(i)
-                i <<= 1
-            return powers
-
         tmp = len(df.SNID.unique())
         tmp2 = len(df)
         df["phot_reject"] = df[settings.phot_reject].apply(
@@ -585,13 +586,41 @@ def process_single_csv(file_path, settings):
     df = df.join(df_header).reset_index()
 
     if settings.photo_window_files:
-        logging_utils.print_red("Photo window not supported for csv!")
+        df["window_time_cut"] = True
+        mask = df["MJD"] != -777.00
+        df["window_delta_time"] = df["MJD"] - df[settings.photo_window_var]
+        df.loc[mask, "window_time_cut"] = df["window_delta_time"].apply(
+            lambda x: True
+            if (x > 0 and x < settings.photo_window_max)
+            else (True if (x <= 0 and x > settings.photo_window_min) else False)
+        )
+        df = df[df["window_time_cut"] == True]
+    # quality
+    if settings.phot_reject:
+
+        tmp = len(df.SNID.unique())
+        tmp2 = len(df)
+        df["phot_reject"] = df[settings.phot_reject].apply(
+            lambda x: False
+            if len(set(settings.phot_reject_list).intersection(set(powers_of_two(x))))
+            > 0
+            else True
+        )
+        df = df[df["phot_reject"] == True]
+
+        if settings.debug:
+            logging_utils.print_blue("Phot reject", file_path)
+            logging_utils.print_blue(f"SNID {tmp} to {len(df.SNID.unique())}")
+            logging_utils.print_blue(f"Phot {tmp2} to {len(df)}")
 
     #############################################
     # Miscellaneous data processing
     #############################################
+    df = df[list(set(keep_col + keep_col_header))].copy()
     # filters have a trailing white space which we remove
     df.FLT = df.FLT.apply(lambda x: x.rstrip()).values.astype(str)
+    # keep only filters we are going to use for classification
+    df = df[df["FLT"].isin(settings.list_filters)]
     # Drop the delimiter lines
     df = df[df.MJD != -777.000]
     # Reset the index (it is no longer continuous after dropping lines)
