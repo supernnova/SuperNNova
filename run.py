@@ -136,7 +136,9 @@ if __name__ == "__main__":
             if settings.debug:
                 visualize.visualize(settings)
             else:
-                logging_utils.print_red("Use --debug for explore_lightcurves")
+                logging_utils.print_red(
+                    "Use --debug in database creation for explore_lightcurves"
+                )
 
         if settings.plot_lcs:
             if settings.model_files:
