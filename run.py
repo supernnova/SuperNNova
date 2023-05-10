@@ -180,8 +180,8 @@ if __name__ == "__main__":
             metrics.aggregate_metrics(settings)
             lu.print_blue("Finished aggregating performance")
             # Stats and plots in paper
-            st.SuperNNova_stats_and_plots(settings)
-            lu.print_blue("Finished assembling paper performance")
+            # st.SuperNNova_stats_and_plots(settings)
+            # lu.print_blue("Finished assembling paper performance")
 
         # Speec benchmarks
         if settings.speed:

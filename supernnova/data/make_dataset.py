@@ -48,7 +48,7 @@ def build_traintestval_splits(settings):
     logging_utils.print_green(f"Computing splits")
 
     # Read and process files faster with ProcessPoolExecutor
-    max_workers = multiprocessing.cpu_count()
+    max_workers = multiprocessing.cpu_count() - 2
     photo_columns = ["SNID"] + [
         f"target_{nb_classes}classes"
         # for nb_classes in list(set([2, len(settings.sntypes.keys())]))
@@ -694,7 +694,7 @@ def preprocess_data(settings):
                 list_fn.append(process_fn_FITS)
 
     logging_utils.print_green("List to preprocess ", list_files)
-    max_workers = multiprocessing.cpu_count()
+    max_workers = multiprocessing.cpu_count() - 2
 
     host_spe_tmp = []
     # use parallelization to speed up processing
@@ -902,7 +902,7 @@ def pivot_dataframe_batch(list_files, settings):
 
     # Parameters of multiprocessing below
     if not settings.debug:
-        max_workers = multiprocessing.cpu_count()
+        max_workers = multiprocessing.cpu_count() - 2
         # use parallelization to speed up processing
         # Loop over chunks of files
         for chunk_idx in tqdm(list_chunks, desc="Pivoting dataframes", ncols=100):
