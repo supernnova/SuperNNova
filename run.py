@@ -136,7 +136,7 @@ if __name__ == "__main__":
             if settings.debug:
                 visualize.visualize(settings)
             else:
-                logging_utils.print_red("Use --debug for explore_lightcurves")
+                logging_utils.print_red("Use --debug --data for explore_lightcurves")
 
         if settings.plot_lcs:
             if settings.model_files:
@@ -180,8 +180,8 @@ if __name__ == "__main__":
             metrics.aggregate_metrics(settings)
             lu.print_blue("Finished aggregating performance")
             # Stats and plots in paper
-            st.SuperNNova_stats_and_plots(settings)
-            lu.print_blue("Finished assembling paper performance")
+            # st.SuperNNova_stats_and_plots(settings)
+            # lu.print_blue("Finished assembling paper performance")
 
         # Speec benchmarks
         if settings.speed:
