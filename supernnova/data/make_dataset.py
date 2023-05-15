@@ -557,6 +557,13 @@ def process_single_csv(file_path, settings):
 
     # Load the companion HEAD file
     df_header = pd.read_csv(file_path.replace("PHOT", "HEAD"))
+
+    if settings.redshift_label != "none":
+        logging_utils.print_yellow("Changed redshift to", settings.redshift_label)
+        df_header["HOSTGAL_SPECZ"] = df_header[settings.redshift_label]
+        df_header["HOSTGAL_SPECZ_ERR"] = df_header[f"{settings.redshift_label}_ERR"]
+        df_header["SIM_REDSHIFT_CMB"] = df_header[settings.redshift_label]
+
     # Keep only columns of interest
     keep_col_header = [
         "SNID",
