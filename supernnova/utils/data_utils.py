@@ -672,5 +672,9 @@ def save_to_HDF5(settings, df):
             hf["data"][idx] = np.ravel(arr)
 
         # save data types for training
-        #hf["data_types_training"] = np.asarray(settings.data_types_training).astype(np.dtype("S100"))
-        hf["data_types_training"] = f"{settings.data_types_training}"
+        try:
+            hf["data_types_training"] = np.asarray(settings.data_types_training).astype(
+                np.dtype("S100")
+            )
+        except Exception:
+            hf["data_types_training"] = f"{settings.data_types_training}"

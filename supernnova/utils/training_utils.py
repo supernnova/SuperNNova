@@ -246,7 +246,10 @@ def load_HDF5(settings, test=False):
         assert set(training_features) <= set(training_features_data)
         lu.print_green("Features used", " ".join(training_features))
 
-        settings.data_types_training = hf["data_types_training"][:].astype(str)
+        try:
+            settings.data_types_training = hf["data_types_training"][:].astype(str)
+        except Exception:
+            settings.data_types_training = hf["data_types_training"][:]
 
         arr_data = hf["data"][:]
         if test:
