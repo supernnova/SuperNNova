@@ -28,8 +28,7 @@ COLUMN_NAMES = [
 
 
 def manual_lc():
-    """Manually provide data
-    """
+    """Manually provide data"""
     # this is the format you can use to provide light-curves
     df = pd.DataFrame()
     # supernova IDs
@@ -60,9 +59,10 @@ def load_lc_csv(filename):
     df = pd.read_csv(filename)
 
     missing_cols = [k for k in COLUMN_NAMES if k not in df.keys()]
-    lu.print_red(f"Missing {len(missing_cols)} columns", missing_cols)
-    lu.print_yellow(f"filling with zeros")
-    lu.print_yellow(f"HOSTGAL required only for classification with redshift")
+    if len(missing_cols) > 0:
+        lu.print_red(f"Missing {len(missing_cols)} columns", missing_cols)
+        lu.print_yellow(f"filling with zeros")
+        lu.print_yellow(f"HOSTGAL required only for classification with redshift")
     for k in missing_cols:
         df[k] = np.zeros(len(df))
     df = df.sort_values(by=["MJD"])
@@ -72,7 +72,7 @@ def load_lc_csv(filename):
 
 
 def reformat_to_df(pred_probs, ids=None):
-    """ Reformat SNN predictions to a DataFrame
+    """Reformat SNN predictions to a DataFrame
 
     # TO DO: suppport nb_inference != 1
     """
@@ -97,9 +97,7 @@ def reformat_to_df(pred_probs, ids=None):
 
 
 if __name__ == "__main__":
-    """ Wrapper to get predictions on the fly with SNN
-
-    """
+    """Wrapper to get predictions on the fly with SNN"""
 
     parser = argparse.ArgumentParser(
         description="Classification using pre-trained model"
@@ -117,15 +115,25 @@ if __name__ == "__main__":
         "--filename",
         type=str,
         default="tests/onthefly_lc/example_lc.csv",
-        help="device to be used [cuda,cpu]",
+        help="filename or path to classify",
     )
 
     args = parser.parse_args()
 
     # Input data
     # options: csv or manual data, choose one
-    # df = load_lc_csv(args.filename)
-    df = manual_lc()
+    # df = manual_lc()
+    if "csv" in args.filename:
+        df = load_lc_csv(args.filename)
+    else:
+        try:
+            list_df = []
+            for fil in glob.glob(f"{args.filename}/*csv"):
+                list_df.append(load_lc_csv(fil))
+            df = pd.concat(list_df)
+        except Exception:
+            print(f"Provide a csv file or folder with csvs")
+            raise ValueError
 
     # Obtain predictions for full light-curve
     # Format: batch, nb_inference_samples, nb_classes
