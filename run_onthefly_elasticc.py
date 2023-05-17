@@ -125,12 +125,14 @@ if __name__ == "__main__":
     # df = manual_lc()
     if "csv" in args.filename:
         df = load_lc_csv(args.filename)
+        outname = f"Predictions_{Path(args.filename).name}"
     else:
         try:
             list_df = []
             for fil in glob.glob(f"{args.filename}/*csv"):
                 list_df.append(load_lc_csv(fil))
             df = pd.concat(list_df)
+            outname = f"{args.filename}/Predictions_{Path(args.model_file).name}.csv"
         except Exception:
             print(f"Provide a csv file or folder with csvs")
             raise ValueError
@@ -145,7 +147,8 @@ if __name__ == "__main__":
     #
     # reformat to df
     preds_df = reformat_to_df(pred_probs, ids=df.SNID.unique())
-    preds_df.to_csv(f"Predictions_{Path(args.filename).name}")
+
+    preds_df.to_csv(outname)
 
     print(preds_df)
     # To implement
