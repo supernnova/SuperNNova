@@ -61,7 +61,7 @@ def load_lc_csv(filename):
     if "HEAD" in filename:
         df_meta = pd.read_csv(filename)
         df_phot = pd.read_csv(filename.replace("HEAD", "PHOT"))
-        df = pd.merge(df_phot, df_meta, how="left")
+        df = df_phot.merge(df_meta, how="left", on="SNID")
     else:
         df = pd.read_csv(filename)
 
@@ -152,7 +152,6 @@ if __name__ == "__main__":
     # Format: batch, nb_inference_samples, nb_classes
     # Beware, ids are resorted while obtaining predictions!
     ids_preds, pred_probs = classify_lcs(df, args.model_file, args.device)
-
     # ________________________
     # Optional
     #

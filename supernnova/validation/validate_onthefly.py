@@ -14,7 +14,7 @@ from supernnova.data.make_dataset import pivot_dataframe_single_from_df
 
 
 def get_settings(model_file):
-    """ Define settings from model
+    """Define settings from model
 
     Args:
         model_file (str): complete name with path for model to be used
@@ -65,7 +65,7 @@ def get_settings(model_file):
 
 
 def format_data(df, settings):
-    """ Format data into SuperNNova-friendly format
+    """Format data into SuperNNova-friendly format
 
     Args:
         df (pandas.DataFrame): dataframe with light-curves
@@ -97,7 +97,7 @@ def format_data(df, settings):
 
 
 def classify_lcs(df, model_file, device):
-    """ Obtain predictions for light-curves
+    """Obtain predictions for light-curves
     Args:
         df (DataFrame): light-curves to classify
         model_file (str): Path+name of model to use for predictions
