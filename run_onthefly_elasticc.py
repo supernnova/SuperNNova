@@ -136,11 +136,10 @@ if __name__ == "__main__":
     else:
         try:
             list_df = []
-            to_search = (
-                f"{args.filename}/*HEAD*csv"
-                if args.metaandphot
-                else f"{args.filename}/*csv"
-            )
+            to_search = f"{args.filename}/*HEAD*csv"
+            if len(to_search) < 1:
+                to_search = f"{args.filename}/*csv"
+
             for fil in glob.glob(to_search):
                 list_df.append(load_lc_csv(fil))
             df = pd.concat(list_df)
