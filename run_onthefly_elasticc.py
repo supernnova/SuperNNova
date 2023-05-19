@@ -51,14 +51,14 @@ def manual_lc():
     return df
 
 
-def load_lc_csv(filename, metaandphot=False):
+def load_lc_csv(filename):
     """Read light-curve(s) in csv format
 
     Args:
         filename (str): data file
-        metaandphot (Bool): if metadata and photometry are in two files (SNANA format)
     """
-    if metaandphot:
+
+    if "HEAD" in filename:
         df_meta = pd.read_csv(filename)
         df_phot = pd.read_csv(filename.replace("HEAD", "PHOT"))
         df = pd.merge(df_phot, df_meta, how="left")
@@ -124,11 +124,6 @@ if __name__ == "__main__":
         default="tests/onthefly_lc/example_lc.csv",
         help="filename or path to classify",
     )
-    parser.add_argument(
-        "--metaandphot",
-        action="store_true",
-        help="Use if metadata and photometry are in different csv",
-    )
 
     args = parser.parse_args()
 
@@ -136,12 +131,7 @@ if __name__ == "__main__":
     # options: csv or manual data, choose one
     # df = manual_lc()
     if "csv" in args.filename:
-        if "PHOT" in args.filename:
-            to_load = args.filename.replace("PHOT", "HEAD")
-        else:
-            to_load = args.filename
-
-        df = load_lc_csv(to_load, metaandphot=args.metaandphot)
+        df = load_lc_csv(args.filename)
         outname = f"Predictions_{Path(args.filename).name}"
     else:
         try:
@@ -152,7 +142,7 @@ if __name__ == "__main__":
                 else f"{args.filename}/*csv"
             )
             for fil in glob.glob(to_search):
-                list_df.append(load_lc_csv(fil, metaandphot=args.metaandphot))
+                list_df.append(load_lc_csv(fil))
             df = pd.concat(list_df)
             outname = f"{args.filename}/Predictions_{Path(args.model_file).name}.csv"
         except Exception:
