@@ -51,13 +51,19 @@ def manual_lc():
     return df
 
 
-def load_lc_csv(filename):
+def load_lc_csv(filename, metaandphot=False):
     """Read light-curve(s) in csv format
 
     Args:
         filename (str): data file
+        metaandphot (Bool): if metadata and photometry are in two files (SNANA format)
     """
-    df = pd.read_csv(filename)
+    if metaandphot:
+        df_meta = pd.read_csv(filename)
+        df_phot = pd.read_csv(filename.replace("HEAD", "PHOT"))
+        df = pd.merge(df_phot, df_meta, how="left")
+    else:
+        df = pd.read_csv(filename)
 
     missing_cols = [k for k in COLUMN_NAMES if k not in df.keys()]
     if len(missing_cols) > 0:
@@ -118,6 +124,11 @@ if __name__ == "__main__":
         default="tests/onthefly_lc/example_lc.csv",
         help="filename or path to classify",
     )
+    parser.add_argument(
+        "--metaandphot",
+        action="store_true",
+        help="Use if metadata and photometry are in different csv",
+    )
 
     args = parser.parse_args()
 
@@ -125,13 +136,23 @@ if __name__ == "__main__":
     # options: csv or manual data, choose one
     # df = manual_lc()
     if "csv" in args.filename:
-        df = load_lc_csv(args.filename)
+        if "PHOT" in args.filename:
+            to_load = args.filename.replace("PHOT", "HEAD")
+        else:
+            to_load = args.filename
+
+        df = load_lc_csv(to_load, metaandphot=args.metaandphot)
         outname = f"Predictions_{Path(args.filename).name}"
     else:
         try:
             list_df = []
-            for fil in glob.glob(f"{args.filename}/*csv"):
-                list_df.append(load_lc_csv(fil))
+            to_search = (
+                f"{args.filename}/*HEAD*csv"
+                if args.metaandphot
+                else f"{args.filename}/*csv"
+            )
+            for fil in glob.glob(to_search):
+                list_df.append(load_lc_csv(fil, metaandphot=args.metaandphot))
             df = pd.concat(list_df)
             outname = f"{args.filename}/Predictions_{Path(args.model_file).name}.csv"
         except Exception:
