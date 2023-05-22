@@ -14,7 +14,7 @@ from supernnova.data.make_dataset import pivot_dataframe_single_from_df
 
 
 def get_settings(model_file):
-    """ Define settings from model
+    """Define settings from model
 
     Args:
         model_file (str): complete name with path for model to be used
@@ -65,7 +65,7 @@ def get_settings(model_file):
 
 
 def format_data(df, settings):
-    """ Format data into SuperNNova-friendly format
+    """Format data into SuperNNova-friendly format
 
     Args:
         df (pandas.DataFrame): dataframe with light-curves
@@ -91,13 +91,14 @@ def format_data(df, settings):
     # this is ok since it goes by length not by index (which I never reset)
     # beware: this requires index int!
     FLT_onehot = tmp_onehot[len(settings.list_filters_combination) :]
-    df = pd.concat([df, FLT_onehot], axis=1)[settings.training_features]
+
+    df = pd.concat([df, FLT_onehot], axis=1)[settings.all_features]
 
     return df
 
 
 def classify_lcs(df, model_file, device):
-    """ Obtain predictions for light-curves
+    """Obtain predictions for light-curves
     Args:
         df (DataFrame): light-curves to classify
         model_file (str): Path+name of model to use for predictions
@@ -116,6 +117,7 @@ def classify_lcs(df, model_file, device):
         for (i, f) in enumerate(settings.training_features)
         if f in settings.training_features_to_normalize
     ]
+
     settings.random_length = False
     settings.random_redshift = False
 
@@ -149,7 +151,14 @@ def classify_lcs(df, model_file, device):
         X_normed = X_all.copy()
         X_normed = tu.normalize_arr(X_normed, settings)
         # format: data, target (filled with zeros), _
+        settings.idx_features = [
+            i
+            for (i, _) in enumerate(settings.all_features)
+            if _ in settings.training_features
+        ]
+        X_normed = X_normed[:, settings.idx_features]
         X_tmp = X_normed, 0, "dummy"
+
         list_lcs.append(X_tmp)
 
     packed, _, target_tensor, idxs_rev_sort = tu.get_data_batch(
