@@ -3,6 +3,7 @@ import argparse
 import numpy as np
 import pandas as pd
 from pathlib import Path
+from sklearn import metrics
 import supernnova.utils.logging_utils as lu
 from supernnova.validation.validate_onthefly import classify_lcs, get_settings
 
@@ -36,12 +37,12 @@ def manual_lc():
     return df
 
 
-def load_lc_csv(filename, model_file):
+def load_lc_csv(filename, settings):
     """Read light-curve(s) in csv format
 
     Args:
         filename (str): data file
-        model_file (str): model file
+        settings (str): model file settings
     """
 
     if "HEAD" in filename:
@@ -51,9 +52,21 @@ def load_lc_csv(filename, model_file):
     else:
         df = pd.read_csv(filename)
 
-    settings = get_settings(model_file)
+    if settings.redshift_label != "none":
+        z_label = settings.redshift_features[0].replace("_ERR", "")
+        df[z_label] = df[settings.redshift_label]
+        df[f"{z_label}_ERR"] = df[f"{settings.redshift_label}_ERR"]
+
     cols = (
-        ["SNID", "MJD", "FLUXCAL", "FLUXCALERR", "FLT"]
+        [
+            "SNID",
+            "MJD",
+            "FLUXCAL",
+            "FLUXCALERR",
+            "FLT",
+            "HOSTGAL_PHOTOZ",
+            "HOSTGAL_PHOTOZ_ERR",
+        ]
         + settings.redshift_features
         + settings.additional_train_var
     )
@@ -116,14 +129,23 @@ if __name__ == "__main__":
         default="tests/onthefly_lc/example_lc.csv",
         help="filename or path to classify",
     )
+    parser.add_argument(
+        "--redshift_label",
+        type=str,
+        default="none",
+        help="label to be used as redshift",
+    )
 
     args = parser.parse_args()
 
     # Input data
     # options: csv or manual data, choose one
     # df = manual_lc()
+
+    settings = get_settings(args.model_file)
+    settings.redshift_label = args.redshift_label
     if "csv" in args.filename:
-        df = load_lc_csv(args.filename, args.model_file)
+        df = load_lc_csv(args.filename, settings)
         outname = f"Predictions_{Path(args.filename).name}"
     else:
         try:
@@ -133,7 +155,7 @@ if __name__ == "__main__":
                 to_search = f"{args.filename}/*csv"
 
             for fil in glob.glob(to_search):
-                list_df.append(load_lc_csv(fil, args.model_file))
+                list_df.append(load_lc_csv(fil, settings))
             df = pd.concat(list_df)
             outname = f"{args.filename}/Predictions_{Path(args.model_file).name}.csv"
         except Exception:
@@ -144,14 +166,39 @@ if __name__ == "__main__":
     # Format: batch, nb_inference_samples, nb_classes
     # Beware, ids are resorted while obtaining predictions!
     ids_preds, pred_probs = classify_lcs(df, args.model_file, args.device)
+
     # ________________________
     # Optional
     #
     # reformat to df
-    preds_df = reformat_to_df(pred_probs, ids=df.SNID.unique())
+    preds_df = reformat_to_df(pred_probs, ids=ids_preds)
+
+    dic_types = {
+        0: [10, 11, 12, 20, 21, 25, 26, 27, 30, 31, 32, 35, 36, 37],
+        1: [40, 42, 45, 46, 59],
+        2: [51, 82, 84, 87, 88, 89],
+        3: [60],
+        4: [80, 83, 90, 91],
+    }
+    preds_df = preds_df.merge(df[["SNID", "SNTYPE"]].drop_duplicates(), on="SNID")
+    try:
+        preds_df["target"] = preds_df["SNTYPE"].apply(
+            lambda x: 0
+            if x in dic_types[0]
+            else (
+                1
+                if x in dic_types[1]
+                else (2 if x in dic_types[2] else (3 if x in dic_types[3] else 4))
+            )
+        )
+        print(
+            "Balanced accuracy",
+            metrics.balanced_accuracy_score(preds_df["target"], preds_df["pred_class"]),
+        )
+    except Exception:
+        # silent error
+        a = 0
 
     preds_df.to_csv(outname)
 
     print(preds_df)
-    # To implement
-    # Early prediction visualization
