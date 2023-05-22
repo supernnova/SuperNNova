@@ -1,9 +1,11 @@
+import glob
 import argparse
 import numpy as np
 import pandas as pd
 from pathlib import Path
+from sklearn import metrics
 import supernnova.utils.logging_utils as lu
-from supernnova.validation.validate_onthefly import classify_lcs
+from supernnova.validation.validate_onthefly import classify_lcs, get_settings
 
 """
     Example code on how to run on the fly classifications
@@ -11,24 +13,9 @@ from supernnova.validation.validate_onthefly import classify_lcs
     - Either provide a list with data or a Pandas DataFrame
 """
 
-# Data columns to provide
-# HOSTGAL redshifts only required if classification with redshift is used
-COLUMN_NAMES = [
-    "SNID",
-    "MJD",
-    "FLUXCAL",
-    "FLUXCALERR",
-    "FLT",
-    "HOSTGAL_PHOTOZ",
-    "HOSTGAL_SPECZ",
-    "HOSTGAL_PHOTOZ_ERR",
-    "HOSTGAL_SPECZ_ERR",
-]
-
 
 def manual_lc():
-    """Manually provide data
-    """
+    """Manually provide data"""
     # this is the format you can use to provide light-curves
     df = pd.DataFrame()
     # supernova IDs
@@ -45,22 +32,49 @@ def manual_lc():
     df["HOSTGAL_PHOTOZ"] = [0.1, 0.1, 0.5, 0.5]
     df["HOSTGAL_SPECZ_ERR"] = [0.001, 0.001, 0.001, 0.001]
     df["HOSTGAL_PHOTOZ_ERR"] = [0.01, 0.01, 0.01, 0.01]
+    df["MWEBV"] = [0.01, 0.01, 0.01, 0.01]
 
     return df
 
 
-def load_lc_csv(filename):
+def load_lc_csv(filename, settings):
     """Read light-curve(s) in csv format
 
     Args:
         filename (str): data file
+        settings (str): model file settings
     """
-    df = pd.read_csv(filename)
 
-    missing_cols = [k for k in COLUMN_NAMES if k not in df.keys()]
-    lu.print_red(f"Missing {len(missing_cols)} columns", missing_cols)
-    lu.print_yellow(f"filling with zeros")
-    lu.print_yellow(f"HOSTGAL required only for classification with redshift")
+    if "HEAD" in filename:
+        df_meta = pd.read_csv(filename)
+        df_phot = pd.read_csv(filename.replace("HEAD", "PHOT"))
+        df = df_phot.merge(df_meta, how="left", on="SNID")
+    else:
+        df = pd.read_csv(filename)
+
+    if settings.redshift_label != "none":
+        z_label = settings.redshift_features[0].replace("_ERR", "")
+        df[z_label] = df[settings.redshift_label]
+        df[f"{z_label}_ERR"] = df[f"{settings.redshift_label}_ERR"]
+
+    cols = [
+        "SNID",
+        "MJD",
+        "FLUXCAL",
+        "FLUXCALERR",
+        "FLT",
+        "HOSTGAL_PHOTOZ",
+        "HOSTGAL_PHOTOZ_ERR",
+        "HOSTGAL_SPECZ",
+        "HOSTGAL_SPECZ_ERR",
+    ]
+    if settings.additional_train_var:
+        cols += settings.additional_train_var
+    missing_cols = [k for k in cols if k not in df.keys()]
+    if len(missing_cols) > 0:
+        lu.print_red(f"Missing {len(missing_cols)} columns", missing_cols)
+        lu.print_yellow(f"filling with zeros")
+        lu.print_yellow(f"HOSTGAL required only for classification with redshift")
     for k in missing_cols:
         df[k] = np.zeros(len(df))
     df = df.sort_values(by=["MJD"])
@@ -70,7 +84,7 @@ def load_lc_csv(filename):
 
 
 def reformat_to_df(pred_probs, ids=None):
-    """ Reformat SNN predictions to a DataFrame
+    """Reformat SNN predictions to a DataFrame
 
     # TO DO: suppport nb_inference != 1
     """
@@ -95,9 +109,7 @@ def reformat_to_df(pred_probs, ids=None):
 
 
 if __name__ == "__main__":
-    """ Wrapper to get predictions on the fly with SNN
-
-    """
+    """Wrapper to get predictions on the fly with SNN"""
 
     parser = argparse.ArgumentParser(
         description="Classification using pre-trained model"
@@ -115,15 +127,50 @@ if __name__ == "__main__":
         "--filename",
         type=str,
         default="tests/onthefly_lc/example_lc.csv",
-        help="device to be used [cuda,cpu]",
+        help="filename or path to classify",
+    )
+    parser.add_argument(
+        "--redshift_label",
+        type=str,
+        default="none",
+        help="label to be used as redshift",
+    )
+    parser.add_argument(
+        "--manual_lc",
+        action="store_true",
+        help="if manual lc to be used",
     )
 
     args = parser.parse_args()
 
+    settings = get_settings(args.model_file)
+    settings.redshift_label = args.redshift_label
+
     # Input data
     # options: csv or manual data, choose one
-    # df = load_lc_csv(args.filename)
-    df = manual_lc()
+    if args.manual_lc:
+        df = manual_lc()
+        outname = "manual_lc.csv"
+    else:
+        if "csv" in args.filename:
+            df = load_lc_csv(args.filename, settings)
+            outname = f"Predictions_{Path(args.filename).name}"
+        else:
+            try:
+                list_df = []
+                to_search = f"{args.filename}/*HEAD*csv"
+                if len(to_search) < 1:
+                    to_search = f"{args.filename}/*csv"
+
+                for fil in glob.glob(to_search):
+                    list_df.append(load_lc_csv(fil, settings))
+                df = pd.concat(list_df)
+                outname = (
+                    f"{args.filename}/Predictions_{Path(args.model_file).name}.csv"
+                )
+            except Exception:
+                print(f"Provide a csv file or folder with csvs")
+                raise ValueError
 
     # Obtain predictions for full light-curve
     # Format: batch, nb_inference_samples, nb_classes
@@ -134,9 +181,35 @@ if __name__ == "__main__":
     # Optional
     #
     # reformat to df
-    preds_df = reformat_to_df(pred_probs, ids=df.SNID.unique())
-    preds_df.to_csv(f"Predictions_{Path(args.filename).name}")
-    print(preds_df)
+    preds_df = reformat_to_df(pred_probs, ids=ids_preds)
 
-    # To implement
-    # Early prediction visualization
+    dic_types = {
+        0: [10, 11, 12, 20, 21, 25, 26, 27, 30, 31, 32, 35, 36, 37],
+        1: [40, 42, 45, 46, 59],
+        2: [51, 82, 84, 87, 88, 89],
+        3: [60],
+        4: [80, 83, 90, 91],
+    }
+
+    try:
+        preds_df = preds_df.merge(df[["SNID", "SNTYPE"]].drop_duplicates(), on="SNID")
+        preds_df["target"] = preds_df["SNTYPE"].apply(
+            lambda x: 0
+            if x in dic_types[0]
+            else (
+                1
+                if x in dic_types[1]
+                else (2 if x in dic_types[2] else (3 if x in dic_types[3] else 4))
+            )
+        )
+        print(
+            "Balanced accuracy",
+            metrics.balanced_accuracy_score(preds_df["target"], preds_df["pred_class"]),
+        )
+    except Exception:
+        # silent error
+        a = 0
+
+    preds_df.to_csv(outname)
+
+    print(preds_df)
