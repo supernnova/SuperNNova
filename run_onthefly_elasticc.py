@@ -4,28 +4,13 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 import supernnova.utils.logging_utils as lu
-from supernnova.validation.validate_onthefly import classify_lcs
+from supernnova.validation.validate_onthefly import classify_lcs, get_settings
 
 """
     Example code on how to run on the fly classifications
     - Need to laod a pre-trained model
     - Either provide a list with data or a Pandas DataFrame
 """
-
-# Data columns to provide
-# HOSTGAL redshifts only required if classification with redshift is used
-COLUMN_NAMES = [
-    "SNID",
-    "MJD",
-    "FLUXCAL",
-    "FLUXCALERR",
-    "FLT",
-    "HOSTGAL_PHOTOZ",
-    "HOSTGAL_SPECZ",
-    "HOSTGAL_PHOTOZ_ERR",
-    "HOSTGAL_SPECZ_ERR",
-    "MWEBV",
-]
 
 
 def manual_lc():
@@ -51,11 +36,12 @@ def manual_lc():
     return df
 
 
-def load_lc_csv(filename):
+def load_lc_csv(filename, model_file):
     """Read light-curve(s) in csv format
 
     Args:
         filename (str): data file
+        model_file (str): model file
     """
 
     if "HEAD" in filename:
@@ -65,7 +51,13 @@ def load_lc_csv(filename):
     else:
         df = pd.read_csv(filename)
 
-    missing_cols = [k for k in COLUMN_NAMES if k not in df.keys()]
+    settings = get_settings(model_file)
+    cols = (
+        ["SNID", "MJD", "FLUXCAL", "FLUXCALERR", "FLT"]
+        + settings.redshift_features
+        + settings.additional_train_var
+    )
+    missing_cols = [k for k in cols if k not in df.keys()]
     if len(missing_cols) > 0:
         lu.print_red(f"Missing {len(missing_cols)} columns", missing_cols)
         lu.print_yellow(f"filling with zeros")
@@ -131,7 +123,7 @@ if __name__ == "__main__":
     # options: csv or manual data, choose one
     # df = manual_lc()
     if "csv" in args.filename:
-        df = load_lc_csv(args.filename)
+        df = load_lc_csv(args.filename, args.model_file)
         outname = f"Predictions_{Path(args.filename).name}"
     else:
         try:
@@ -141,7 +133,7 @@ if __name__ == "__main__":
                 to_search = f"{args.filename}/*csv"
 
             for fil in glob.glob(to_search):
-                list_df.append(load_lc_csv(fil))
+                list_df.append(load_lc_csv(fil, args.model_file))
             df = pd.concat(list_df)
             outname = f"{args.filename}/Predictions_{Path(args.model_file).name}.csv"
         except Exception:
