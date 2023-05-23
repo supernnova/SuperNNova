@@ -9,7 +9,7 @@ from supernnova.validation.validate_onthefly import classify_lcs, get_settings
 
 """
     Example code on how to run on the fly classifications
-    - Need to laod a pre-trained model
+    - Need to load a pre-trained model
     - Either provide a list with data or a Pandas DataFrame
 """
 
@@ -43,6 +43,9 @@ def load_lc_csv(filename, settings):
     Args:
         filename (str): data file
         settings (str): model file settings
+
+    Returns:
+        df (pd.DataFrame): dataframe with lc and metadata
     """
 
     if "HEAD" in filename:
@@ -73,10 +76,6 @@ def load_lc_csv(filename, settings):
     missing_cols = [k for k in cols if k not in df.keys()]
     if len(missing_cols) > 0:
         lu.print_red(f"Missing {len(missing_cols)} columns", missing_cols)
-        lu.print_yellow(f"filling with zeros")
-        lu.print_yellow(f"HOSTGAL required only for classification with redshift")
-    for k in missing_cols:
-        df[k] = np.zeros(len(df))
     df = df.sort_values(by=["MJD"])
     df["SNID"] = df["SNID"].astype(int).astype(str)
 
@@ -86,7 +85,12 @@ def load_lc_csv(filename, settings):
 def reformat_to_df(pred_probs, ids=None):
     """Reformat SNN predictions to a DataFrame
 
-    # TO DO: suppport nb_inference != 1
+    Args:
+        pred_probs (arr): probabilities array
+        ids (str, list): ids
+
+    Returns:
+        df (pd.DataFrame): reformatted predictions
     """
     num_inference_samples = 1
 
@@ -109,8 +113,11 @@ def reformat_to_df(pred_probs, ids=None):
 
 
 if __name__ == "__main__":
-    """Wrapper to get predictions on the fly with SNN"""
+    """Wrapper to get predictions on the fly with SNN
 
+    Raises:
+        ValueError: when model/data is not properly matched
+    """
     parser = argparse.ArgumentParser(
         description="Classification using pre-trained model"
     )
@@ -143,7 +150,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    # Load model configuration
     settings = get_settings(args.model_file)
+    # override model redshift_label to input data redshift
     settings.redshift_label = args.redshift_label
 
     # Input data
@@ -169,7 +178,7 @@ if __name__ == "__main__":
                     f"{args.filename}/Predictions_{Path(args.model_file).name}.csv"
                 )
             except Exception:
-                print(f"Provide a csv file or folder with csvs")
+                print("Provide a csv file or folder with csv")
                 raise ValueError
 
     # Obtain predictions for full light-curve
@@ -180,9 +189,12 @@ if __name__ == "__main__":
     # ________________________
     # Optional
     #
-    # reformat to df
+    # reformat and save
     preds_df = reformat_to_df(pred_probs, ids=ids_preds)
+    preds_df.to_csv(outname)
 
+    # get accuracy
+    # use types in training_log.json
     dic_types = {
         0: [10, 11, 12, 20, 21, 25, 26, 27, 30, 31, 32, 35, 36, 37],
         1: [40, 42, 45, 46, 59],
@@ -190,7 +202,6 @@ if __name__ == "__main__":
         3: [60],
         4: [80, 83, 90, 91],
     }
-
     try:
         preds_df = preds_df.merge(df[["SNID", "SNTYPE"]].drop_duplicates(), on="SNID")
         preds_df["target"] = preds_df["SNTYPE"].apply(
@@ -204,12 +215,14 @@ if __name__ == "__main__":
         )
         print(
             "Balanced accuracy",
-            metrics.balanced_accuracy_score(preds_df["target"], preds_df["pred_class"]),
+            round(
+                100
+                * metrics.balanced_accuracy_score(
+                    preds_df["target"], preds_df["pred_class"]
+                ),
+                2,
+            ),
         )
     except Exception:
         # silent error
         a = 0
-
-    preds_df.to_csv(outname)
-
-    print(preds_df)

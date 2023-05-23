@@ -6,6 +6,7 @@ from tqdm import tqdm
 from pathlib import Path
 from supernnova import conf
 from supernnova.utils import data_utils
+import supernnova.utils.logging_utils as lu
 from supernnova.conf import get_norm_from_model
 from supernnova.utils import experiment_settings
 from supernnova.utils import training_utils as tu
@@ -74,6 +75,28 @@ def format_data(df, settings):
         df (pandas.DataFrame): reformatted data
 
     """
+
+    # fill missing columns with zeros
+    # only if columns are not used for classification
+    host_features_model = [k for k in settings.all_features if "HOST" in k]
+    host_features_notindata = [k for k in host_features_model if k not in df.keys()]
+    if (
+        (len(host_features_notindata) > 0 and settings.redshift == "none")
+        or (
+            settings.redshift == "zspe"
+            and "HOSTGAL_SPECZ" not in host_features_notindata
+        )
+        or settings.redshift == "zpho"
+        and "HOSTGAL_PHOTOZ" not in host_features_notindata
+    ):
+        for hf in host_features_notindata:
+            df[hf] = np.zeros(len(df))
+    elif len(host_features_notindata) > 0:
+        lu.print_red(
+            f"Missing features needed for classification {host_features_notindata}"
+        )
+        raise ValueError
+
     # compute delta time
     df = data_utils.compute_delta_time(df)
     # fill dummies
@@ -86,7 +109,7 @@ def format_data(df, settings):
     # onehot
     # Fit a one hot encoder for FLT
     # to have the same onehot for all datasets
-    tmp = pd.Series(settings.list_filters_combination).append(df["FLT"])
+    tmp = pd.concat([pd.Series(settings.list_filters_combination), df["FLT"]])
     tmp_onehot = pd.get_dummies(tmp)
     # this is ok since it goes by length not by index (which I never reset)
     # beware: this requires index int!
@@ -168,10 +191,16 @@ def classify_lcs(df, model_file, device):
     # load model
     rnn = tu.get_model(settings, len(settings.training_features))
     rnn_state = torch.load(model_file, map_location=lambda storage, loc: storage)
-    rnn.load_state_dict(rnn_state)
+    try:
+        rnn.load_state_dict(rnn_state)
+    except Exception:
+        if len(settings.training_features) < len(settings.all_features):
+            lu.print_red("Model has less features than data (check model filters)")
+        else:
+            lu.print_red("Check correct model is chosen")
+        raise ValueError
     rnn.to(device)
     rnn.eval()
-
     # obtain predictions
     list_preds = []
     for iter_ in range(settings.num_inference_samples):
