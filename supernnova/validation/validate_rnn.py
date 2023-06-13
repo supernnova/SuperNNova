@@ -5,7 +5,7 @@ import pandas as pd
 from tqdm import tqdm
 from time import time
 from pathlib import Path
-
+from sklearn import metrics
 import torch
 import torch.nn as nn
 
@@ -350,6 +350,10 @@ def get_predictions(settings, model_file=None):
     preds = np.argmax(tmp[class_col].values, 1)
     acc = (preds == tmp.target.values).sum() / len(tmp)
     lu.print_green(f"Accuracy MC", acc)
+    lu.print_green(
+        f"Balanced Accuracy",
+        metrics.balanced_accuracy_score(tmp.target.values, preds),
+    )
 
     for OOD in ["random", "reverse", "shuffle", "sin"]:
         class_col_ood = [f"all_{OOD}_class{i}" for i in range(settings.nb_classes)]
@@ -372,6 +376,9 @@ def get_predictions(settings, model_file=None):
     preds = np.argmax(tmp[class_col].values, 1)
     acc = (preds == tmp.target.values).sum() / len(tmp)
     lu.print_green(f"Accuracy MFE", acc)
+    lu.print_green(
+        f"Balanced Accuracy", metrics.balanced_accuracy_score(tmp.target.values, preds)
+    )
 
     for OOD in ["random", "reverse", "shuffle", "sin"]:
         class_col_ood = [f"all_{OOD}_class{i}" for i in range(settings.nb_classes)]

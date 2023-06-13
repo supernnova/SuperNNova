@@ -70,7 +70,7 @@ def get_lr(settings):
 
         # Compute the smoothed loss
         avg_loss = beta * avg_loss + (1 - beta) * loss
-        smoothed_loss = avg_loss / (1 - beta ** batch_num)
+        smoothed_loss = avg_loss / (1 - beta**batch_num)
         # Stop if the loss is exploding
         if batch_num > 1 and smoothed_loss > 4 * best_loss:
             break
@@ -253,6 +253,7 @@ def train(settings):
 
     # Data
     list_data_train, list_data_val = tu.load_HDF5(settings, test=False)
+
     # Model specification
     rnn = tu.get_model(settings, len(settings.training_features))
     criterion = nn.CrossEntropyLoss()

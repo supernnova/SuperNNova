@@ -71,8 +71,7 @@ class ExperimentSettings:
             self.load_normalization()
 
     def get_randomforest_features(self):
-        """Specify list of features to be used for RandomForest training
-        """
+        """Specify list of features to be used for RandomForest training"""
 
         features = [
             "x1",
@@ -124,8 +123,7 @@ class ExperimentSettings:
             Path(path).mkdir(exist_ok=True, parents=True)
 
     def set_pytorch_model_name(self):
-        """Define the model name for all NN based classifiers
-        """
+        """Define the model name for all NN based classifiers"""
         name = f"{self.model}_S_{self.seed}_CLF_{self.nb_classes}"
         name += f"_R_{self.redshift}"
         name += f"_{self.source_data}_DF_{self.data_fraction}_N_{self.norm}"
@@ -163,8 +161,7 @@ class ExperimentSettings:
                 json.dump(d_tmp, f, indent=4, sort_keys=True)
 
     def set_randomforest_model_name(self):
-        """Define the model name for all RandomForest based classifiers
-        """
+        """Define the model name for all RandomForest based classifiers"""
 
         name = f"randomforest_S_{self.seed}_CLF_{self.nb_classes}"
         name += f"_R_{self.redshift}"
@@ -182,15 +179,13 @@ class ExperimentSettings:
         return name
 
     def check_data_exists(self):
-        """Utility to check the database has been built
-        """
+        """Utility to check the database has been built"""
 
         database_file = f"{self.processed_dir}/database.h5"
         assert os.path.isfile(database_file)
 
     def set_feature_lists(self):
-        """Utility to define the features used to train NN=based models
-        """
+        """Utility to define the features used to train NN=based models"""
 
         self.training_features_to_normalize = [
             f"FLUXCAL_{f}" for f in self.list_filters
@@ -223,6 +218,13 @@ class ExperimentSettings:
                 self.training_features = (
                     self.non_redshift_features + self.redshift_features
                 )
+
+                if self.additional_train_var:
+                    self.training_features += [
+                        k
+                        for k in self.additional_train_var
+                        if k not in self.training_features
+                    ]
 
     def set_database_file_names(self):
         """Create a unique database name based on the dataset required

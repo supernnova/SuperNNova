@@ -153,7 +153,6 @@ def fill_data_list(
         iterator = tqdm(idxs, desc=desc, ncols=100)
 
     for i in iterator:
-
         X_all = arr_data[i].reshape(-1, n_features)
         target = int(arr_target[i])
         lc = str(arr_SNID[i])
@@ -242,11 +241,15 @@ def load_HDF5(settings, test=False):
         n_features = hf["data"].attrs["n_features"]
         training_features_data = hf["features"][:].astype(str)
         training_features = settings.training_features
+
         # check if all model features are in db
         assert set(training_features) <= set(training_features_data)
         lu.print_green("Features used", " ".join(training_features))
 
-        settings.data_types_training = hf["data_types_training"][:].astype(str)
+        try:
+            settings.data_types_training = hf["data_types_training"][:].astype(str)
+        except Exception:
+            a = " "
 
         arr_data = hf["data"][:]
         if test:
