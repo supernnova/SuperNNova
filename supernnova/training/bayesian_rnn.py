@@ -5,7 +5,7 @@ import warnings
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+# from torch.nn.utils.rnn import pack_sequence, unpack_sequence
 
 # mean_field_inference: instead of sampling a weight as in W = N(mu, sigma)
 # we always set W = mu
@@ -305,8 +305,12 @@ class BayesRNNBase(nn.Module):
 
         is_packed = isinstance(input, nn.utils.rnn.PackedSequence)
         if is_packed:
-            input, batch_sizes = input
+            # input, batch_sizes = input
+            input, batch_sizes, s_indices, u_indices = input
+            print("type of input after unpack: ", type(input))
+            print("type of batch_size: ", type(batch_sizes))
             max_batch_size = int(batch_sizes[0])
+            print("max batch size: ", max_batch_size)
         else:
             batch_sizes = None
             max_batch_size = input.size(0) if self.batch_first else input.size(1)
