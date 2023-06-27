@@ -5,7 +5,6 @@ import warnings
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-# from torch.nn.utils.rnn import pack_sequence, unpack_sequence
 
 # mean_field_inference: instead of sampling a weight as in W = N(mu, sigma)
 # we always set W = mu
@@ -38,6 +37,7 @@ class BayesianRNN(nn.Module):
         )
 
         # Layers / nn objects
+        print("starting rnn layer ...")
         self.rnn_layer = BayesRNNBase(
             self.layer_type.upper(),
             input_size,
@@ -54,6 +54,8 @@ class BayesianRNN(nn.Module):
                 math.exp(self.prior.sigma_mix / settings.rho_scale_upper) - 1.0
             ),
         )
+        print("type of rnn layer: ", type(self.rnn_layer))
+        print("finish rnn layer...")
 
         self.output_layer = BayesLinear(
             last_input_size,
@@ -80,7 +82,6 @@ class BayesianRNN(nn.Module):
         # cn has dim (num_layers * num_directions, batch, hidden_size)
         # assuming num_directions = 1, num_layers = 2 :
         # hn[-1, -1] == out[len, -1] where len is the len of the seq at batch index == -1
-
         x, hidden = self.rnn_layer(x, mean_field_inference=mean_field_inference)
 
         # Output options
@@ -307,10 +308,10 @@ class BayesRNNBase(nn.Module):
         if is_packed:
             # input, batch_sizes = input
             input, batch_sizes, s_indices, u_indices = input
-            print("type of input after unpack: ", type(input))
-            print("type of batch_size: ", type(batch_sizes))
+            # print("type of input after unpack: ", type(input))
+            # print("type of batch_size: ", type(batch_sizes))
             max_batch_size = int(batch_sizes[0])
-            print("max batch size: ", max_batch_size)
+            # print("max batch size: ", max_batch_size)
         else:
             batch_sizes = None
             max_batch_size = input.size(0) if self.batch_first else input.size(1)
@@ -352,6 +353,18 @@ class BayesRNNBase(nn.Module):
             variable_length=is_packed,
             flat_weight=flat_weight,
         )
+
+        # print("mode: ", self.mode)
+        # print("input_size: ", self.input_size)
+        # print("hidden_size: ", self.hidden_size)
+        # print("num_layers: ", self.num_layers)
+        # print("batch_first: ", self.batch_first)
+        # print("dropout: ", self.dropout)
+        # print("train: ", self.training)
+        # print("bidrectional: ", self.bidirectional)
+        # print("dropout_state: ", self.dropout_state)
+        # print("variable_length: ", is_packed)
+        # print("flat_weight: ", flat_weight)
 
         # Format weights for BBB
         all_weights = []
