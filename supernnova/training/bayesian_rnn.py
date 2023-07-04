@@ -354,6 +354,17 @@ class BayesRNNBase(nn.Module):
             flat_weight=flat_weight,
         )
 
+        #### trail: whether the following function works
+        # func = torch.nn.RNN(
+        #     input_size=self.input_size,
+        #     hidden_size=self.hidden_size,
+        #     num_layers=self.num_layers,
+        #     batch_first=self.batch_first,
+        #     dropout=self.dropout,
+        #     bidirectional=self.bidirectional,
+        # )
+
+
         # print("mode: ", self.mode)
         # print("input_size: ", self.input_size)
         # print("hidden_size: ", self.hidden_size)
