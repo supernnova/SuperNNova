@@ -6,6 +6,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+import torch.nn.utils.rnn as rnn_utils
+
 # mean_field_inference: instead of sampling a weight as in W = N(mu, sigma)
 # we always set W = mu
 
@@ -83,7 +85,7 @@ class BayesianRNN(nn.Module):
         # assuming num_directions = 1, num_layers = 2 :
         # hn[-1, -1] == out[len, -1] where len is the len of the seq at batch index == -1
         x, hidden = self.rnn_layer(x, mean_field_inference=mean_field_inference)
-
+        print("rnn x: ", x.data.shape)
         # Output options
         # Standard: all layers, only end of pass
         #    - take last pass in all layers (hidden)
@@ -286,21 +288,21 @@ class BayesRNNBase(nn.Module):
             self.hidden_size,
         )
 
-        def check_hidden_size(
-            hx, expected_hidden_size, msg="Expected hidden size {}, got {}"
-        ):
-            if tuple(hx.size()) != expected_hidden_size:
-                raise RuntimeError(msg.format(expected_hidden_size, tuple(hx.size())))
+        # def check_hidden_size(
+        #     hx, expected_hidden_size, msg="Expected hidden size {}, got {}"
+        # ):
+        #     if tuple(hx.size()) != expected_hidden_size:
+        #         raise RuntimeError(msg.format(expected_hidden_size, tuple(hx.size())))
 
-        if self.mode == "LSTM":
-            check_hidden_size(
-                hidden[0], expected_hidden_size, "Expected hidden[0] size {}, got {}"
-            )
-            check_hidden_size(
-                hidden[1], expected_hidden_size, "Expected hidden[1] size {}, got {}"
-            )
-        else:
-            check_hidden_size(hidden, expected_hidden_size)
+        # if self.mode == "LSTM":
+        #     check_hidden_size(
+        #         hidden[0], expected_hidden_size, "Expected hidden[0] size {}, got {}"
+        #     )
+        #     check_hidden_size(
+        #         hidden[1], expected_hidden_size, "Expected hidden[1] size {}, got {}"
+        #     )
+        # else:
+        #     check_hidden_size(hidden, expected_hidden_size)
 
     def forward(self, input, hx=None, mean_field_inference=False):
 
@@ -308,22 +310,31 @@ class BayesRNNBase(nn.Module):
         if is_packed:
             # input, batch_sizes = input
             input, batch_sizes, s_indices, u_indices = input
-            # print("type of input after unpack: ", type(input))
-            # print("type of batch_size: ", type(batch_sizes))
+            # unpack sequence with padding
+            # batch_sizes = input.batch_sizes
+            # input, lengths = rnn_utils.pad_packed_sequence(input)
             max_batch_size = int(batch_sizes[0])
-            # print("max batch size: ", max_batch_size)
         else:
+            print("input is not packed")
             batch_sizes = None
             max_batch_size = input.size(0) if self.batch_first else input.size(1)
 
         if hx is None:
             num_directions = 2 if self.bidirectional else 1
-            hx = input.new_zeros(
-                self.num_layers * num_directions,
-                max_batch_size,
-                self.hidden_size,
-                requires_grad=False,
-            )
+            if is_packed:
+                hx = input.new_zeros(
+                    self.num_layers * num_directions,
+                    self.hidden_size,
+                    requires_grad=False,
+                )
+
+            else:
+                hx = input.new_zeros(
+                    self.num_layers * num_directions,
+                    max_batch_size,
+                    self.hidden_size,
+                    requires_grad=False,
+                )
             print("hx shape: ", hx.shape)
             if self.mode == "LSTM":
                 hx = (hx, hx)
@@ -364,8 +375,7 @@ class BayesRNNBase(nn.Module):
             dropout=self.dropout,
             bidirectional=self.bidirectional,
         )
-        print("batch first: ", self.batch_first)
-        print("lstm model: ", lstm_model)
+        
         # print("mode: ", self.mode)
         # print("input_size: ", self.input_size)
         # print("hidden_size: ", self.hidden_size)
