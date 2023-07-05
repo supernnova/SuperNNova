@@ -324,6 +324,7 @@ class BayesRNNBase(nn.Module):
                 self.hidden_size,
                 requires_grad=False,
             )
+            print("hx shape: ", hx.shape)
             if self.mode == "LSTM":
                 hx = (hx, hx)
 
@@ -340,31 +341,31 @@ class BayesRNNBase(nn.Module):
             flat_weight = None
 
         self.check_forward_args(input, hx, batch_sizes)
-        func = self._backend.RNN(
-            self.mode,
-            self.input_size,
-            self.hidden_size,
-            num_layers=self.num_layers,
-            batch_first=self.batch_first,
-            dropout=self.dropout,
-            train=self.training,
-            bidirectional=self.bidirectional,
-            dropout_state=self.dropout_state,
-            variable_length=is_packed,
-            flat_weight=flat_weight,
-        )
-
-        #### trail: whether the following function works
-        # func = torch.nn.RNN(
-        #     input_size=self.input_size,
-        #     hidden_size=self.hidden_size,
+        # func = self._backend.RNN(
+        #     self.mode,
+        #     self.input_size,
+        #     self.hidden_size,
         #     num_layers=self.num_layers,
         #     batch_first=self.batch_first,
         #     dropout=self.dropout,
+        #     train=self.training,
         #     bidirectional=self.bidirectional,
+        #     dropout_state=self.dropout_state,
+        #     variable_length=is_packed,
+        #     flat_weight=flat_weight,
         # )
 
-
+        #### trail: whether the following function works
+        lstm_model = torch.nn.LSTM(
+            input_size=self.input_size,
+            hidden_size=self.hidden_size,
+            num_layers=self.num_layers,
+            batch_first=self.batch_first,
+            dropout=self.dropout,
+            bidirectional=self.bidirectional,
+        )
+        print("batch first: ", self.batch_first)
+        print("lstm model: ", lstm_model)
         # print("mode: ", self.mode)
         # print("input_size: ", self.input_size)
         # print("hidden_size: ", self.hidden_size)
@@ -442,7 +443,9 @@ class BayesRNNBase(nn.Module):
 
                 all_weights.append(weights)
 
-        output, hidden = func(input, all_weights, hx, batch_sizes)
+        # output, hidden = func(input, all_weights, hx, batch_sizes)
+        print("input shape: ", input.shape)
+        output, hidden = lstm_model(input, hx)
         if is_packed:
             output = nn.utils.rnn.PackedSequence(output, batch_sizes)
 
