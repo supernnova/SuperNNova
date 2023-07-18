@@ -1,4 +1,4 @@
-# Modified code from pytorch package (v2.0.1) (https://github.com/pytorch/pytorch/tree/v2.0.1)
+# class BayesRNNBase and BayesLSTM are developed based on RNNBase and LSTM from pytorch package (v2.0.1) (https://github.com/pytorch/pytorch/tree/v2.0.1)
 # Source: https://github.com/pytorch/pytorch/blob/v2.0.1/torch/nn/modules/rnn.py
 
 import math
@@ -8,23 +8,20 @@ from typing import List, Tuple, Optional, overload
 
 import torch
 from torch import Tensor, _VF
-from torch.nn import Parameter
-import torch.nn as nn
+from torch.nn import Parameter, Module
+from torch.nn.utils.rnn import PackedSequence, pad_packed_sequence
+
 import torch.nn.functional as F
 
-import torch.nn.utils.rnn as rnn_utils
-from torch.nn.utils.rnn import PackedSequence
+
 
 # mean_field_inference: instead of sampling a weight as in W = N(mu, sigma)
 # we always set W = mu
 
-def _apply_permutation(tensor: Tensor, permutation: Tensor, dim: int = 1) -> Tensor:
-    return tensor.index_select(dim, permutation)
-
-class BayesianRNN(nn.Module):
+class BayesianRNN(Module):
 
     def __init__(self, input_size, settings):
-        super(BayesianRNN, self).__init__()
+        super().__init__()
 
         # Params
         self.layer_type = settings.layer_type
@@ -48,25 +45,27 @@ class BayesianRNN(nn.Module):
         )
 
         # Layers / nn objects
-        print("starting rnn layer ...")
-        self.rnn_layer = BayesRNNBase(
-            self.layer_type.upper(),
-            input_size,
-            self.hidden_size,
-            self.prior,
-            num_layers=self.num_layers,
-            bidirectional=self.bidirectional,
-            mu_lower=-0.05,
-            mu_upper=0.05,
-            rho_lower=math.log(
-                math.exp(self.prior.sigma_mix / settings.rho_scale_lower) - 1.0
-            ),
-            rho_upper=math.log(
-                math.exp(self.prior.sigma_mix / settings.rho_scale_upper) - 1.0
-            ),
-        )
-        print("type of rnn layer: ", type(self.rnn_layer))
-        print("finish rnn layer...")
+        if self.layer_type == "lstm":
+            print("starting rnn layer ...")
+            self.rnn_layer = BayesLSTM(
+                input_size,
+                self.hidden_size,
+                self.prior,
+                num_layers=self.num_layers,
+                bidirectional=self.bidirectional,
+                mu_lower=-0.05,
+                mu_upper=0.05,
+                rho_lower=math.log(
+                    math.exp(self.prior.sigma_mix / settings.rho_scale_lower) - 1.0
+                ),
+                rho_upper=math.log(
+                    math.exp(self.prior.sigma_mix / settings.rho_scale_upper) - 1.0
+                ),
+            )
+            print("type of rnn layer: ", type(self.rnn_layer))
+            print("finish rnn layer...")
+        else:
+            raise ValueError("Unregistered BayesRNN mode: {}".format(self.layer_type.upper()))
 
         self.output_layer = BayesLinear(
             last_input_size,
@@ -94,7 +93,6 @@ class BayesianRNN(nn.Module):
         # assuming num_directions = 1, num_layers = 2 :
         # hn[-1, -1] == out[len, -1] where len is the len of the seq at batch index == -1
         x, hidden = self.rnn_layer(x, mean_field_inference=mean_field_inference)
-        print("rnn x: ", x.data.shape)
         # Output options
         # Standard: all layers, only end of pass
         #    - take last pass in all layers (hidden)
@@ -105,7 +103,6 @@ class BayesianRNN(nn.Module):
         #    - find where padding was done and create a mask for those values, apply this mask
         #    - take a mean for the whole sequence (time_steps)
         #    - use h2o to obtain output (beware! it is only one layer deep since it is the last one only)
-
         if self.rnn_output_option == "standard":
             # Special case for lstm where hidden = (h, c)
             if self.layer_type == "lstm":
@@ -121,8 +118,8 @@ class BayesianRNN(nn.Module):
             # x is (batch, hidden size * num_layers * num_directions)
 
         if self.rnn_output_option == "mean":
-            if isinstance(x, torch.nn.utils.rnn.PackedSequence):
-                x, lens = torch.nn.utils.rnn.pad_packed_sequence(x)
+            if isinstance(x, PackedSequence):
+                x, lens = pad_packed_sequence(x)
                 # x is (seq_len, batch, hidden size)
 
                 # take mean over seq_len
@@ -140,26 +137,28 @@ class BayesianRNN(nn.Module):
 
         return output
 
+def _apply_permutation(tensor: Tensor, permutation: Tensor, dim: int = 1) -> Tensor:
+    return tensor.index_select(dim, permutation)
 
-class BayesRNNBase(nn.Module):
+class BayesRNNBase(Module):
 
     def __init__(
         self,
-        mode,
-        input_size,
-        hidden_size,
-        prior,
-        num_layers=1,
-        bias=True,
-        batch_first=False,
-        dropout=0,
-        bidirectional=False,
-        mu_lower=-0.05,
-        mu_upper=0.05,
-        rho_lower=-1,
-        rho_upper=-4,
+        mode: str,
+        input_size: int,
+        hidden_size: int,
+        prior: object,
+        num_layers: int = 1,
+        bias: bool = True,
+        batch_first: bool = False,
+        dropout: float = 0,
+        bidirectional: bool = False,
+        mu_lower = -0.05,
+        mu_upper = 0.05,
+        rho_lower = -1,
+        rho_upper = -4,
     ):
-        super(BayesRNNBase, self).__init__()
+        super().__init__()
         self.mode = mode
         self.input_size = input_size
         self.hidden_size = hidden_size
@@ -197,7 +196,8 @@ class BayesRNNBase(nn.Module):
         else:
             gate_size = hidden_size
 
-        # self._all_weights = []
+        self._flat_weights_names = []
+        self._all_weights = []
         for layer in range(num_layers):
             for direction in range(num_directions):
                 layer_input_size = (
@@ -211,6 +211,7 @@ class BayesRNNBase(nn.Module):
                     rho_lower,
                     rho_upper,
                 )
+                
                 w_hh_mu, w_hh_rho = get_bbb_variable(
                     (gate_size, hidden_size), mu_lower, mu_upper, rho_lower, rho_upper
                 )
@@ -252,12 +253,13 @@ class BayesRNNBase(nn.Module):
 
                 for name, param in zip(param_names, layer_params):
                     setattr(self, name, param)
-                # self._all_weights.append(param_names)
+                self._flat_weights_names.extend(param_names)
+                self._all_weights.append(param_names)
 
         self.flatten_parameters()
         self.kl = None
 
-    def flatten_parameters(self):
+    def flatten_parameters(self) -> None:
         """Resets parameter data pointer so that they can use faster code paths.
         """
         self._data_ptrs = []
@@ -269,68 +271,99 @@ class BayesRNNBase(nn.Module):
         self.flatten_parameters()
         return ret
 
-    def check_forward_args(self, input, hidden, batch_sizes):
-        is_input_packed = batch_sizes is not None
-        expected_input_dim = 2 if is_input_packed else 3
+    def check_input(self, input: Tensor, batch_sizes: Optional[Tensor]) -> None:
+        expected_input_dim = 2 if batch_sizes is not None else 3
         if input.dim() != expected_input_dim:
             raise RuntimeError(
-                "input must have {} dimensions, got {}".format(
-                    expected_input_dim, input.dim()
-                )
-            )
+                'input must have {} dimensions, got {}'.format(
+                    expected_input_dim, input.dim()))
         if self.input_size != input.size(-1):
             raise RuntimeError(
-                "input.size(-1) must be equal to input_size. Expected {}, got {}".format(
-                    self.input_size, input.size(-1)
-                )
-            )
-
-        if is_input_packed:
+                'input.size(-1) must be equal to input_size. Expected {}, got {}'.format(
+                    self.input_size, input.size(-1)))
+    
+    def get_expected_hidden_size(self, input: Tensor, batch_sizes: Optional[Tensor]) -> Tuple[int, int, int]:
+        if batch_sizes is not None:
             mini_batch = int(batch_sizes[0])
         else:
             mini_batch = input.size(0) if self.batch_first else input.size(1)
-
         num_directions = 2 if self.bidirectional else 1
-        expected_hidden_size = (
-            self.num_layers * num_directions,
-            mini_batch,
-            self.hidden_size,
-        )
+       
+        expected_hidden_size = (self.num_layers * num_directions,
+                                mini_batch, self.hidden_size)
+    
+        return expected_hidden_size
+    
+    def check_hidden_size(self, hx: Tensor, expected_hidden_size: Tuple[int, int, int],
+                          msg: str = 'Expected hidden size {}, got {}') -> None:
+        if hx.size() != expected_hidden_size:
+            raise RuntimeError(msg.format(expected_hidden_size, list(hx.size())))
+        
+    def check_forward_args(self, input: Tensor, hidden: Tensor, batch_sizes: Optional[Tensor]):
+        self.check_input(input, batch_sizes)
+        expected_hidden_size = self.get_expected_hidden_size(input, batch_sizes)
 
-        # def check_hidden_size(
-        #     hx, expected_hidden_size, msg="Expected hidden size {}, got {}"
-        # ):
-        #     if tuple(hx.size()) != expected_hidden_size:
-        #         raise RuntimeError(msg.format(expected_hidden_size, tuple(hx.size())))
+        self.check_hidden_size(hidden, expected_hidden_size)
 
-        # if self.mode == "LSTM":
-        #     check_hidden_size(
-        #         hidden[0], expected_hidden_size, "Expected hidden[0] size {}, got {}"
-        #     )
-        #     check_hidden_size(
-        #         hidden[1], expected_hidden_size, "Expected hidden[1] size {}, got {}"
-        #     )
-        # else:
-        #     check_hidden_size(hidden, expected_hidden_size)
+    def permute_hidden(self, hx: Tensor, permutation: Optional[Tensor]):
+        if permutation is None:
+            return hx
+        return _apply_permutation(hx, permutation)
+    
+    def extra_repr(self) -> str:
+        s = "{input_size}, {hidden_size}"
+        if self.num_layers != 1:
+            s += ", num_layers={num_layers}"
+        if self.bias is not True:
+            s += ", bias={bias}"
+        if self.batch_first is not False:
+            s += ", batch_first={batch_first}"
+        if self.dropout != 0:
+            s += ", dropout={dropout}"
+        if self.bidirectional is not False:
+            s += ", bidirectional={bidirectional}"
+        return s.format(**self.__dict__)
 
-    # Same as above, see torch/nn/modules/module.py::_forward_unimplemented
+
+class BayesLSTM(BayesRNNBase):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__("LSTM", *args, **kwargs)
+
+    def get_expected_cell_size(self, input: Tensor, batch_sizes: Optional[Tensor]) -> Tuple[int, int, int]:
+        if batch_sizes is not None:
+            mini_batch = int(batch_sizes[0])
+        else:
+            mini_batch = input.size(0) if self.batch_first else input.size(1)
+        num_directions = 2 if self.bidirectional else 1
+        expected_hidden_size = (self.num_layers * num_directions,
+                                mini_batch, self.hidden_size)
+        return expected_hidden_size
+
+    def check_forward_args(self,  # type: ignore[override]
+                        input: Tensor,
+                        hidden: Tuple[Tensor, Tensor],
+                        batch_sizes: Optional[Tensor],
+                        ):
+        self.check_input(input, batch_sizes)
+        self.check_hidden_size(hidden[0], self.get_expected_hidden_size(input, batch_sizes),
+                                'Expected hidden[0] size {}, got {}')
+        self.check_hidden_size(hidden[1], self.get_expected_cell_size(input, batch_sizes),
+                                'Expected hidden[1] size {}, got {}')
+        
+    
     def permute_hidden(self,  # type: ignore[override]
-                        hx: Tuple[Tensor, Tensor],
-                        permutation: Optional[Tensor]
-                        ) -> Tuple[Tensor, Tensor]:
+                    hx: Tuple[Tensor, Tensor],
+                    permutation: Optional[Tensor]
+                    ) -> Tuple[Tensor, Tensor]:
         if permutation is None:
             return hx
         return _apply_permutation(hx[0], permutation), _apply_permutation(hx[1], permutation)
-
+    
     def forward(self, input, hx=None, mean_field_inference=False):
-        
-        batch_sizes = None
         is_packed = isinstance(input, PackedSequence)
         if is_packed:
             input, batch_sizes, sorted_indices, unsorted_indices = input
-            # unpack sequence with padding
-            # batch_sizes = input.batch_sizes
-            # input, lengths = rnn_utils.pad_packed_sequence(input)
             max_batch_size = batch_sizes[0]
             max_batch_size = int(max_batch_size)
         else:
@@ -344,34 +377,14 @@ class BayesRNNBase(nn.Module):
             sorted_indices = None
             unsorted_indices = None
 
-            # max_batch_size = input.size(0) if self.batch_first else input.size(1)
-
         if hx is None:
             num_directions = 2 if self.bidirectional else 1
-            # if is_packed:
-            #     hx = input.new_zeros(
-            #         self.num_layers * num_directions,
-            #         self.hidden_size,
-            #         requires_grad=False,
-            #     )
-
-            # else:
-            #     hx = input.new_zeros(
-            #         self.num_layers * num_directions,
-            #         max_batch_size,
-            #         self.hidden_size,
-            #         requires_grad=False,
-            #     )
-            # print("hx shape: ", hx.shape)
-            # real_hidden_size = self.proj_size if self.proj_size > 0 else self.hidden_size
-            # h_zeros = torch.zeros(self.num_layers * num_directions,
-            #                     max_batch_size, real_hidden_size,
-            #                     dtype=input.dtype, device=input.device)
+    
             hx = torch.zeros(self.num_layers * num_directions,
                                 max_batch_size, self.hidden_size,
                                 dtype=input.dtype, device=input.device)
-            if self.mode == "LSTM":
-                hx = (hx, hx)
+            
+            hx = (hx, hx)
 
         else:
             if batch_sizes is None:  # If not PackedSequence input.
@@ -405,18 +418,6 @@ class BayesRNNBase(nn.Module):
 
         self.check_forward_args(input, hx, batch_sizes)
 
-       
-        #### trail: whether the following function works
-        # lstm_model = torch.nn.LSTM(
-        #     input_size=self.input_size,
-        #     hidden_size=self.hidden_size,
-        #     num_layers=self.num_layers,
-        #     batch_first=self.batch_first,
-        #     dropout=self.dropout,
-        #     bidirectional=self.bidirectional,
-        # )
-        
-
         # Format weights for BBB
         all_weights = []
         num_layers = self.num_layers
@@ -431,30 +432,17 @@ class BayesRNNBase(nn.Module):
 
                 w_ih_mean = getattr(self, f"weight_ih_mu_l{layer_idx}{suffix}")
                 w_ih_rho = getattr(self, f"weight_ih_rho_l{layer_idx}{suffix}")
-                w_ih_sigma = torch.nn.functional.softplus(w_ih_rho) + 1e-5
+                w_ih_sigma = F.softplus(w_ih_rho) + 1e-5
 
                 w_hh_mean = getattr(self, f"weight_hh_mu_l{layer_idx}{suffix}")
                 w_hh_rho = getattr(self, f"weight_hh_rho_l{layer_idx}{suffix}")
-                w_hh_sigma = torch.nn.functional.softplus(w_hh_rho) + 1e-5
-
-                b_ih_mean = getattr(self, f"bias_ih_mu_l{layer_idx}{suffix}")
-                b_ih_rho = getattr(self, f"bias_ih_rho_l{layer_idx}{suffix}")
-                b_ih_sigma = torch.nn.functional.softplus(b_ih_rho) + 1e-5
-
-                b_hh_mean = getattr(self, f"bias_hh_mu_l{layer_idx}{suffix}")
-                b_hh_rho = getattr(self, f"bias_hh_rho_l{layer_idx}{suffix}")
-                b_hh_sigma = torch.nn.functional.softplus(b_hh_rho) + 1e-5
+                w_hh_sigma = F.softplus(w_hh_rho) + 1e-5
 
                 if mean_field_inference:
                     weight_ih = w_ih_mean
                     weight_hh = w_hh_mean
-                    all_weights.extend([weight_ih, weight_hh])
-                    if self.bias:
-                        bias_ih = b_ih_mean
-                        bias_hh = b_hh_mean
-                        all_weights.extend([bias_ih, bias_hh])
+                
                 else:
-
                     # Sample weights from normal distribution
                     eps_ih = w_ih_mean.data.new(w_ih_mean.size()).normal_(0.0, 1.0)
                     weight_ih = w_ih_mean + eps_ih * w_ih_sigma
@@ -462,40 +450,37 @@ class BayesRNNBase(nn.Module):
                     eps_hh = w_hh_mean.data.new(w_hh_mean.size()).normal_(0.0, 1.0)
                     weight_hh = w_hh_mean + eps_hh * w_hh_sigma
 
-                    all_weights.extend([weight_ih, weight_hh])
+                all_weights.extend([weight_ih, weight_hh])
 
-                    if self.bias:
+                # Compute KL divergence
+                self.kl += compute_KL(weight_ih, w_ih_mean, w_ih_sigma, self.prior)
+                self.kl += compute_KL(weight_hh, w_hh_mean, w_hh_sigma, self.prior)
 
+                if self.bias:
+
+                    b_ih_mean = getattr(self, f"bias_ih_mu_l{layer_idx}{suffix}")
+                    b_ih_rho = getattr(self, f"bias_ih_rho_l{layer_idx}{suffix}")
+                    b_ih_sigma = F.softplus(b_ih_rho) + 1e-5
+
+                    b_hh_mean = getattr(self, f"bias_hh_mu_l{layer_idx}{suffix}")
+                    b_hh_rho = getattr(self, f"bias_hh_rho_l{layer_idx}{suffix}")
+                    b_hh_sigma = F.softplus(b_hh_rho) + 1e-5
+
+                    if mean_field_inference:
+                        bias_ih = b_ih_mean
+                        bias_hh = b_hh_mean
+               
+                    else:
                         eps_ih = b_ih_mean.data.new(b_ih_mean.size()).normal_(0.0, 1.0)
                         bias_ih = b_ih_mean + eps_ih * b_ih_sigma
 
                         eps_hh = b_hh_mean.data.new(b_hh_mean.size()).normal_(0.0, 1.0)
                         bias_hh = b_hh_mean + eps_hh * b_hh_sigma
 
-                        all_weights.extend([bias_ih, bias_hh])
+                    all_weights.extend([bias_ih, bias_hh])
                 
-
-                # Compute KL divergence
-                self.kl += compute_KL(weight_ih, w_ih_mean, w_ih_sigma, self.prior)
-                self.kl += compute_KL(weight_hh, w_hh_mean, w_hh_sigma, self.prior)
-
-                # weights = [weight_ih, weight_hh]
-
-                # Get biases
-                if self.bias:
-
-                    # eps_ih = b_ih_mean.data.new(b_ih_mean.size()).normal_(0.0, 1.0)
-                    # bias_ih = b_ih_mean + eps_ih * b_ih_sigma
-
-                    # eps_hh = b_hh_mean.data.new(b_hh_mean.size()).normal_(0.0, 1.0)
-                    # bias_hh = b_hh_mean + eps_hh * b_hh_sigma
-
                     self.kl += compute_KL(bias_ih, b_ih_mean, b_ih_sigma, self.prior)
                     self.kl += compute_KL(bias_hh, b_hh_mean, b_hh_sigma, self.prior)
-
-                    # weights += [bias_ih, bias_hh]
-
-                # all_weights.append(weights)
 
         if batch_sizes is None:
             result = _VF.lstm(input, hx, all_weights, self.bias, self.num_layers,
@@ -514,46 +499,20 @@ class BayesRNNBase(nn.Module):
                 output = output.squeeze(batch_dim)
                 hidden = (hidden[0].squeeze(1), hidden[1].squeeze(1))
             return output, self.permute_hidden(hidden, unsorted_indices)
-       
-        # # output, hidden = lstm_model(input, hx)
-        # if is_packed:
-        #     output = nn.utils.rnn.PackedSequence(output, batch_sizes)
-
-        # return output, hidden
-
-    def extra_repr(self):
-        s = "{input_size}, {hidden_size}"
-        if self.num_layers != 1:
-            s += ", num_layers={num_layers}"
-        if self.bias is not True:
-            s += ", bias={bias}"
-        if self.batch_first is not False:
-            s += ", batch_first={batch_first}"
-        if self.dropout != 0:
-            s += ", dropout={dropout}"
-        if self.bidirectional is not False:
-            s += ", bidirectional={bidirectional}"
-        return s.format(**self.__dict__)
-
-
-class BayesLSTM(BayesRNNBase):
-
-    def __init__(self, *args, **kwargs):
-        super(BayesLSTM, self).__init__("LSTM", *args, **kwargs)
 
 
 class BayesGRU(BayesRNNBase):
 
     def __init__(self, *args, **kwargs):
-        super(BayesGRU, self).__init__("GRU", *args, **kwargs)
+        super().__init__("GRU", *args, **kwargs)
 
 
-class BayesLinear(nn.Module):
+class BayesLinear(Module):
 
     def __init__(
         self, in_features, out_features, prior, mu_lower, mu_upper, rho_lower, rho_upper
     ):
-        super(BayesLinear, self).__init__()
+        super().__init__()
         self.in_features = in_features
         self.out_features = out_features
         self.prior = prior
@@ -562,7 +521,7 @@ class BayesLinear(nn.Module):
             (out_features, in_features), mu_lower, mu_upper, rho_lower, rho_upper
         )
 
-        bias = nn.Parameter(torch.Tensor(out_features))
+        bias = Parameter(torch.Tensor(out_features))
         bias.data.fill_(0.0)
 
         self.mu = mu
@@ -604,12 +563,12 @@ class BayesLinear(nn.Module):
         )
 
 
-class BayesBiasLinear(nn.Module):
+class BayesBiasLinear(Module):
 
     def __init__(
         self, in_features, out_features, prior, mu_lower, mu_upper, rho_lower, rho_upper
     ):
-        super(BayesBiasLinear, self).__init__()
+        super().__init__()
         self.in_features = in_features
         self.out_features = out_features
         self.prior = prior
@@ -653,7 +612,7 @@ class BayesBiasLinear(nn.Module):
         return logits
 
 
-class BayesEmbedding(nn.Module):
+class BayesEmbedding(Module):
 
     def __init__(
         self,
@@ -665,7 +624,7 @@ class BayesEmbedding(nn.Module):
         rho_lower,
         rho_upper,
     ):
-        super(BayesEmbedding, self).__init__()
+        super().__init__()
 
         self.num_embeddings = num_embeddings
         self.embedding_dim = embedding_dim
@@ -746,8 +705,8 @@ class Prior(object):
 
 def get_bbb_variable(shape, mu_lower, mu_upper, rho_lower, rho_upper):
 
-    mu = nn.Parameter(torch.Tensor(*shape))
-    rho = nn.Parameter(torch.Tensor(*shape))
+    mu = Parameter(torch.Tensor(*shape))
+    rho = Parameter(torch.Tensor(*shape))
 
     # Initialize
     mu.data.uniform_(mu_lower, mu_upper)
