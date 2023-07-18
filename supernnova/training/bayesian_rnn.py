@@ -1,16 +1,25 @@
+# Modified code from pytorch package (v2.0.1) (https://github.com/pytorch/pytorch/tree/v2.0.1)
+# Source: https://github.com/pytorch/pytorch/blob/v2.0.1/torch/nn/modules/rnn.py
+
 import math
 import numbers
 import warnings
+from typing import List, Tuple, Optional, overload
 
 import torch
+from torch import Tensor, _VF
+from torch.nn import Parameter
 import torch.nn as nn
 import torch.nn.functional as F
 
 import torch.nn.utils.rnn as rnn_utils
+from torch.nn.utils.rnn import PackedSequence
 
 # mean_field_inference: instead of sampling a weight as in W = N(mu, sigma)
 # we always set W = mu
 
+def _apply_permutation(tensor: Tensor, permutation: Tensor, dim: int = 1) -> Tensor:
+    return tensor.index_select(dim, permutation)
 
 class BayesianRNN(nn.Module):
 
@@ -304,40 +313,83 @@ class BayesRNNBase(nn.Module):
         # else:
         #     check_hidden_size(hidden, expected_hidden_size)
 
-    def forward(self, input, hx=None, mean_field_inference=False):
+    # Same as above, see torch/nn/modules/module.py::_forward_unimplemented
+    def permute_hidden(self,  # type: ignore[override]
+                        hx: Tuple[Tensor, Tensor],
+                        permutation: Optional[Tensor]
+                        ) -> Tuple[Tensor, Tensor]:
+        if permutation is None:
+            return hx
+        return _apply_permutation(hx[0], permutation), _apply_permutation(hx[1], permutation)
 
-        is_packed = isinstance(input, nn.utils.rnn.PackedSequence)
+    def forward(self, input, hx=None, mean_field_inference=False):
+        
+        batch_sizes = None
+        is_packed = isinstance(input, PackedSequence)
         if is_packed:
-            # input, batch_sizes = input
-            input, batch_sizes, s_indices, u_indices = input
+            input, batch_sizes, sorted_indices, unsorted_indices = input
             # unpack sequence with padding
             # batch_sizes = input.batch_sizes
             # input, lengths = rnn_utils.pad_packed_sequence(input)
-            max_batch_size = int(batch_sizes[0])
+            max_batch_size = batch_sizes[0]
+            max_batch_size = int(max_batch_size)
         else:
-            print("input is not packed")
             batch_sizes = None
+            assert (input.dim() in (2, 3)), f"LSTM: Expected input to be 2-D or 3-D but received {input.dim()}-D tensor"
+            is_batched = input.dim() == 3
+            batch_dim = 0 if self.batch_first else 1
+            if not is_batched:
+                input = input.unsqueeze(batch_dim)
             max_batch_size = input.size(0) if self.batch_first else input.size(1)
+            sorted_indices = None
+            unsorted_indices = None
+
+            # max_batch_size = input.size(0) if self.batch_first else input.size(1)
 
         if hx is None:
             num_directions = 2 if self.bidirectional else 1
-            if is_packed:
-                hx = input.new_zeros(
-                    self.num_layers * num_directions,
-                    self.hidden_size,
-                    requires_grad=False,
-                )
+            # if is_packed:
+            #     hx = input.new_zeros(
+            #         self.num_layers * num_directions,
+            #         self.hidden_size,
+            #         requires_grad=False,
+            #     )
 
-            else:
-                hx = input.new_zeros(
-                    self.num_layers * num_directions,
-                    max_batch_size,
-                    self.hidden_size,
-                    requires_grad=False,
-                )
-            print("hx shape: ", hx.shape)
+            # else:
+            #     hx = input.new_zeros(
+            #         self.num_layers * num_directions,
+            #         max_batch_size,
+            #         self.hidden_size,
+            #         requires_grad=False,
+            #     )
+            # print("hx shape: ", hx.shape)
+            # real_hidden_size = self.proj_size if self.proj_size > 0 else self.hidden_size
+            # h_zeros = torch.zeros(self.num_layers * num_directions,
+            #                     max_batch_size, real_hidden_size,
+            #                     dtype=input.dtype, device=input.device)
+            hx = torch.zeros(self.num_layers * num_directions,
+                                max_batch_size, self.hidden_size,
+                                dtype=input.dtype, device=input.device)
             if self.mode == "LSTM":
                 hx = (hx, hx)
+
+        else:
+            if batch_sizes is None:  # If not PackedSequence input.
+                if is_batched:
+                    if (hx[0].dim() != 3 or hx[1].dim() != 3):
+                        msg = ("For batched 3-D input, hx and cx should "
+                                f"also be 3-D but got ({hx[0].dim()}-D, {hx[1].dim()}-D) tensors")
+                        raise RuntimeError(msg)
+                else:
+                    if hx[0].dim() != 2 or hx[1].dim() != 2:
+                        msg = ("For unbatched 2-D input, hx and cx should "
+                                f"also be 2-D but got ({hx[0].dim()}-D, {hx[1].dim()}-D) tensors")
+                        raise RuntimeError(msg)
+                    hx = (hx[0].unsqueeze(1), hx[1].unsqueeze(1))
+
+            # Each batch of the hidden state should match the input sequence that
+            # the user believes he/she is passing in.
+            hx = self.permute_hidden(hx, sorted_indices)
 
         has_flat_weights = (
             list(p.data.data_ptr() for p in self.parameters()) == self._data_ptrs
@@ -352,41 +404,18 @@ class BayesRNNBase(nn.Module):
             flat_weight = None
 
         self.check_forward_args(input, hx, batch_sizes)
-        # func = self._backend.RNN(
-        #     self.mode,
-        #     self.input_size,
-        #     self.hidden_size,
+
+       
+        #### trail: whether the following function works
+        # lstm_model = torch.nn.LSTM(
+        #     input_size=self.input_size,
+        #     hidden_size=self.hidden_size,
         #     num_layers=self.num_layers,
         #     batch_first=self.batch_first,
         #     dropout=self.dropout,
-        #     train=self.training,
         #     bidirectional=self.bidirectional,
-        #     dropout_state=self.dropout_state,
-        #     variable_length=is_packed,
-        #     flat_weight=flat_weight,
         # )
-
-        #### trail: whether the following function works
-        lstm_model = torch.nn.LSTM(
-            input_size=self.input_size,
-            hidden_size=self.hidden_size,
-            num_layers=self.num_layers,
-            batch_first=self.batch_first,
-            dropout=self.dropout,
-            bidirectional=self.bidirectional,
-        )
         
-        # print("mode: ", self.mode)
-        # print("input_size: ", self.input_size)
-        # print("hidden_size: ", self.hidden_size)
-        # print("num_layers: ", self.num_layers)
-        # print("batch_first: ", self.batch_first)
-        # print("dropout: ", self.dropout)
-        # print("train: ", self.training)
-        # print("bidrectional: ", self.bidirectional)
-        # print("dropout_state: ", self.dropout_state)
-        # print("variable_length: ", is_packed)
-        # print("flat_weight: ", flat_weight)
 
         # Format weights for BBB
         all_weights = []
@@ -419,9 +448,11 @@ class BayesRNNBase(nn.Module):
                 if mean_field_inference:
                     weight_ih = w_ih_mean
                     weight_hh = w_hh_mean
+                    all_weights.extend([weight_ih, weight_hh])
                     if self.bias:
                         bias_ih = b_ih_mean
                         bias_hh = b_hh_mean
+                        all_weights.extend([bias_ih, bias_hh])
                 else:
 
                     # Sample weights from normal distribution
@@ -431,35 +462,64 @@ class BayesRNNBase(nn.Module):
                     eps_hh = w_hh_mean.data.new(w_hh_mean.size()).normal_(0.0, 1.0)
                     weight_hh = w_hh_mean + eps_hh * w_hh_sigma
 
+                    all_weights.extend([weight_ih, weight_hh])
+
+                    if self.bias:
+
+                        eps_ih = b_ih_mean.data.new(b_ih_mean.size()).normal_(0.0, 1.0)
+                        bias_ih = b_ih_mean + eps_ih * b_ih_sigma
+
+                        eps_hh = b_hh_mean.data.new(b_hh_mean.size()).normal_(0.0, 1.0)
+                        bias_hh = b_hh_mean + eps_hh * b_hh_sigma
+
+                        all_weights.extend([bias_ih, bias_hh])
+                
+
                 # Compute KL divergence
                 self.kl += compute_KL(weight_ih, w_ih_mean, w_ih_sigma, self.prior)
                 self.kl += compute_KL(weight_hh, w_hh_mean, w_hh_sigma, self.prior)
 
-                weights = [weight_ih, weight_hh]
+                # weights = [weight_ih, weight_hh]
 
                 # Get biases
                 if self.bias:
 
-                    eps_ih = b_ih_mean.data.new(b_ih_mean.size()).normal_(0.0, 1.0)
-                    bias_ih = b_ih_mean + eps_ih * b_ih_sigma
+                    # eps_ih = b_ih_mean.data.new(b_ih_mean.size()).normal_(0.0, 1.0)
+                    # bias_ih = b_ih_mean + eps_ih * b_ih_sigma
 
-                    eps_hh = b_hh_mean.data.new(b_hh_mean.size()).normal_(0.0, 1.0)
-                    bias_hh = b_hh_mean + eps_hh * b_hh_sigma
+                    # eps_hh = b_hh_mean.data.new(b_hh_mean.size()).normal_(0.0, 1.0)
+                    # bias_hh = b_hh_mean + eps_hh * b_hh_sigma
 
                     self.kl += compute_KL(bias_ih, b_ih_mean, b_ih_sigma, self.prior)
                     self.kl += compute_KL(bias_hh, b_hh_mean, b_hh_sigma, self.prior)
 
-                    weights += [bias_ih, bias_hh]
+                    # weights += [bias_ih, bias_hh]
 
-                all_weights.append(weights)
+                # all_weights.append(weights)
 
-        # output, hidden = func(input, all_weights, hx, batch_sizes)
-        print("input shape: ", input.shape)
-        output, hidden = lstm_model(input, hx)
+        if batch_sizes is None:
+            result = _VF.lstm(input, hx, all_weights, self.bias, self.num_layers,
+                            self.dropout, self.training, self.bidirectional, self.batch_first)
+        else:
+            result = _VF.lstm(input, batch_sizes, hx, all_weights, self.bias,
+                            self.num_layers, self.dropout, self.training, self.bidirectional)
+        output = result[0]
+        hidden = result[1:]
+
         if is_packed:
-            output = nn.utils.rnn.PackedSequence(output, batch_sizes)
+            output_packed = PackedSequence(output, batch_sizes, sorted_indices, unsorted_indices)
+            return output_packed, self.permute_hidden(hidden, unsorted_indices)
+        else:
+            if not is_batched:
+                output = output.squeeze(batch_dim)
+                hidden = (hidden[0].squeeze(1), hidden[1].squeeze(1))
+            return output, self.permute_hidden(hidden, unsorted_indices)
+       
+        # # output, hidden = lstm_model(input, hx)
+        # if is_packed:
+        #     output = nn.utils.rnn.PackedSequence(output, batch_sizes)
 
-        return output, hidden
+        # return output, hidden
 
     def extra_repr(self):
         s = "{input_size}, {hidden_size}"
