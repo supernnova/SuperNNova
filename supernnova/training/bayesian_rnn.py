@@ -395,36 +395,37 @@ class BayesLSTM(BayesRNNBase):
             
             hx = (hx, hx)
 
-        else:
-            if batch_sizes is None:  # If not PackedSequence input.
-                if is_batched:
-                    if (hx[0].dim() != 3 or hx[1].dim() != 3):
-                        msg = ("For batched 3-D input, hx and cx should "
-                                f"also be 3-D but got ({hx[0].dim()}-D, {hx[1].dim()}-D) tensors")
-                        raise RuntimeError(msg)
-                else:
-                    if hx[0].dim() != 2 or hx[1].dim() != 2:
-                        msg = ("For unbatched 2-D input, hx and cx should "
-                                f"also be 2-D but got ({hx[0].dim()}-D, {hx[1].dim()}-D) tensors")
-                        raise RuntimeError(msg)
-                    hx = (hx[0].unsqueeze(1), hx[1].unsqueeze(1))
+        # else:
+        #     if batch_sizes is None:  # If not PackedSequence input.
+        #         if is_batched:
+        #             if (hx[0].dim() != 3 or hx[1].dim() != 3):
+        #                 msg = ("For batched 3-D input, hx and cx should "
+        #                         f"also be 3-D but got ({hx[0].dim()}-D, {hx[1].dim()}-D) tensors")
+        #                 raise RuntimeError(msg)
+        #         else:
+        #             if hx[0].dim() != 2 or hx[1].dim() != 2:
+        #                 msg = ("For unbatched 2-D input, hx and cx should "
+        #                         f"also be 2-D but got ({hx[0].dim()}-D, {hx[1].dim()}-D) tensors")
+        #                 raise RuntimeError(msg)
+        #             hx = (hx[0].unsqueeze(1), hx[1].unsqueeze(1))
 
-            # Each batch of the hidden state should match the input sequence that
-            # the user believes he/she is passing in.
-            hx = self.permute_hidden(hx, sorted_indices)
+            # # Each batch of the hidden state should match the input sequence that
+            # # the user believes he/she is passing in.
+            # hx = self.permute_hidden(hx, sorted_indices)
 
-        has_flat_weights = (
-            list(p.data.data_ptr() for p in self.parameters()) == self._data_ptrs
-        )
-        if has_flat_weights:
-            first_data = next(self.parameters()).data
-            assert first_data.storage().size() == self._param_buf_size
-            flat_weight = first_data.new().set_(
-                first_data.storage(), 0, torch.Size([self._param_buf_size])
-            )
-        else:
-            flat_weight = None
-
+        # todo: memory usage efficiency
+        # has_flat_weights = (
+        #     list(p.data.data_ptr() for p in self.parameters()) == self._data_ptrs
+        # )
+        # if has_flat_weights:
+        #     first_data = next(self.parameters()).data
+        #     assert first_data.storage().size() == self._param_buf_size
+        #     flat_weight = first_data.new().set_(
+        #         first_data.storage(), 0, torch.Size([self._param_buf_size])
+        #     )
+        # else:
+        #     flat_weight = None
+       
         self.check_forward_args(input, hx, batch_sizes)
 
         # Format weights for BBB
