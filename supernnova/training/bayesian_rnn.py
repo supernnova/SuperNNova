@@ -223,16 +223,25 @@ class BayesRNNBase(Module):
                     (gate_size,), mu_lower, mu_upper, rho_lower, rho_upper
                 )
 
-                layer_params = (
-                    w_ih_mu,
-                    w_ih_rho,
-                    w_hh_mu,
-                    w_hh_rho,
-                    b_ih_mu,
-                    b_ih_rho,
-                    b_hh_mu,
-                    b_hh_rho,
-                )
+                if bias:
+                    layer_params = (
+                        w_ih_mu,
+                        w_ih_rho,
+                        w_hh_mu,
+                        w_hh_rho,
+                        b_ih_mu,
+                        b_ih_rho,
+                        b_hh_mu,
+                        b_hh_rho
+                    )
+                else:
+                    layer_params = (
+                        w_ih_mu,
+                        w_ih_rho,
+                        w_hh_mu,
+                        w_hh_rho,
+                    )
+
 
                 suffix = "_reverse" if direction == 1 else ""
                 param_names = [
