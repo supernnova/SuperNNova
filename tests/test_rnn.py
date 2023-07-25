@@ -33,8 +33,8 @@ def test_database_filter():
 
 def test_database_sntypes():
     cmd = (
-        f"python run.py --data --dump_dir tests/dump_data --raw_dir tests/raw "
-        f"--sntypes 101"
+        f'python run.py --data --dump_dir tests/dump_data --raw_dir tests/raw '
+        f'--sntypes {{"101":"Ia"}}'
     )
     call_cmd(cmd)
     
