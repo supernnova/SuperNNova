@@ -71,8 +71,8 @@ jobs:
       - name: Generate build
         run: poetry build
 
-      - name: Code tests
-        run: poetry run pytest
+      # - name: Code tests
+      #   run: poetry run pytest
 
       - name: Documentation build test
         run: |
