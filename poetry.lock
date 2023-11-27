@@ -2993,4 +2993,4 @@ docs = ["Sphinx", "sphinx-rtd-theme", "myst-parser", "sphinx-click", "sphinx-cop
 [metadata]
 lock-version = "2.0"
 python-versions = " >=3.11, <3.13"
-content-hash = "ea749e8381feb0536e9df42c86d9e08eb125c65fff25d193e66691ab8fcf7099"
+content-hash = "caa14e55f9dc85bf0ff36e2ce130b671b04b713f0c7f1535630ad866356304f4"
