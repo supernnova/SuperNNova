@@ -1,0 +1,84 @@
+
+name: Publish
+
+on:
+  release:
+    types: [created]
+
+jobs:
+
+  # Useful for workflow debugging
+  # printJob:
+  #   name: Print event
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - name: Dump GitHub context
+  #     env:
+  #       GITHUB_CONTEXT: ${{ toJson(github) }}
+  #     run: |
+  #       echo "$GITHUB_CONTEXT"
+
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # Set-up dependencies
+      - name: Check-out repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Needed for tags to be fetched; see https://github.com/actions/checkout/issues/290
+
+      # Uncomment if you need mpi
+      # - name: Set-up MPI
+      #   uses: mpi4py/setup-mpi@v1
+
+      - name: Set-up Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+
+      - name: Set-up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'poetry'
+
+      # Configure project
+      - name: Set project version
+        run: |
+          poetry version $(git describe --tags --abbrev=0)
+
+      # Configure repository for test.PyPI
+      - name: Configure Poetry for test.PyPI
+        if: "github.event.release.prerelease"
+        run: |
+          poetry config repositories.testpypi https://test.pypi.org/legacy/
+          poetry config pypi-token.testpypi ${{ secrets.TEST_PYPI_TOKEN }}
+
+      # Configure repository for PyPI
+      - name: Configure Poetry for PyPI
+        if: "!github.event.release.prerelease"
+        run: |
+          poetry config http-basic.pypi "__token__" ${{ secrets.PYPI_TOKEN }}
+
+      # Publish docs
+      - name: Trigger RTDs build
+        if: "!github.event.release.prerelease"
+        run: |
+          curl -X POST                                                    \
+               -H "Authorization: Token ${{ secrets.RTD_WEBHOOK_TOKEN }}" \
+               ${{ secrets.RTD_WEBHOOK_URL }}
+
+      # Publish project to test.PyPI
+      - name: Publish to test.PyPI
+        if: "github.event.release.prerelease"
+        run: poetry publish --build -r testpypi
+
+      # ... else publish project to PyPI
+      - name: Publish to PyPI
+        if: "!github.event.release.prerelease"
+        run: poetry publish --build
+
