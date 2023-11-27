@@ -2,7 +2,7 @@
 [![arXiv](https://img.shields.io/badge/arxiv-astro--ph%2F1901.06384-red)](https://arxiv.org/abs/1901.06384) 
 [![Data DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3265189.svg)](https://doi.org/10.5281/zenodo.3265189)
 
-![Logo](docs/SuperNNova.png)
+![Logo](docs/assets/SuperNNova.png)
 
 [![Build Status](https://travis-ci.org/supernnova/SuperNNova.svg?branch=master)](https://travis-ci.org/supernnova/SuperNNova)
 
