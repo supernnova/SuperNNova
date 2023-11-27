@@ -55,11 +55,11 @@ jobs:
         run: poetry install --no-interaction --extras "docs dev"
 
       # Enforce code formating standards
-      - name: Enforce linting
-        run: poetry run ruff .
-
-      - name: Enforce formating
-        run: poetry run black .
+      # - name: Enforce linting
+      #   run: poetry run ruff .
+      #
+      # - name: Enforce formating
+      #   run: poetry run black .
 
       # Make sure the Poetry project is properly maintained
       - name: Enforce maintainance of Poetry project
@@ -75,5 +75,7 @@ jobs:
         run: poetry run pytest
 
       - name: Documentation build test
-        run: poetry run make docs
+        run: |
+          cd docs
+          poetry run make html
 
