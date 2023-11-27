@@ -1,7 +1,7 @@
 Welcome to SuperNNova's documentation!
 =======================================
 
-.. image:: SuperNNova.png
+.. image:: assets/SuperNNova.png
 
 .. toctree::
    :glob:
