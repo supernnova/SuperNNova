@@ -72,13 +72,13 @@ jobs:
                -H "Authorization: Token ${{ secrets.RTD_WEBHOOK_TOKEN }}" \
                ${{ secrets.RTD_WEBHOOK_URL }}
 
-      # Publish project to test.PyPI
-      - name: Publish to test.PyPI
-        if: "github.event.release.prerelease"
-        run: poetry publish --build -r testpypi
-
-      # ... else publish project to PyPI
-      - name: Publish to PyPI
-        if: "!github.event.release.prerelease"
-        run: poetry publish --build
+      # # Publish project to test.PyPI
+      # - name: Publish to test.PyPI
+      #   if: "github.event.release.prerelease"
+      #   run: poetry publish --build -r testpypi
+      #
+      # # ... else publish project to PyPI
+      # - name: Publish to PyPI
+      #   if: "!github.event.release.prerelease"
+      #   run: poetry publish --build
 
