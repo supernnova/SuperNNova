@@ -72,7 +72,7 @@ jobs:
                -d "token=${{ secrets.RTD_WEBHOOK_TOKEN }}" \
                ${{ secrets.RTD_WEBHOOK_URL }}
 
-      # # Publish project to test.PyPI
+      # Publish project to test.PyPI
       # - name: Publish to test.PyPI
       #   if: "github.event.release.prerelease"
       #   run: poetry publish --build -r testpypi
