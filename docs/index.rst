@@ -70,3 +70,8 @@ Welcome to SuperNNova's documentation!
    :caption: Notes for Developers
 
    notes_for_developers
+
+Index
+=====
+* :ref:`genindex`
+* :ref:`modindex`
