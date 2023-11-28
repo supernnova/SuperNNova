@@ -1,5 +1,5 @@
 from time import time
-from colorama import init, Fore, Back, Style
+from colorama import init, Fore, Style
 from contextlib import ContextDecorator
 
 

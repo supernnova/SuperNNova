@@ -1,4 +1,3 @@
-import re
 import os
 import h5py
 import torch
@@ -7,7 +6,6 @@ import pandas as pd
 import torch.nn as nn
 from tqdm import tqdm
 from pathlib import Path
-import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from ..utils import data_utils as du
@@ -262,7 +260,7 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
             subset_to_plot = list(subset_to_plot)
         else:
             lu.print_red(f"Not a valid file --plot_file {settings.plot_file}")
-            lu.print_yellow(f"Plotting 2 random lcs")
+            lu.print_yellow("Plotting 2 random lcs")
             # randomly select lcs to plot
             list_entries = np.random.randint(0, high=len(list_data_test), size=2)
             subset_to_plot = [list_data_test[i] for i in list_entries]
@@ -346,9 +344,7 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
 
 
 def plot_gif(settings, df_plot, SNID, redshift, peak_MJD, target, arr_time, d_pred):
-    """ Create GIFs for classification
-    """
-    import imageio
+    """Create GIFs for classification"""
 
     def plot_image_for_gif(fig, gs, df_plot, d_pred, time, SNtype):
 
@@ -425,7 +421,6 @@ def plot_gif(settings, df_plot, SNID, redshift, peak_MJD, target, arr_time, d_pr
         image = image.reshape(fig.canvas.get_width_height()[::-1] + (3,))
 
         from PIL import Image
-        import PIL.ImageOps as pops
 
         im = Image.fromarray(image)
         # make background transparent
@@ -435,7 +430,6 @@ def plot_gif(settings, df_plot, SNID, redshift, peak_MJD, target, arr_time, d_pr
 
         return image
 
-    kwargs_write = {"fps": 1.0, "quantizer": "nq"}
     fig = plt.figure()
     gs = gridspec.GridSpec(2, 1)
     SNtype = du.sntype_decoded(target, settings)

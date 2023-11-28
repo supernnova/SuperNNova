@@ -45,7 +45,7 @@ def build_traintestval_splits(settings):
         settings (ExperimentSettings): controls experiment hyperparameters
     """
 
-    logging_utils.print_green(f"Computing splits")
+    logging_utils.print_green("Computing splits")
 
     # Read and process files faster with ProcessPoolExecutor
     max_workers = multiprocessing.cpu_count() - 2
@@ -112,7 +112,7 @@ def build_traintestval_splits(settings):
     df_salt = data_utils.load_fitfile(settings)
     if len(df_salt) < 1:
         # if no fits file we include all lcs
-        logging_utils.print_yellow(f"All lcs used for salt and photometry samples")
+        logging_utils.print_yellow("All lcs used for salt and photometry samples")
         df_salt = pd.DataFrame()
         df_salt["SNID"] = df_photo["SNID"].str.strip()
     df_salt["is_salt"] = 1
@@ -164,8 +164,14 @@ def build_traintestval_splits(settings):
                 g[settings.sntype_var].apply(lambda x: list(np.unique(x))).to_dict()
             )
             print(f"target {settings.sntype_var}")
+            # settings.data_types_training = [
+            #     f"{k} {settings.sntypes[v[0]]} {[int(dt) for dt in dic_targets[k]]}"
+            #     for k, v in dic_targets.items()
+            # ]
             settings.data_types_training = [
                 f"{k} {settings.sntypes[v[0]]} {[int(dt) for dt in dic_targets[k]]}"
+                if v[0] in settings.sntypes.keys()
+                else f"{k} nonIa {[int(dt) for dt in dic_targets[k]]}"
                 for k, v in dic_targets.items()
             ]
             print(settings.data_types_training)
@@ -184,7 +190,7 @@ def build_traintestval_splits(settings):
                     ids_test = np.load(settings.testing_ids)
                     ids_test = [f"{k}" for k in ids_test]
                 else:
-                    logging_utils.print_red(f"Provide a csv or numpy testing_ids file")
+                    logging_utils.print_red("Provide a csv or numpy testing_ids file")
                     raise ValueError
 
                 g_wo_test = df[~df.SNID.isin(ids_test)].groupby(
@@ -418,7 +424,7 @@ def process_single_FITS(file_path, settings):
 
                 # if using a variable from header file
                 if settings.photo_window_var in df_header.keys():
-                    a = 1
+                    pass
                 else:
                     logging_utils.print_red(
                         "Provide a valid peak key in header or a photo_window_file"
@@ -460,7 +466,7 @@ def process_single_FITS(file_path, settings):
             if (x > 0 and x < settings.photo_window_max)
             else (True if (x <= 0 and x > settings.photo_window_min) else False)
         )
-        df = df[df["window_time_cut"] == True]
+        df = df[df["window_time_cut"] is True]
     # quality
     if settings.phot_reject:
         # only valid for powers of two combinations
@@ -472,7 +478,7 @@ def process_single_FITS(file_path, settings):
             > 0
             else True
         )
-        df = df[df["phot_reject"] == True]
+        df = df[df["phot_reject"] is True]
 
         if settings.debug:
             logging_utils.print_blue("Phot reject", file_path)
@@ -601,7 +607,7 @@ def process_single_csv(file_path, settings):
             if (x > 0 and x < settings.photo_window_max)
             else (True if (x <= 0 and x > settings.photo_window_min) else False)
         )
-        df = df[df["window_time_cut"] == True]
+        df = df[df["window_time_cut"] is True]
     # quality
     if settings.phot_reject:
 
@@ -613,7 +619,7 @@ def process_single_csv(file_path, settings):
             > 0
             else True
         )
-        df = df[df["phot_reject"] == True]
+        df = df[df["phot_reject"] is True]
 
         if settings.debug:
             logging_utils.print_blue("Phot reject", file_path)
@@ -958,7 +964,7 @@ def make_dataset(settings):
 
     # Aggregate the pivoted dataframe
     list_files = natsorted(
-        glob.glob(os.path.join(settings.preprocessed_dir, f"*pivot.pickle*"))
+        glob.glob(os.path.join(settings.preprocessed_dir, "*pivot.pickle*"))
     )
     logging_utils.print_green("Concatenating pivot")
 

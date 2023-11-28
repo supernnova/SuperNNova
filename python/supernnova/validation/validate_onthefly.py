@@ -2,9 +2,7 @@ import json
 import torch
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
 from pathlib import Path
-from supernnova import conf
 from supernnova.utils import data_utils
 import supernnova.utils.logging_utils as lu
 from supernnova.conf import get_norm_from_model

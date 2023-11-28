@@ -218,7 +218,7 @@ def create_latex_accuracy_singletable(df, outname, title):
         df[k] = (
             "$"
             + df[f"{k}_{metric}_mean"].round(2).map(str)
-            + " \pm "
+            + " \\pm "
             + df[f"{k}_{metric}_std"].round(2).map(str)
             + "$"
         )

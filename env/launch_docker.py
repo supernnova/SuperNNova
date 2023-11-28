@@ -7,27 +7,28 @@ from pathlib import Path
 
 def launch_docker():
 
-    pwd = os.getcwd()
-    UID = os.getuid()
+    os.getcwd()
+    os.getuid()
     snn_dir = os.path.abspath(Path(os.path.dirname(os.path.realpath(__file__))).parent)
     dump_dir = os.path.abspath(Path(snn_dir).parent)
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--image", type=str, choices=['cpu','gpu','gpu10'],help="Use which image gpu or cpu")
-    parser.add_argument("--dump_dir", default=dump_dir, help='Dir to dump results')
-    parser.add_argument("--raw_dir", help='Optional dir to point towards data')
+    parser.add_argument(
+        "--image",
+        type=str,
+        choices=["cpu", "gpu", "gpu10"],
+        help="Use which image gpu or cpu",
+    )
+    parser.add_argument("--dump_dir", default=dump_dir, help="Dir to dump results")
+    parser.add_argument("--raw_dir", help="Optional dir to point towards data")
 
     args = parser.parse_args()
 
-    cmd = (
-        f"docker run -it --rm ")
+    cmd = "docker run -it --rm "
 
-    cmd += f" --gpus all " if 'gpu' in args.image else ""
+    cmd += " --gpus all " if "gpu" in args.image else ""
 
-    cmd += (
-        f" -v {snn_dir}:/u/home/SuperNNova"
-        f" -v {args.dump_dir}:/u/home/snndump"
-        )
+    cmd += f" -v {snn_dir}:/u/home/SuperNNova" f" -v {args.dump_dir}:/u/home/snndump"
 
     if args.raw_dir:
         cmd += f" -v {args.raw_dir}:/u/home/raw"
