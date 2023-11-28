@@ -2,7 +2,6 @@ import torch
 
 
 class VariationalRNN(torch.nn.Module):
-
     def __init__(self, input_size, settings):
 
         super(VariationalRNN, self).__init__()
@@ -39,7 +38,7 @@ class VariationalRNN(torch.nn.Module):
                 input_size,
                 self.hidden_size,
                 num_layers=1,
-                dropout=0.,  # no dropout: we later create a specific layer for that
+                dropout=0.0,  # no dropout: we later create a specific layer for that
                 bidirectional=self.bidirectional,
             )
             # Apply weight drop

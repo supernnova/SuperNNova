@@ -93,7 +93,7 @@ def get_delta_metrics(df_stats, settings):
     """Difference between models in SuperNNova paper.
 
     BEWARE: selection hard coded
-    
+
     Args:
         df (pandas.DataFrame): dataframe containing summary stats
         settings (ExperimentSettings): custom class to hold hyperparameters
@@ -185,7 +185,8 @@ def get_delta_metrics(df_stats, settings):
                 "model_name_left",
                 "model_name_right",
                 "delta_type",
-                "all_accuracy_mean_delta","mean_all_class0_std_dev_mean_delta",
+                "all_accuracy_mean_delta",
+                "mean_all_class0_std_dev_mean_delta",
                 "all_entropy_mean_delta",
             ]
         )

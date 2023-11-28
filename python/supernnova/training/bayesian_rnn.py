@@ -14,12 +14,11 @@ from torch.nn.utils.rnn import PackedSequence, pad_packed_sequence
 import torch.nn.functional as F
 
 
-
 # mean_field_inference: instead of sampling a weight as in W = N(mu, sigma)
 # we always set W = mu
 
-class BayesianRNN(Module):
 
+class BayesianRNN(Module):
     def __init__(self, input_size, settings):
         super().__init__()
 
@@ -65,7 +64,9 @@ class BayesianRNN(Module):
             print("type of rnn layer: ", type(self.rnn_layer))
             print("finish rnn layer...")
         else:
-            raise ValueError("Unregistered BayesRNN mode: {}".format(self.layer_type.upper()))
+            raise ValueError(
+                "Unregistered BayesRNN mode: {}".format(self.layer_type.upper())
+            )
 
         self.output_layer = BayesLinear(
             last_input_size,
@@ -137,11 +138,12 @@ class BayesianRNN(Module):
 
         return output
 
+
 def _apply_permutation(tensor: Tensor, permutation: Tensor, dim: int = 1) -> Tensor:
     return tensor.index_select(dim, permutation)
 
-class BayesRNNBase(Module):
 
+class BayesRNNBase(Module):
     def __init__(
         self,
         mode: str,
@@ -153,10 +155,10 @@ class BayesRNNBase(Module):
         batch_first: bool = False,
         dropout: float = 0,
         bidirectional: bool = False,
-        mu_lower = -0.05,
-        mu_upper = 0.05,
-        rho_lower = -1,
-        rho_upper = -4,
+        mu_lower=-0.05,
+        mu_upper=0.05,
+        rho_lower=-1,
+        rho_upper=-4,
     ):
         super().__init__()
         self.mode = mode
@@ -211,7 +213,7 @@ class BayesRNNBase(Module):
                     rho_lower,
                     rho_upper,
                 )
-                
+
                 w_hh_mu, w_hh_rho = get_bbb_variable(
                     (gate_size, hidden_size), mu_lower, mu_upper, rho_lower, rho_upper
                 )
@@ -232,7 +234,7 @@ class BayesRNNBase(Module):
                         b_ih_mu,
                         b_ih_rho,
                         b_hh_mu,
-                        b_hh_rho
+                        b_hh_rho,
                     )
                 else:
                     layer_params = (
@@ -241,7 +243,6 @@ class BayesRNNBase(Module):
                         w_hh_mu,
                         w_hh_rho,
                     )
-
 
                 suffix = "_reverse" if direction == 1 else ""
                 param_names = [
@@ -269,8 +270,7 @@ class BayesRNNBase(Module):
         self.kl = None
 
     def flatten_parameters(self) -> None:
-        """Resets parameter data pointer so that they can use faster code paths.
-        """
+        """Resets parameter data pointer so that they can use faster code paths."""
         self._data_ptrs = []
         self._param_buf_size = 0
         return
@@ -284,31 +284,46 @@ class BayesRNNBase(Module):
         expected_input_dim = 2 if batch_sizes is not None else 3
         if input.dim() != expected_input_dim:
             raise RuntimeError(
-                'input must have {} dimensions, got {}'.format(
-                    expected_input_dim, input.dim()))
+                "input must have {} dimensions, got {}".format(
+                    expected_input_dim, input.dim()
+                )
+            )
         if self.input_size != input.size(-1):
             raise RuntimeError(
-                'input.size(-1) must be equal to input_size. Expected {}, got {}'.format(
-                    self.input_size, input.size(-1)))
-    
-    def get_expected_hidden_size(self, input: Tensor, batch_sizes: Optional[Tensor]) -> Tuple[int, int, int]:
+                "input.size(-1) must be equal to input_size. Expected {}, got {}".format(
+                    self.input_size, input.size(-1)
+                )
+            )
+
+    def get_expected_hidden_size(
+        self, input: Tensor, batch_sizes: Optional[Tensor]
+    ) -> Tuple[int, int, int]:
         if batch_sizes is not None:
             mini_batch = int(batch_sizes[0])
         else:
             mini_batch = input.size(0) if self.batch_first else input.size(1)
         num_directions = 2 if self.bidirectional else 1
-       
-        expected_hidden_size = (self.num_layers * num_directions,
-                                mini_batch, self.hidden_size)
-    
+
+        expected_hidden_size = (
+            self.num_layers * num_directions,
+            mini_batch,
+            self.hidden_size,
+        )
+
         return expected_hidden_size
-    
-    def check_hidden_size(self, hx: Tensor, expected_hidden_size: Tuple[int, int, int],
-                          msg: str = 'Expected hidden size {}, got {}') -> None:
+
+    def check_hidden_size(
+        self,
+        hx: Tensor,
+        expected_hidden_size: Tuple[int, int, int],
+        msg: str = "Expected hidden size {}, got {}",
+    ) -> None:
         if hx.size() != expected_hidden_size:
             raise RuntimeError(msg.format(expected_hidden_size, list(hx.size())))
-        
-    def check_forward_args(self, input: Tensor, hidden: Tensor, batch_sizes: Optional[Tensor]):
+
+    def check_forward_args(
+        self, input: Tensor, hidden: Tensor, batch_sizes: Optional[Tensor]
+    ):
         self.check_input(input, batch_sizes)
         expected_hidden_size = self.get_expected_hidden_size(input, batch_sizes)
 
@@ -318,7 +333,7 @@ class BayesRNNBase(Module):
         if permutation is None:
             return hx
         return _apply_permutation(hx, permutation)
-    
+
     def extra_repr(self) -> str:
         s = "{input_size}, {hidden_size}"
         if self.num_layers != 1:
@@ -335,40 +350,53 @@ class BayesRNNBase(Module):
 
 
 class BayesLSTM(BayesRNNBase):
-
     def __init__(self, *args, **kwargs):
         super().__init__("LSTM", *args, **kwargs)
 
-    def get_expected_cell_size(self, input: Tensor, batch_sizes: Optional[Tensor]) -> Tuple[int, int, int]:
+    def get_expected_cell_size(
+        self, input: Tensor, batch_sizes: Optional[Tensor]
+    ) -> Tuple[int, int, int]:
         if batch_sizes is not None:
             mini_batch = int(batch_sizes[0])
         else:
             mini_batch = input.size(0) if self.batch_first else input.size(1)
         num_directions = 2 if self.bidirectional else 1
-        expected_hidden_size = (self.num_layers * num_directions,
-                                mini_batch, self.hidden_size)
+        expected_hidden_size = (
+            self.num_layers * num_directions,
+            mini_batch,
+            self.hidden_size,
+        )
         return expected_hidden_size
 
-    def check_forward_args(self,  # type: ignore[override]
-                        input: Tensor,
-                        hidden: Tuple[Tensor, Tensor],
-                        batch_sizes: Optional[Tensor],
-                        ):
+    def check_forward_args(
+        self,  # type: ignore[override]
+        input: Tensor,
+        hidden: Tuple[Tensor, Tensor],
+        batch_sizes: Optional[Tensor],
+    ):
         self.check_input(input, batch_sizes)
-        self.check_hidden_size(hidden[0], self.get_expected_hidden_size(input, batch_sizes),
-                                'Expected hidden[0] size {}, got {}')
-        self.check_hidden_size(hidden[1], self.get_expected_cell_size(input, batch_sizes),
-                                'Expected hidden[1] size {}, got {}')
-        
-    
-    def permute_hidden(self,  # type: ignore[override]
-                    hx: Tuple[Tensor, Tensor],
-                    permutation: Optional[Tensor]
-                    ) -> Tuple[Tensor, Tensor]:
+        self.check_hidden_size(
+            hidden[0],
+            self.get_expected_hidden_size(input, batch_sizes),
+            "Expected hidden[0] size {}, got {}",
+        )
+        self.check_hidden_size(
+            hidden[1],
+            self.get_expected_cell_size(input, batch_sizes),
+            "Expected hidden[1] size {}, got {}",
+        )
+
+    def permute_hidden(
+        self,  # type: ignore[override]
+        hx: Tuple[Tensor, Tensor],
+        permutation: Optional[Tensor],
+    ) -> Tuple[Tensor, Tensor]:
         if permutation is None:
             return hx
-        return _apply_permutation(hx[0], permutation), _apply_permutation(hx[1], permutation)
-    
+        return _apply_permutation(hx[0], permutation), _apply_permutation(
+            hx[1], permutation
+        )
+
     def forward(self, input, hx=None, mean_field_inference=False):
         is_packed = isinstance(input, PackedSequence)
         if is_packed:
@@ -377,7 +405,10 @@ class BayesLSTM(BayesRNNBase):
             max_batch_size = int(max_batch_size)
         else:
             batch_sizes = None
-            assert (input.dim() in (2, 3)), f"LSTM: Expected input to be 2-D or 3-D but received {input.dim()}-D tensor"
+            assert input.dim() in (
+                2,
+                3,
+            ), f"LSTM: Expected input to be 2-D or 3-D but received {input.dim()}-D tensor"
             is_batched = input.dim() == 3
             batch_dim = 0 if self.batch_first else 1
             if not is_batched:
@@ -388,11 +419,15 @@ class BayesLSTM(BayesRNNBase):
 
         if hx is None:
             num_directions = 2 if self.bidirectional else 1
-    
-            hx = torch.zeros(self.num_layers * num_directions,
-                                max_batch_size, self.hidden_size,
-                                dtype=input.dtype, device=input.device)
-            
+
+            hx = torch.zeros(
+                self.num_layers * num_directions,
+                max_batch_size,
+                self.hidden_size,
+                dtype=input.dtype,
+                device=input.device,
+            )
+
             hx = (hx, hx)
 
         # else:
@@ -409,9 +444,9 @@ class BayesLSTM(BayesRNNBase):
         #                 raise RuntimeError(msg)
         #             hx = (hx[0].unsqueeze(1), hx[1].unsqueeze(1))
 
-            # # Each batch of the hidden state should match the input sequence that
-            # # the user believes he/she is passing in.
-            # hx = self.permute_hidden(hx, sorted_indices)
+        # # Each batch of the hidden state should match the input sequence that
+        # # the user believes he/she is passing in.
+        # hx = self.permute_hidden(hx, sorted_indices)
 
         # todo: memory usage efficiency
         # has_flat_weights = (
@@ -425,7 +460,7 @@ class BayesLSTM(BayesRNNBase):
         #     )
         # else:
         #     flat_weight = None
-       
+
         self.check_forward_args(input, hx, batch_sizes)
 
         # Format weights for BBB
@@ -451,7 +486,7 @@ class BayesLSTM(BayesRNNBase):
                 if mean_field_inference:
                     weight_ih = w_ih_mean
                     weight_hh = w_hh_mean
-                
+
                 else:
                     # Sample weights from normal distribution
                     eps_ih = w_ih_mean.data.new(w_ih_mean.size()).normal_(0.0, 1.0)
@@ -479,7 +514,7 @@ class BayesLSTM(BayesRNNBase):
                     if mean_field_inference:
                         bias_ih = b_ih_mean
                         bias_hh = b_hh_mean
-               
+
                     else:
                         eps_ih = b_ih_mean.data.new(b_ih_mean.size()).normal_(0.0, 1.0)
                         bias_ih = b_ih_mean + eps_ih * b_ih_sigma
@@ -488,21 +523,41 @@ class BayesLSTM(BayesRNNBase):
                         bias_hh = b_hh_mean + eps_hh * b_hh_sigma
 
                     all_weights.extend([bias_ih, bias_hh])
-                
+
                     self.kl += compute_KL(bias_ih, b_ih_mean, b_ih_sigma, self.prior)
                     self.kl += compute_KL(bias_hh, b_hh_mean, b_hh_sigma, self.prior)
 
         if batch_sizes is None:
-            result = _VF.lstm(input, hx, all_weights, self.bias, self.num_layers,
-                            self.dropout, self.training, self.bidirectional, self.batch_first)
+            result = _VF.lstm(
+                input,
+                hx,
+                all_weights,
+                self.bias,
+                self.num_layers,
+                self.dropout,
+                self.training,
+                self.bidirectional,
+                self.batch_first,
+            )
         else:
-            result = _VF.lstm(input, batch_sizes, hx, all_weights, self.bias,
-                            self.num_layers, self.dropout, self.training, self.bidirectional)
+            result = _VF.lstm(
+                input,
+                batch_sizes,
+                hx,
+                all_weights,
+                self.bias,
+                self.num_layers,
+                self.dropout,
+                self.training,
+                self.bidirectional,
+            )
         output = result[0]
         hidden = result[1:]
 
         if is_packed:
-            output_packed = PackedSequence(output, batch_sizes, sorted_indices, unsorted_indices)
+            output_packed = PackedSequence(
+                output, batch_sizes, sorted_indices, unsorted_indices
+            )
             return output_packed, self.permute_hidden(hidden, unsorted_indices)
         else:
             if not is_batched:
@@ -512,13 +567,11 @@ class BayesLSTM(BayesRNNBase):
 
 
 class BayesGRU(BayesRNNBase):
-
     def __init__(self, *args, **kwargs):
         super().__init__("GRU", *args, **kwargs)
 
 
 class BayesLinear(Module):
-
     def __init__(
         self, in_features, out_features, prior, mu_lower, mu_upper, rho_lower, rho_upper
     ):
@@ -574,7 +627,6 @@ class BayesLinear(Module):
 
 
 class BayesBiasLinear(Module):
-
     def __init__(
         self, in_features, out_features, prior, mu_lower, mu_upper, rho_lower, rho_upper
     ):
@@ -623,7 +675,6 @@ class BayesBiasLinear(Module):
 
 
 class BayesEmbedding(Module):
-
     def __init__(
         self,
         num_embeddings,
@@ -657,7 +708,7 @@ class BayesEmbedding(Module):
 
         # Sample weight
         mean = self.mu
-        sigma = F.softplus(self.rho) + 1E-5
+        sigma = F.softplus(self.rho) + 1e-5
 
         if mean_field_inference:
             weights = mean
@@ -665,7 +716,7 @@ class BayesEmbedding(Module):
             # This way of creating the epsilon variable is faster than
             # from numpy or torch.randn or FloatTensor.normal_ when mean is already
             # on the GPU
-            eps = mean.data.new(mean.size()).normal_(0., 1.)
+            eps = mean.data.new(mean.size()).normal_(0.0, 1.0)
             weights = mean + eps * sigma
 
         # Compute KL divergence
@@ -700,7 +751,6 @@ class BayesEmbedding(Module):
 
 
 class Prior(object):
-
     def __init__(self, pi=0.25, log_sigma1=-1.0, log_sigma2=-7.0):
         self.pi_mixture = pi
         self.log_sigma1 = log_sigma1

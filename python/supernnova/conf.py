@@ -19,7 +19,9 @@ def get_args():
     # General parameters
     #######################
     parser.add_argument(
-        "--data", action="store_true", help="Create dataset for ML training"  # write data
+        "--data",
+        action="store_true",
+        help="Create dataset for ML training",  # write data
     )
     parser.add_argument("--train_rnn", action="store_true", help="Train RNN model")
     parser.add_argument(
@@ -29,7 +31,9 @@ def get_args():
         "--validate_rnn", action="store_true", help="Validate RNN model"
     )
     parser.add_argument(
-        "--validate_rf", action="store_true", help="Validate RandomForest model"  # eliminate rf
+        "--validate_rf",
+        action="store_true",
+        help="Validate RandomForest model",  # eliminate rf
     )
     parser.add_argument(
         "--override_source_data",  # eliminate override source data
@@ -43,7 +47,9 @@ def get_args():
         action="store_true",
         help="Plot a random selection of lightcurves",
     )
-    parser.add_argument("--speed", action="store_true", help="Get RNN speed benchmark") # test this option!
+    parser.add_argument(
+        "--speed", action="store_true", help="Get RNN speed benchmark"
+    )  # test this option!
 
     parser.add_argument(
         "--monitor_interval",
@@ -52,15 +58,19 @@ def get_args():
         help="Monitor validation every monitor_interval epoch",
     )
     parser.add_argument(
-        "--metrics", action="store_true", help="Use Pred file to compute metrics"  #  test this option!
+        "--metrics",
+        action="store_true",
+        help="Use Pred file to compute metrics",  #  test this option!
     )
     parser.add_argument(
-        "--performance", # elimiate this option 
+        "--performance",  # elimiate this option
         action="store_true",
         help="Get method performance and paper plots",
     )
     parser.add_argument(
-        "--science_plots", action="store_true", help="Plots of scientific interest"  # eliminate  tit 
+        "--science_plots",
+        action="store_true",
+        help="Plots of scientific interest",  # eliminate  tit
     )
     parser.add_argument(
         "--calibration",
@@ -68,12 +78,12 @@ def get_args():
         help="Plot calibration of trained classifiers",
     )
     parser.add_argument(
-        "--plot_lcs", # test this option 
+        "--plot_lcs",  # test this option
         action="store_true",
         help="Plot lcs with classification probabilities",
     )
     parser.add_argument(
-        "--plot_file",  # test this option 
+        "--plot_file",  # test this option
         default=None,
         help="Plot subset of lcs in file (csv with SNID column)",
     )
@@ -82,9 +92,11 @@ def get_args():
         action="store_true",
         help="Plot lcs and the histogram of probability for each class",
     )
-    parser.add_argument("--model_files", nargs="+", help="Path to model files") # test it 
     parser.add_argument(
-        "--prediction_files", nargs="+", help="Path to prediction files" # test it
+        "--model_files", nargs="+", help="Path to model files"
+    )  # test it
+    parser.add_argument(
+        "--prediction_files", nargs="+", help="Path to prediction files"  # test it
     )
     parser.add_argument("--metric_files", nargs="+", help="Path to metric files")
     parser.add_argument(
@@ -112,7 +124,7 @@ def get_args():
         help="Default path where data and models are dumped",
     )
     parser.add_argument(
-        "--fits_dir", # eliminate it 
+        "--fits_dir",  # eliminate it
         type=str,
         default=f"{default_dump_dir}/fits",
         help="Default path where fits to photometry are",
@@ -124,7 +136,7 @@ def get_args():
         help="Default path where raw data is",
     )
     parser.add_argument(
-        "--redshift", # change it by Anois
+        "--redshift",  # change it by Anois
         choices=["none", "zpho", "zspe"],
         default="none",
         help="Host redshift used in classification: none, zpho, zspe",
@@ -136,7 +148,7 @@ def get_args():
         help="Feature normalization: global does the same norm for all filters",
     )
     parser.add_argument(
-        "--source_data", # elimiate it 
+        "--source_data",  # elimiate it
         choices=["saltfit", "photometry"],
         default="photometry",
         help="Data source used to select light-curves for supernnova",
@@ -162,14 +174,16 @@ def get_args():
         help="Create database with only validation set",
     )
     parser.add_argument(
-        "--testing_ids", # test it 
+        "--testing_ids",  # test it
         default=None,
         help="Filename with SNIDs to be used for testing (.csv with SNID column or .npy)",
     )
 
     # Photometry window
     parser.add_argument(
-        "--photo_window_files", nargs="+", help="Path to fits with PEAKMJD estimation" # test it 
+        "--photo_window_files",
+        nargs="+",
+        help="Path to fits with PEAKMJD estimation",  # test it
     )
     parser.add_argument(
         "--photo_window_var",
@@ -185,7 +199,7 @@ def get_args():
     )
     # Survey configuration
     parser.add_argument(
-        "--list_filters", # test it 
+        "--list_filters",  # test it
         nargs="+",
         default=natsorted(["g", "i", "r", "z"]),
         help="Survey filters",
@@ -204,7 +218,7 @@ def get_args():
         help="Bit list to mask (supports only powers of 2)",
     )
     parser.add_argument(
-        "--redshift_label", 
+        "--redshift_label",
         type=str,
         default="none",
         help="Redshift label to be used instead of HOSTGAL_SPECZ (with _ERR) and SIM_REDSHIFT",
@@ -248,23 +262,26 @@ def get_args():
     )
     parser.add_argument(
         "--model",
-        default="vanilla", # anis change the name 
+        default="vanilla",  # anis change the name
         type=str,
         choices=["vanilla", "variational", "bayesian", "bayesian_2"],
         help="recurrent model type",
     )
     parser.add_argument(
-        "--use_cuda", action="store_true", help="Use GPU (pytorch backend only)"  # test 
+        "--use_cuda", action="store_true", help="Use GPU (pytorch backend only)"  # test
     )
     parser.add_argument(
         "--learning_rate", default=1e-3, type=float, help="Learning rate"
     )
 
     parser.add_argument(
-        "--nb_classes", default=2, type=int, help="Number of classification targets"  # test 
+        "--nb_classes",
+        default=2,
+        type=int,
+        help="Number of classification targets",  # test
     )
     parser.add_argument(
-        "--sntypes", # test it 
+        "--sntypes",  # test it
         default=OrderedDict(
             {
                 "101": "Ia",
@@ -280,13 +297,13 @@ def get_args():
         help="SN classes in sims (put Ia always first)",
     )
     parser.add_argument(
-        "--sntype_var", 
+        "--sntype_var",
         type=str,
         default="SNTYPE",
         help="Variable representing event types (e.g. SNTYPE)",
     )
     parser.add_argument(
-        "--additional_train_var", # test 
+        "--additional_train_var",  # test
         nargs="+",
         help="Additional training variables",
     )
@@ -329,7 +346,7 @@ def get_args():
     parser.add_argument("--log_sigma2_output", default=-7.0, type=float)
     parser.add_argument("--rho_scale_lower_output", default=4.0, type=float)
     parser.add_argument("--rho_scale_upper_output", default=3.0, type=float)
-    ### pytorch higher version end 
+    ### pytorch higher version end
 
     parser.add_argument(
         "--num_inference_samples",
@@ -344,7 +361,7 @@ def get_args():
     )
 
     #########################
-    # RandomForest parameters  # eliminate this section 
+    # RandomForest parameters  # eliminate this section
     #########################
 
     # Classifier initialization

@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 import shutil
+
 # from tests.test_utils import call_cmd
 # from tests.test_utils import testmanager
 from .test_utils import call_cmd
@@ -8,14 +9,14 @@ from .test_utils import call_cmd
 dir_path = os.path.dirname(os.path.realpath(__file__)) + "/dump/"
 dir_data_path = os.path.dirname(os.path.realpath(__file__)) + "/dump_data/"
 
+
 def test_database():
-    cmd = (
-        "python run.py --data --dump_dir tests/dump --raw_dir tests/raw"
-    )
+    cmd = "python run.py --data --dump_dir tests/dump --raw_dir tests/raw"
     call_cmd(cmd)
-    
-    # check whether database has been generated 
+
+    # check whether database has been generated
     assert os.path.exists(dir_path + "processed/database.h5") is True
+
 
 def test_database_filter():
     cmd = (
@@ -23,62 +24,70 @@ def test_database_filter():
         "--list_filters g r"
     )
     call_cmd(cmd)
-    
-    # check whether database has been generated 
+
+    # check whether database has been generated
     assert os.path.exists(dir_data_path + "processed/database.h5") is True
     # remove dump_data folder after assertion
     shutil.rmtree(dir_data_path)
+
 
 def test_database_sntypes():
     cmd = (
         "python run.py --data --dump_dir tests/dump_data --raw_dir tests/raw "
-        "--sntypes '{\"101\":\"Ia\"}' "
-        )
+        '--sntypes \'{"101":"Ia"}\' '
+    )
     call_cmd(cmd)
-    
-    # check whether database has been generated 
+
+    # check whether database has been generated
     assert os.path.exists(dir_data_path + "processed/database.h5") is True
     # remove dump_data folder after assertion
     shutil.rmtree(dir_data_path)
 
+
 def test_rnn_train():
 
-    cmd = (
-        "python run.py --train_rnn --dump_dir tests/dump "
-    )
-    
+    cmd = "python run.py --train_rnn --dump_dir tests/dump "
+
     call_cmd(cmd)
 
     model_dir = dir_path + "models/"
-    files = ["*/*.pt", "*/PRED*", "*/METRICS*", "*/train_and_val_loss*", "*/training_log.json"]
+    files = [
+        "*/*.pt",
+        "*/PRED*",
+        "*/METRICS*",
+        "*/train_and_val_loss*",
+        "*/training_log.json",
+    ]
     for fi in files:
         assert len([e for e in (Path(model_dir)).glob(fi)]) == 1
 
+
 def test_rnn_nbclass():
 
-    cmd = (
-        "python run.py --train_rnn --dump_dir tests/dump --nb_classes 2"
-        
-    )
-    
+    cmd = "python run.py --train_rnn --dump_dir tests/dump --nb_classes 2"
+
     call_cmd(cmd)
 
     model_dir = dir_path + "models/"
-    files = ["*/*.pt", "*/PRED*", "*/METRICS*", "*/train_and_val_loss*", "*/training_log.json"]
+    files = [
+        "*/*.pt",
+        "*/PRED*",
+        "*/METRICS*",
+        "*/train_and_val_loss*",
+        "*/training_log.json",
+    ]
     for fi in files:
         assert len([e for e in (Path(model_dir)).glob(fi)]) == 1
 
 
 def test_rnn_validate():
     """running rnn_validate generating two files PRED* and METRICS*,
-       which are the same filename as train_rnn and cannot be tested 
-       by files exist assertion 
-       to do: either change the file names or check contents of the file
+    which are the same filename as train_rnn and cannot be tested
+    by files exist assertion
+    to do: either change the file names or check contents of the file
     """
-    cmd = (
-        "python run.py --validate_rnn --dump_dir tests/dump"
-    )
-    
+    cmd = "python run.py --validate_rnn --dump_dir tests/dump"
+
     call_cmd(cmd)
 
     # model_dir = dir_path + "models/"
@@ -86,12 +95,12 @@ def test_rnn_validate():
     # for fi in files:
     #     assert len([e for e in (Path(model_dir)).glob(fi)]) == 1
 
+
 def test_rnn_speed():
-    cmd = (
-        "python run.py --validate_rnn --speed --dump_dir tests/dump"
-    )
-    
+    cmd = "python run.py --validate_rnn --speed --dump_dir tests/dump"
+
     call_cmd(cmd)
+
 
 def test_rnn_metrics():
     model_dir = dir_path + "models/"
@@ -101,35 +110,34 @@ def test_rnn_metrics():
             f"python run.py --validate_rnn --metrics --dump_dir tests/dump "
             f"--prediction_files {pf}"
         )
-    
+
         call_cmd(cmd)
+
 
 def test_rnn_mfile():
     model_dir = dir_path + "models/"
     model_files = [e for e in (Path(model_dir)).glob("*/*.pt")]
     for mf in model_files:
         cmd = (
-            f"python run.py --validate_rnn --dump_dir tests/dump "
-            f"--model_files {mf}"
+            f"python run.py --validate_rnn --dump_dir tests/dump " f"--model_files {mf}"
         )
 
         call_cmd(cmd)
+
 
 def test_plot_lcs():
     model_dir = dir_path + "models/"
     model_files = [e for e in (Path(model_dir)).glob("*/*.pt")]
     for mf in model_files:
-        cmd = (
-            f"python run.py --plot_lcs --dump_dir tests/dump/ "
-            f"--model_files {mf}"
-        )
+        cmd = f"python run.py --plot_lcs --dump_dir tests/dump/ " f"--model_files {mf}"
 
         call_cmd(cmd)
 
-'''    
+
+"""    
 
    
 if __name__ == "__main__":
 
     test_rnn()
-'''
+"""

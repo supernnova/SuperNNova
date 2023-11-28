@@ -14,7 +14,8 @@ if __name__ == "__main__":
     parser.add_argument("yml", type=Path, help="Yaml configuration file")
 
     parser.add_argument(
-        "--mode", choices=["data", "train_rnn", "validate_rnn", "plot_lcs"],
+        "--mode",
+        choices=["data", "train_rnn", "validate_rnn", "plot_lcs"],
     )
     args = parser.parse_args()
 

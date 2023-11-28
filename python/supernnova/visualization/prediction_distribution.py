@@ -161,9 +161,7 @@ def plot_distributions(settings, list_d_plot):
         fig_path = f"{settings.lightcurves_dir}/{parent_dir}/prediction_distribution"
         fig_name = f"{parent_dir}.png"
     else:
-        fig_path = (
-            f"{settings.lightcurves_dir}/{settings.pytorch_model_name}/prediction_distribution"
-        )
+        fig_path = f"{settings.lightcurves_dir}/{settings.pytorch_model_name}/prediction_distribution"
         fig_name = f"{settings.pytorch_model_name}.png"
     Path(fig_path).mkdir(parents=True, exist_ok=True)
     # plt.tight_layout()
@@ -288,7 +286,7 @@ def plot_prediction_distribution(settings):
         arr_time = np.cumsum(df_temp.delta_time.values)
         for flt in settings.list_filters:
             non_zero = np.where(
-                ~np.isclose(df_temp[f"FLUXCAL_{flt}"].values, 0, atol=1E-2)
+                ~np.isclose(df_temp[f"FLUXCAL_{flt}"].values, 0, atol=1e-2)
             )[0]
             d_plot[flt]["FLUXCAL"] = df_temp[f"FLUXCAL_{flt}"].values[non_zero]
             d_plot[flt]["FLUXCALERR"] = df_temp[f"FLUXCALERR_{flt}"].values[non_zero]

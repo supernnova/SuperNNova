@@ -344,8 +344,7 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
 
 
 def plot_gif(settings, df_plot, SNID, redshift, peak_MJD, target, arr_time, d_pred):
-    """ Create GIFs for classification
-    """
+    """Create GIFs for classification"""
 
     def plot_image_for_gif(fig, gs, df_plot, d_pred, time, SNtype):
 

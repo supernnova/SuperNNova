@@ -32,7 +32,7 @@ Base_salt = Base.replace("photometry", "saltfit")
 
 
 def SuperNNova_stats_and_plots(settings):
-    """ Reproduce stats and plots used for SuperNNova paper.
+    """Reproduce stats and plots used for SuperNNova paper.
     BEWARE: Selection is hardcoded
 
     Args:
@@ -57,7 +57,7 @@ def SuperNNova_stats_and_plots_thread(df, settings, plots=True, debug=False):
     Args:
         df (pandas.DataFrame) : summary statistics df
         settings (ExperimentSettings): custom class to hold hyperparameters
-        plots (Boolean optional): make pltos or only printout stats 
+        plots (Boolean optional): make pltos or only printout stats
         debug (Boolean optional): only print tasks
     Returns:
         printout: stats as organized in paper

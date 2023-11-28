@@ -1242,7 +1242,10 @@ def create_OOD_classification_plots(df, list_models, settings):
             df_perc = (
                 df_sel[list_keys]
                 .div(
-                    df_sel[[item for item in list_keys if "random" in item]].sum(axis=1), axis=0
+                    df_sel[[item for item in list_keys if "random" in item]].sum(
+                        axis=1
+                    ),
+                    axis=0,
                 )
                 .multiply(100)
                 .round(2)

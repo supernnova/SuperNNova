@@ -7,8 +7,7 @@ import torch.nn.functional as F
 
 
 def log_norm(x, min_clip, mean, std, F=torch):
-    """
-    """
+    """ """
 
     x = (F.log(x - min_clip + 1e-5) - mean) / std
     return x
