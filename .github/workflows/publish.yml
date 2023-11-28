@@ -68,8 +68,8 @@ jobs:
       - name: Trigger RTDs build
         if: "!github.event.release.prerelease"
         run: |
-          curl -X POST                                                    \
-               -H "Authorization: Token ${{ secrets.RTD_WEBHOOK_TOKEN }}" \
+          curl -X POST                                     \
+               -d "token=${{ secrets.RTD_WEBHOOK_TOKEN }}" \
                ${{ secrets.RTD_WEBHOOK_URL }}
 
       # # Publish project to test.PyPI
