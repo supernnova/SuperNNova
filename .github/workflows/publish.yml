@@ -5,6 +5,7 @@ on:
   release:
     types: [created]
 
+# These are needed because secrets can not be used in 'if' expressions
 env:
   PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
   TEST_PYPI_TOKEN: ${{ secrets.TEST_PYPI_TOKEN }}
