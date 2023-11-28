@@ -5,6 +5,12 @@ on:
   release:
     types: [created]
 
+env:
+  PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+  TEST_PYPI_TOKEN: ${{ secrets.TEST_PYPI_TOKEN }}
+  RTD_WEBHOOK_URL: ${{ secrets.RTD_WEBHOOK_URL }}
+  RTD_WEBHOOK_TOKEN: ${{ secrets.RTD_WEBHOOK_TOKEN }}
+
 jobs:
 
   # Useful for workflow debugging
@@ -56,32 +62,32 @@ jobs:
 
       # Configure repository for test.PyPI
       - name: Configure Poetry for test.PyPI
-        if: "github.event.release.prerelease"
+        if: "github.event.release.prerelease && env.TEST_PYPI_TOKEN"
         run: |
           poetry config repositories.testpypi https://test.pypi.org/legacy/
           poetry config pypi-token.testpypi ${{ secrets.TEST_PYPI_TOKEN }}
 
       # Configure repository for PyPI
       - name: Configure Poetry for PyPI
-        if: "!github.event.release.prerelease"
+        if: "!github.event.release.prerelease && env.PYPI_TOKEN"
         run: |
           poetry config http-basic.pypi "__token__" ${{ secrets.PYPI_TOKEN }}
 
       # Publish docs
       - name: Trigger RTDs build
-        if: "!github.event.release.prerelease"
+        if: "!github.event.release.prerelease && env.RTD_WEBHOOK_URL && env.RTD_WEBHOOK_TOKEN"
         run: |
           curl -X POST                                     \
                -d "token=${{ secrets.RTD_WEBHOOK_TOKEN }}" \
                ${{ secrets.RTD_WEBHOOK_URL }}
 
       # Publish project to test.PyPI
-      # - name: Publish to test.PyPI
-      #   if: "github.event.release.prerelease"
-      #   run: poetry publish --build -r testpypi
-      #
-      # # ... else publish project to PyPI
-      # - name: Publish to PyPI
-      #   if: "!github.event.release.prerelease"
-      #   run: poetry publish --build
+      - name: Publish to test.PyPI
+        if: "github.event.release.prerelease && env.TEST_PYPI_TOKEN"
+        run: poetry publish --build -r testpypi
+
+      # ... else publish project to PyPI
+      - name: Publish to PyPI
+        if: "!github.event.release.prerelease && env.PYPI_TOKEN"
+        run: poetry publish --build
 
