@@ -349,9 +349,9 @@ def get_predictions(settings, model_file=None):
     tmp = df_pred[["SNID", "target"] + class_col].groupby("SNID").mean()
     preds = np.argmax(tmp[class_col].values, 1)
     acc = (preds == tmp.target.values).sum() / len(tmp)
-    lu.print_green(f"Accuracy MC", acc)
+    lu.print_green("Accuracy MC", acc)
     lu.print_green(
-        f"Balanced Accuracy",
+        "Balanced Accuracy",
         metrics.balanced_accuracy_score(tmp.target.values, preds),
     )
 
@@ -375,9 +375,9 @@ def get_predictions(settings, model_file=None):
     tmp = df_pred_MFE[["SNID", "target"] + class_col].groupby("SNID").mean()
     preds = np.argmax(tmp[class_col].values, 1)
     acc = (preds == tmp.target.values).sum() / len(tmp)
-    lu.print_green(f"Accuracy MFE", acc)
+    lu.print_green("Accuracy MFE", acc)
     lu.print_green(
-        f"Balanced Accuracy", metrics.balanced_accuracy_score(tmp.target.values, preds)
+        "Balanced Accuracy", metrics.balanced_accuracy_score(tmp.target.values, preds)
     )
 
     for OOD in ["random", "reverse", "shuffle", "sin"]:

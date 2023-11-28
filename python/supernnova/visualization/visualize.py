@@ -5,9 +5,9 @@ import glob
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 
 plt.switch_backend("agg")
-import matplotlib.gridspec as gridspec
 
 
 def plot_lightcurves(df, SNIDs, settings):
@@ -99,7 +99,7 @@ def plot_lightcurves_from_hdf5(settings, SNID_idxs):
             ax = plt.subplot(gs[idx])
 
             SNID = hf["SNID"][SNID_idx]
-            PEAKMJD = str(hf["PEAKMJD"][SNID_idx])
+            str(hf["PEAKMJD"][SNID_idx])
             PEAKMJDNORM = hf["PEAKMJDNORM"][SNID_idx]
             typ = hf[settings.sntype_var][SNID_idx]
             typ = settings.sntypes[str(typ)]

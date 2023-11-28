@@ -7,8 +7,8 @@ from pathlib import Path
 
 def launch_docker():
 
-    pwd = os.getcwd()
-    UID = os.getuid()
+    os.getcwd()
+    os.getuid()
     snn_dir = os.path.abspath(Path(os.path.dirname(os.path.realpath(__file__))).parent)
     dump_dir = os.path.abspath(Path(snn_dir).parent)
 
@@ -20,9 +20,9 @@ def launch_docker():
     args = parser.parse_args()
 
     cmd = (
-        f"docker run -it --rm ")
+        "docker run -it --rm ")
 
-    cmd += f" --gpus all " if 'gpu' in args.image else ""
+    cmd += " --gpus all " if 'gpu' in args.image else ""
 
     cmd += (
         f" -v {snn_dir}:/u/home/SuperNNova"

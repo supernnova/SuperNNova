@@ -1,18 +1,16 @@
 import os
-import pytest
 from pathlib import Path
-import glob
 import shutil
 # from tests.test_utils import call_cmd
 # from tests.test_utils import testmanager
-from .test_utils import call_cmd, testmanager
+from .test_utils import call_cmd
 
 dir_path = os.path.dirname(os.path.realpath(__file__)) + "/dump/"
 dir_data_path = os.path.dirname(os.path.realpath(__file__)) + "/dump_data/"
 
 def test_database():
     cmd = (
-        f"python run.py --data --dump_dir tests/dump --raw_dir tests/raw"
+        "python run.py --data --dump_dir tests/dump --raw_dir tests/raw"
     )
     call_cmd(cmd)
     
@@ -21,8 +19,8 @@ def test_database():
 
 def test_database_filter():
     cmd = (
-        f"python run.py --data --dump_dir tests/dump_data --raw_dir tests/raw "
-        f"--list_filters g r"
+        "python run.py --data --dump_dir tests/dump_data --raw_dir tests/raw "
+        "--list_filters g r"
     )
     call_cmd(cmd)
     
@@ -46,7 +44,7 @@ def test_database_sntypes():
 def test_rnn_train():
 
     cmd = (
-        f"python run.py --train_rnn --dump_dir tests/dump "
+        "python run.py --train_rnn --dump_dir tests/dump "
     )
     
     call_cmd(cmd)
@@ -59,7 +57,7 @@ def test_rnn_train():
 def test_rnn_nbclass():
 
     cmd = (
-        f"python run.py --train_rnn --dump_dir tests/dump --nb_classes 2"
+        "python run.py --train_rnn --dump_dir tests/dump --nb_classes 2"
         
     )
     
@@ -78,7 +76,7 @@ def test_rnn_validate():
        to do: either change the file names or check contents of the file
     """
     cmd = (
-        f"python run.py --validate_rnn --dump_dir tests/dump"
+        "python run.py --validate_rnn --dump_dir tests/dump"
     )
     
     call_cmd(cmd)
@@ -90,7 +88,7 @@ def test_rnn_validate():
 
 def test_rnn_speed():
     cmd = (
-        f"python run.py --validate_rnn --speed --dump_dir tests/dump"
+        "python run.py --validate_rnn --speed --dump_dir tests/dump"
     )
     
     call_cmd(cmd)

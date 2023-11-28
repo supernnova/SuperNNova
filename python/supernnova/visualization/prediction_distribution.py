@@ -1,5 +1,4 @@
 import re
-import os
 import h5py
 import torch
 import numpy as np

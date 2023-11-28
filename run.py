@@ -7,13 +7,11 @@ from supernnova.visualization import (
     early_prediction,
     prediction_distribution,
 )
-from supernnova.training import train_rnn, train_randomforest
+from supernnova.training import train_rnn
 from supernnova.paper import superNNova_plots as sp
-from supernnova.paper import superNNova_thread as st
 from supernnova.data import make_dataset
 from supernnova.validation import (
     validate_rnn,
-    validate_randomforest,
     metrics,
 )
 from supernnova.utils import logging_utils

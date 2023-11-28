@@ -74,8 +74,8 @@ def get_metric_ranges(df, sel_criteria, metric="all_accuracy", round_output=2):
     std_metric = np.round(df_sel[f"{metric}_mean"].std())
     top_models = df_sel.nlargest(3, f"{metric}_mean").round(round_output)
 
-    print(f"mean of {mean_metric} \pm {std_metric}")
-    print(f"top models:")
+    print(f"mean of {mean_metric} \\pm {std_metric}")
+    print("top models:")
     nice_df_print(
         top_models, keys=["model_name_noseed", f"{metric}_mean", f"{metric}_std"]
     )
@@ -306,11 +306,11 @@ def print_contamination(df, sel_criteria, settings, data="saltfit"):
             f"all_contamination_{sntype}_std",
         ]
         df_sel[f"str_all_contamination_{sntype}"] = df_sel[key_list].apply(
-            lambda x: " \pm ".join(x.map(str)), axis=1
+            lambda x: " \\pm ".join(x.map(str)), axis=1
         )
         key_list = [f"0_contamination_{sntype}_mean", f"0_contamination_{sntype}_std"]
         df_sel[f"str_0_contamination_{sntype}"] = df_sel[key_list].apply(
-            lambda x: " \pm ".join(x.map(str)), axis=1
+            lambda x: " \\pm ".join(x.map(str)), axis=1
         )
 
     print("all")

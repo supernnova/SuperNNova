@@ -1,5 +1,4 @@
 import math
-import random
 import shutil
 import argparse
 import numpy as np

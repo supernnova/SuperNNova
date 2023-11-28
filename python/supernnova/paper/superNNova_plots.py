@@ -25,7 +25,6 @@ from ..utils.visualization_utils import (
     FILL_DIC,
     MARKER_LIST,
     CMAP,
-    PATTERNS,
     get_model_visualization_name,
 )
 
@@ -268,7 +267,7 @@ def plot_calibration(settings):
 
     ax1.set_ylabel("fraction of positives (fP)", fontsize=18)
     ax1.set_ylim([-0.05, 1.05])
-    ax11.set_xlabel(f"mean predicted probability", fontsize=18)
+    ax11.set_xlabel("mean predicted probability", fontsize=18)
     ax1.legend()
     plt.setp(ax1.get_xticklabels(), visible=False)
 
@@ -310,7 +309,7 @@ def plot_confusion_matrix(
         cm = cm.astype("float") / cm.sum(axis=1)[:, np.newaxis]
 
     plt.imshow(cm, interpolation="nearest", cmap=cmap)
-    cbar = plt.colorbar()
+    plt.colorbar()
     # cbar.set_clim(0, 1.0)
     tick_marks = np.arange(len(classes))
     plt.xticks(tick_marks, classes, rotation=45)
@@ -926,9 +925,9 @@ def performance_plots(settings):
     ]
     # select only best hp (issue for df 0.2) and only cyclic vanilla
     tmp_list_files = [
-        l for l in list_files if "N_global_lstm_32x2_0.05_128_True_mean_C" in l
+        item for item in list_files if "N_global_lstm_32x2_0.05_128_True_mean_C" in item
     ]
-    tmp_list_files += [l for l in list_files if "randomforest" in l]
+    tmp_list_files += [item for item in list_files if "randomforest" in item]
     list_files = tmp_list_files
 
     if len(list_files) == 0:
@@ -1146,7 +1145,7 @@ def plot_speed_benchmark(dump_dir):
     speed_file = os.path.join(dump_dir, "stats/rnn_speed.csv")
 
     assert os.path.isfile(speed_file), lu.str_to_redstr(
-        f"speed_file does not exist. Run ``python run.py --speed`` first."
+        "speed_file does not exist. Run ``python run.py --speed`` first."
     )
 
     df = pd.read_csv(speed_file)
@@ -1243,7 +1242,7 @@ def create_OOD_classification_plots(df, list_models, settings):
             df_perc = (
                 df_sel[list_keys]
                 .div(
-                    df_sel[[l for l in list_keys if "random" in l]].sum(axis=1), axis=0
+                    df_sel[[item for item in list_keys if "random" in item]].sum(axis=1), axis=0
                 )
                 .multiply(100)
                 .round(2)

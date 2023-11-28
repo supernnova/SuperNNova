@@ -69,7 +69,7 @@ def SuperNNova_stats_and_plots_thread(df, settings, plots=True, debug=False):
     Ordered as in paper
     """
     pd.set_option("max_colwidth", 1000)
-    print(lu.str_to_greenstr(f"STATISTICS USED IN SUPERNNOVA"))
+    print(lu.str_to_greenstr("STATISTICS USED IN SUPERNNOVA"))
 
     # Baseline experiments
     baseline(df, settings, plots, debug)
@@ -113,10 +113,10 @@ def baseline(df, settings, plots, debug):
     sel_criteria = Base_salt.replace("DF_1.0", "DF_0.5").split("global")
     print(lu.str_to_bluestr(f"Normalization {sel_criteria}"))
     if not debug:
-        df_sel = sm.get_metric_ranges(df, sel_criteria)
+        sm.get_metric_ranges(df, sel_criteria)
 
     # 3. Comparing with other methods
-    print(lu.str_to_bluestr(f"Other methods:"))
+    print(lu.str_to_bluestr("Other methods:"))
     # Figure: accuracy vs. number of SNe
     if plots:
         print(lu.str_to_yellowstr("Plotting accuracy vs. SNe (Figure 3.)"))
@@ -338,7 +338,7 @@ def towards_cosmo(df, df_delta, df_delta_ood, settings, plots, debug):
     df_sel = df_sel[
         (
             df_sel["model_name_noseed"].isin(
-                [l.replace("photometry", "saltfit") for l in list_models]
+                [item.replace("photometry", "saltfit") for item in list_models]
             )
         )
         & (df_sel["source_data"] == "saltfit")
@@ -446,12 +446,12 @@ def towards_cosmo(df, df_delta, df_delta_ood, settings, plots, debug):
     if not debug:
         sm.nice_df_print(df_sel)
     print("ternary")
-    list_models_sel = [l.replace("CLF_2", "CLF_3") for l in list_models_rnn]
+    list_models_sel = [item.replace("CLF_2", "CLF_3") for item in list_models_rnn]
     df_sel = df_delta_ood[df_delta_ood["model_name_noseed"].isin(list_models_sel)]
     if not debug:
         sm.nice_df_print(df_sel)
     print("seven-way")
-    list_models_sel = [l.replace("CLF_2", "CLF_7") for l in list_models_rnn]
+    list_models_sel = [item.replace("CLF_2", "CLF_7") for item in list_models_rnn]
     df_sel = df_delta_ood[df_delta_ood["model_name_noseed"].isin(list_models_sel)]
     if not debug:
         sm.nice_df_print(df_sel)

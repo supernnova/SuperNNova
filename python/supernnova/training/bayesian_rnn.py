@@ -4,7 +4,7 @@
 import math
 import numbers
 import warnings
-from typing import List, Tuple, Optional, overload
+from typing import Tuple, Optional
 
 import torch
 from torch import Tensor, _VF

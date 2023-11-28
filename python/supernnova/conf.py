@@ -1,6 +1,5 @@
 import os
 import json
-import pickle
 import argparse
 from pathlib import Path
 from natsort import natsorted

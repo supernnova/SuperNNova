@@ -249,7 +249,7 @@ def load_HDF5(settings, test=False):
         try:
             settings.data_types_training = hf["data_types_training"][:].astype(str)
         except Exception:
-            a = " "
+            pass
 
         arr_data = hf["data"][:]
         if test:

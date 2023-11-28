@@ -1,14 +1,13 @@
 import os
 import glob
 import h5py
-import json
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from pathlib import Path
 from natsort import natsorted
 from astropy.table import Table
-from collections import namedtuple, OrderedDict
+from collections import namedtuple
 
 from . import logging_utils
 
@@ -140,7 +139,7 @@ def tag_type(df, settings, type_column="TYPE"):
         extra_tag = max(map_keys_to_classes.values()) + 1
         for mtyp in tmp[type_column].unique():
             map_keys_to_classes[mtyp] = extra_tag
-    n_unique_classes = len(unique_classes) + n
+    len(unique_classes) + n
 
     df[f"target_{len(unique_classes)}classes"] = df[type_column].apply(
         lambda x: map_keys_to_classes[x]
@@ -411,7 +410,7 @@ def log_standardization(arr):
     if arr_min < -2000:
         logging_utils.print_yellow(
             f"Warning: extreme data values {arr_min}",
-            f"clipping normalization min to -2000",
+            "clipping normalization min to -2000",
         )
         arr_min = -2000
 
@@ -525,7 +524,7 @@ def save_to_HDF5(settings, df):
                 .groupby("SNID")
                 .count()
                 .astype(np.uint8)
-                .rename(columns={f"PEAKMJDNORM": new_column})
+                .rename(columns={"PEAKMJDNORM": new_column})
                 .reset_index()
             )
 
@@ -603,9 +602,9 @@ def save_to_HDF5(settings, df):
         flux_features = [f"FLUXCAL_{f}" for f in settings.list_filters]
         flux_log_standardized = log_standardization(df[flux_features].values)
         # Store normalization parameters
-        gnorm.create_dataset(f"FLUXCAL/min", data=flux_log_standardized.arr_min)
-        gnorm.create_dataset(f"FLUXCAL/mean", data=flux_log_standardized.arr_mean)
-        gnorm.create_dataset(f"FLUXCAL/std", data=flux_log_standardized.arr_std)
+        gnorm.create_dataset("FLUXCAL/min", data=flux_log_standardized.arr_min)
+        gnorm.create_dataset("FLUXCAL/mean", data=flux_log_standardized.arr_mean)
+        gnorm.create_dataset("FLUXCAL/std", data=flux_log_standardized.arr_std)
 
         ###################
         # FLUXERR features
@@ -613,9 +612,9 @@ def save_to_HDF5(settings, df):
         fluxerr_features = [f"FLUXCALERR_{f}" for f in settings.list_filters]
         fluxerr_log_standardized = log_standardization(df[fluxerr_features].values)
         # Store normalization parameters
-        gnorm.create_dataset(f"FLUXCALERR/min", data=fluxerr_log_standardized.arr_min)
-        gnorm.create_dataset(f"FLUXCALERR/mean", data=fluxerr_log_standardized.arr_mean)
-        gnorm.create_dataset(f"FLUXCALERR/std", data=fluxerr_log_standardized.arr_std)
+        gnorm.create_dataset("FLUXCALERR/min", data=fluxerr_log_standardized.arr_min)
+        gnorm.create_dataset("FLUXCALERR/mean", data=fluxerr_log_standardized.arr_mean)
+        gnorm.create_dataset("FLUXCALERR/std", data=fluxerr_log_standardized.arr_std)
 
         ####################################
         # Save the rest of the data to hdf5

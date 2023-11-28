@@ -4,7 +4,6 @@ import h5py
 import itertools
 import numpy as np
 from pathlib import Path
-from collections import OrderedDict
 
 
 class ExperimentSettings:

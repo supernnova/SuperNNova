@@ -16,7 +16,7 @@ class testmanager(ContextDecorator):
                 os.path.join(self.dir_path, "dump", folder), ignore_errors=True
             )
 
-        cmd = f"python run.py --data --dump_dir tests/dump --raw_dir tests/raw"
+        cmd = "python run.py --data --dump_dir tests/dump --raw_dir tests/raw"
         subprocess.check_call(shlex.split(cmd))
 
     def __exit__(self, type, value, traceback):
