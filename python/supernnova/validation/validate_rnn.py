@@ -146,14 +146,14 @@ def get_predictions(settings, model_file=None):
     d_pred["target"] = np.zeros((num_elem, settings.num_inference_samples)).astype(
         np.int64
     )
-    d_pred["SNID"] = np.zeros((num_elem, settings.num_inference_samples)).astype(np.str)
+    d_pred["SNID"] = np.zeros((num_elem, settings.num_inference_samples)).astype(str)
 
     d_pred_MFE = {
         key: np.zeros((num_elem, 1, settings.nb_classes)).astype(np.float32)
         for key in ["all"] + [f"all_{OOD}" for OOD in du.OOD_TYPES]
     }
     d_pred_MFE["target"] = np.zeros((num_elem, 1)).astype(np.int64)
-    d_pred_MFE["SNID"] = np.zeros((num_elem, 1)).astype(np.str)
+    d_pred_MFE["SNID"] = np.zeros((num_elem, 1)).astype(str)
 
     # Fetch SN info
     df_SNinfo = du.load_HDF5_SNinfo(settings).set_index("SNID")

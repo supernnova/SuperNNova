@@ -164,8 +164,14 @@ def build_traintestval_splits(settings):
                 g[settings.sntype_var].apply(lambda x: list(np.unique(x))).to_dict()
             )
             print(f"target {settings.sntype_var}")
+            # settings.data_types_training = [
+            #     f"{k} {settings.sntypes[v[0]]} {[int(dt) for dt in dic_targets[k]]}"
+            #     for k, v in dic_targets.items()
+            # ]
             settings.data_types_training = [
                 f"{k} {settings.sntypes[v[0]]} {[int(dt) for dt in dic_targets[k]]}"
+                if v[0] in settings.sntypes.keys()
+                else f"{k} nonIa {[int(dt) for dt in dic_targets[k]]}"
                 for k, v in dic_targets.items()
             ]
             print(settings.data_types_training)

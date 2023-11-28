@@ -61,15 +61,15 @@ if __name__ == "__main__":
 
             lu.print_blue("Finished rnn training, validating, testing and plotting lcs")
 
-        if settings.train_rf:
+        # if settings.train_rf:
 
-            train_randomforest.train(settings)
-            # Obtain predictions
-            validate_randomforest.get_predictions(settings)
-            # Compute metrics
-            metrics.get_metrics_singlemodel(settings, model_type="rf")
+        #     train_randomforest.train(settings)
+        #     # Obtain predictions
+        #     validate_randomforest.get_predictions(settings)
+        #     # Compute metrics
+        #     metrics.get_metrics_singlemodel(settings, model_type="rf")
 
-            lu.print_blue("Finished rf training, validating and testing")
+        #     lu.print_blue("Finished rf training, validating and testing")
 
         ################
         # VALIDATION
@@ -106,28 +106,28 @@ if __name__ == "__main__":
                         model_type="rnn",
                     )
 
-        if settings.validate_rf:
+        # if settings.validate_rf:
 
-            if settings.model_files is None:
-                validate_randomforest.get_predictions(settings)
-                # Compute metrics
-                metrics.get_metrics_singlemodel(settings, model_type="rf")
-            else:
-                for model_file in settings.model_files:
-                    # Restore model settings
-                    model_settings = conf.get_settings_from_dump(
-                        settings,
-                        model_file,
-                        override_source_data=settings.override_source_data,
-                    )
-                    # Get predictions
-                    prediction_file = validate_randomforest.get_predictions(
-                        model_settings, model_file=model_file
-                    )
-                    # Compute metrics
-                    metrics.get_metrics_singlemodel(
-                        model_settings, prediction_file=prediction_file, model_type="rf"
-                    )
+        #     if settings.model_files is None:
+        #         validate_randomforest.get_predictions(settings)
+        #         # Compute metrics
+        #         metrics.get_metrics_singlemodel(settings, model_type="rf")
+        #     else:
+        #         for model_file in settings.model_files:
+        #             # Restore model settings
+        #             model_settings = conf.get_settings_from_dump(
+        #                 settings,
+        #                 model_file,
+        #                 override_source_data=settings.override_source_data,
+        #             )
+        #             # Get predictions
+        #             prediction_file = validate_randomforest.get_predictions(
+        #                 model_settings, model_file=model_file
+        #             )
+        #             # Compute metrics
+        #             metrics.get_metrics_singlemodel(
+        #                 model_settings, prediction_file=prediction_file, model_type="rf"
+        #             )
 
         ##################################
         # VISUALIZE
