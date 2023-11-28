@@ -11,17 +11,17 @@ Dataset exploration
     :members:
     :show-inheritance:
 
-.. currentmodule:: supernnova.visualization.visualize_plasticc.py
-
-.. automodule:: supernnova.visualization.visualize_plasticc
-    :members:
-    :show-inheritance:
-
 Plotting predictions
 ------------------------------
 
 .. currentmodule:: supernnova.visualization.early_prediction.py
 
 .. automodule:: supernnova.visualization.early_prediction
+    :members:
+    :show-inheritance:
+
+.. currentmodule:: supernnova.visualization.prediction_distribution.py
+
+.. automodule:: supernnova.visualization.prediction_distribution
     :members:
     :show-inheritance:
