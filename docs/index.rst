@@ -63,3 +63,10 @@ Welcome to SuperNNova's documentation!
 
    paper/index.rst
    paper/paper.rst
+
+.. toctree::
+   :glob:
+   :maxdepth: 1
+   :caption: Notes for Developers
+
+   notes_for_developers
