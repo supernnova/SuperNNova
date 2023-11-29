@@ -47,7 +47,6 @@ Welcome to SuperNNova's documentation!
    validation/index.rst
    validation/validate.rst
 
-
 .. toctree::
    :glob:
    :maxdepth: 1
@@ -69,4 +68,9 @@ Welcome to SuperNNova's documentation!
    :maxdepth: 1
    :caption: Notes for Developers
 
-   notes_for_developers
+   Notes for Developers <notes_for_developers>
+
+Index
+=====
+* :ref:`genindex`
+* :ref:`modindex`
