@@ -1,6 +1,6 @@
 This section provides details on how to configure and/or develop this codebase.
 
-## Continuos Integration/Continuous Deployment (CI/CD) Workflow
+# Continuos Integration/Continuous Deployment (CI/CD) Workflow
 
 This project uses *GitHub Workflows* to automate or ease a number of development tasks.  These
 workflows can be found within the `./.github/workflows/` directory and include:
@@ -22,7 +22,7 @@ workflows can be found within the `./.github/workflows/` directory and include:
 
     This workflow is run whenever a new release is generated through *GitHub* (see below for details on how to do this).  Documentation is updated on *Read the Docs* and a new version of the code is published on the *Python Package Index* (*PyPI*).
 
-## Setting-up the Code
+# Setting-up the Code
 
 A local development copy of the code base can be obtained and configured as follows:
 
@@ -40,7 +40,7 @@ A local development copy of the code base can be obtained and configured as foll
 Although not strictly necessary, it is recommended that you configure the branch permissions of any forked repositories as detailed in the *GitHub* configuration section below.
 :::
 
-## Poetry and Python environments for development
+# Poetry and Python environments for development
 
 Poetry is used to manage this project ([see here for an introduction](https://python-poetry.org)).  It simplifies & helps with managing the following:
 
@@ -67,7 +67,7 @@ Poetry is used to manage this project ([see here for an introduction](https://py
 
     Once properly configured, publishing to *PyPI* with Poetry is extremely easy.  This is generally managed by the CI/CD workflow for the project though, and developers should never have to manually do this.
 
-## Installing Development Dependencies
+# Installing Development Dependencies
 
 Once the code is locally installed, development dependencies should be installed by moving to the project's root directory and executing the following:
 
@@ -77,15 +77,15 @@ $ poetry install --all-extras
 
 In what follows, it will be assumed that this has been done.
 
-## Guidelines
+# Guidelines
 
 In the following, we lay-out some important guidelines for developing on this codebase.
 
-### Branches
+## Branches
 
 ***Development should never be conducted on the `main` branch***.  If *GitHub* has been properly configured (see below), then merges to this branch are limited to Pull Requests (PRs) only.  Once a PR is opened for the `main` branch, the project tests are run.  When it is closed and code is committed to the main branch, the project version is automatically incremented (see below).
 
-### Versioning
+## Versioning
 
 Semantic versioning (i.e. a scheme that follows a `vMAJOR.MINOR.PATCH` format; see <https://semver.org> for details) is used for this project.  ***The single point of truth for the current production version is the last git tag on the main branch with a `v[0-9]*` format***.  When developing locally, the reported version will often appear as `v0.0.0-dev`.
 
@@ -101,7 +101,7 @@ A `MAJOR` version change should be indicated if the PR introduces a breaking cha
 Make sure you think carefully about what type of changes you are committing.  If you are adding functionality, make sure you bump the **MINOR** version; if you are making breaking changes, make sure you bump the **MAJOR** version.  ***Users will be very thankful that you did!***
 :::
 
-### Tests
+## Tests
 
 *PyTest* is used to run tests for this codebase.  Make sure you run them before submitting any code to a PR by
 executing the following from the project root directory:
@@ -112,13 +112,13 @@ $ pytest
 
 Some further comments about how testing has been configured for this project:
 
-#### Coverage
+### Coverage
 
 *PyTest* has been configured for this project to create a coverage report after running.  This report will inform the developer of what fraction of the code base is exercised by the tests and give a list of lines of code in each Python filename which has not been exercised by the tests run.
 
 While not strictly enforced, we encourage developers to make sure that anything they do to the codebase does not reduce this metric.  This report can be used to inform what parts of the codebase need further testing.
 
-### Git Hooks
+## Git Hooks
 
 This project has been set-up with pre-configured git hooks. They should be used as a means for developers to quickly check that (at least some) of the code standards of the project are being met by commited code.  Ultimately, all standards are actually enforced by the continuous integration pipeline (see below).  Running quick checks (like linting) at the point of commiting code can save time that might otherwise be lost later (for example) at the PR or release stage when testing needs to be rigorous and policy enforcement generally fails slower.  Developers can choose to either:
 
@@ -145,11 +145,11 @@ $ pre-commit uninstall
 
 They can subsequently be re-enabled by reinstalling them.
 
-#### Maintaining Git Hooks
+### Maintaining Git Hooks
 
 The git hooks are defined in the `.pre-commit-config.yaml` file.  Specific revisions for many of the tools listed should be managed with Poetry, with syncing managed with the [sync_with_poetry](https://github.com/floatingpurr/sync_with_poetry) hook.  Developers should take care not to use git hooks to *enforce* any project policies.  That should all be done within the continuous integration workflows.  Instead: these should just be quality-of-life checks that fix minor issues or prevent the propagation of quick-and-easy-to-detect problems which would otherwise be caught by the CI later with considerably more latency.  Furthermore, ensure that the checks performed here are consistant between the hooks and the CI.  For example: make sure that any linting/code quality checks are executed with the same tools and options.
 
-### Releases
+## Releases
 
 Releases are generated through the *GitHub* UI.  A *GitHub Workflow* has been configured to do the following when a new release is produced:
 
@@ -162,7 +162,7 @@ Releases are generated through the *GitHub* UI.  A *GitHub Workflow* has been co
 If a release is flagged as a "pre-release" through the *GitHub* interface, then documentation will not be built and the project will be published on *test.PyPI.org* instead.
 :::
 
-#### Generating a new release
+### Generating a new release
 
 To generate a new release, do the following:
 
@@ -173,11 +173,11 @@ To generate a new release, do the following:
 5. Write some text describing the nature of the release to prospective users, and
 6. Click `Publish Release`.
 
-### Documentation
+## Documentation
 
 Documentation for this project is generated using [Sphinx](https://www.sphinx-doc.org/en/master/) and is hosted on *Read the Docs* for the latest release version.  Sphinx is configured here using [*MyST-Parser*](https://myst-parser.readthedocs.io/en/latest/)so that content can be managed with Markdown (`.md`) rather than Restructured Text (`.rst`).  *MyST-Parser* also offers [several optional Markdown extensions](https://myst-parser.readthedocs.io/en/latest/syntax/syntax.html) enabling the rendering of richer content (e.g. Latex equations).  Several of these extensions have been enabled by default, but not all.  This can be managed by overriding the behavior of the `conf.py` template (see below for directions on overriding templates) and editing the `myst_enable_extensions` list therein.
 
-#### Generating the Documentation
+### Generating the Documentation
 
 Documentation can be generated locally by running the following from the `docs` directory of the project:
 ``` console
@@ -189,7 +189,7 @@ This will generate an html version of the documentation in `docs/_build/html` wh
 $ open docs/_build/html/index.html
 ```
 
-## Configuring Services
+# Configuring Services
 
 Develpers and project owners/maintainers will require accounts with one or all of the following services to work with this codebase.  This section details how these services need to be configured.  Following these steps should only be necessarry - or partially necessary - if a developer chooses to fork the project.
 
