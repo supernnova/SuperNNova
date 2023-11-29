@@ -34,6 +34,7 @@ MNRAS, Volume 491, Issue 3, January 2020, Pages 4277–4293.](https://academic.o
 ## Table of contents
 1. [Repository overview](#overview)
 2. [Getting Started](#start)
+    0. [Use Poetry in new releases]
     1. [With Conda](#conda)
     2. [With Docker](#docker)
 3. [Usage](#usage)
