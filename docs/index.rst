@@ -1,7 +1,7 @@
 Welcome to SuperNNova's documentation!
 =======================================
 
-.. image:: SuperNNova.png
+.. image:: assets/SuperNNova.png
 
 .. toctree::
    :glob:
@@ -47,7 +47,6 @@ Welcome to SuperNNova's documentation!
    validation/index.rst
    validation/validate.rst
 
-
 .. toctree::
    :glob:
    :maxdepth: 1
@@ -63,3 +62,15 @@ Welcome to SuperNNova's documentation!
 
    paper/index.rst
    paper/paper.rst
+
+.. toctree::
+   :glob:
+   :maxdepth: 1
+   :caption: Notes for Developers
+
+   Notes for Developers <notes_for_developers>
+
+Index
+=====
+* :ref:`genindex`
+* :ref:`modindex`

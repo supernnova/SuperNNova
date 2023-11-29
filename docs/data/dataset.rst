@@ -11,16 +11,6 @@ Dataset construction
     :members:
     :show-inheritance:
 
-
-PLASTICC Dataset construction
-------------------------------
-
-.. currentmodule:: supernnova.data.make_dataset_plasticc.py
-.. automodule:: supernnova.data.make_dataset_plasticc
-    :members:
-    :show-inheritance:
-
-
 Data utilities
 ------------------------------
 

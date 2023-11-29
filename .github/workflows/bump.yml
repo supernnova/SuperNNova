@@ -1,0 +1,48 @@
+
+name: Bump version in git
+
+on:
+  push:
+    branches:
+    - main
+
+jobs:
+
+  # Useful for workflow debugging
+  # printJob:    
+  #   name: Print event
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - name: Dump GitHub context
+  #     env:
+  #       GITHUB_CONTEXT: ${{ toJson(github) }}
+  #     run: |
+  #       echo "$GITHUB_CONTEXT"
+
+  bump_version:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Check-out repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Config git
+        run: |
+          git config --global user.email "github+actions@gmail.com"
+          git config --global user.name "Actions"
+
+      - name: Bump major
+        if: contains(github.event.head_commit.message, '[version:major]')
+        run: .github/workflows/bump.sh major
+
+      - name: Bump minor
+        if: "!contains(github.event.head_commit.message, '[version:major]') && contains(github.event.head_commit.message, '[version:minor]')"
+        run: .github/workflows/bump.sh minor
+
+      - name: Bump patch
+        if: "!contains(github.event.head_commit.message, '[version:major]') && !contains(github.event.head_commit.message, '[version:minor]')"
+        run: .github/workflows/bump.sh patch
+

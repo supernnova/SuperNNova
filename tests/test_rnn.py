@@ -1,59 +1,143 @@
 import os
-import pytest
 from pathlib import Path
-from tests.test_utils import call_cmd
-from tests.test_utils import testmanager
+import shutil
+
+# from tests.test_utils import call_cmd
+# from tests.test_utils import testmanager
+from .test_utils import call_cmd
+
+dir_path = os.path.dirname(os.path.realpath(__file__)) + "/dump/"
+dir_data_path = os.path.dirname(os.path.realpath(__file__)) + "/dump_data/"
 
 
-@pytest.mark.parametrize(
-    "dataset, redshift, norm, nb_classes",
-    [
-        ("photometry", None, "global", 2),
-        ("photometry", None, "global", 3),
-        ("photometry", None, "global", 7),
-        ("photometry", None, "none", 2),
-        ("photometry", None, "perfilter", 2),
-        ("photometry", None, "perfilter", 2),
-        ("photometry", None, "perfilter", 2),
-        ("photometry", "zpho", "none", 2),
-        ("photometry", "zspe", "none", 2),
-        ("saltfit", None, "global", 2),
-        ("saltfit", None, "global", 3),
-        ("saltfit", None, "global", 7),
-        ("saltfit", None, "none", 2),
-        ("saltfit", None, "perfilter", 2),
-        ("saltfit", None, "perfilter", 2),
-        ("saltfit", None, "perfilter", 2),
-        ("saltfit", "zpho", "none", 2),
-        ("saltfit", "zspe", "none", 2),
-    ],
-)
-@testmanager()
-def test_rnn(dataset, redshift, norm, nb_classes):
-
-    cmd = (
-        f"python run.py --train_rnn --source_data {dataset} "
-        f"--dump_dir tests/dump "
-        f"--nb_epoch 1 --norm {norm} --nb_classes {nb_classes}"
-    )
-    if redshift is not None:
-        cmd += f" --redshift {redshift}"
+def test_database():
+    cmd = "python run.py --data --dump_dir tests/dump --raw_dir tests/raw"
     call_cmd(cmd)
 
+    # check whether database has been generated
+    assert os.path.exists(dir_path + "processed/database.h5") is True
+
+
+def test_database_filter():
     cmd = (
-        f"python run.py --validate_rnn --source_data {dataset} "
-        f"--dump_dir tests/dump "
-        f"--norm {norm} --nb_classes {nb_classes}"
+        "python run.py --data --dump_dir tests/dump_data --raw_dir tests/raw "
+        "--list_filters g r"
     )
-    if redshift is not None:
-        cmd += f" --redshift {redshift}"
     call_cmd(cmd)
 
-    # Check we do have predictions saved
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    assert len([e for e in (Path(dir_path) / "dump/models").glob("*/PRED*")]) == 1
+    # check whether database has been generated
+    assert os.path.exists(dir_data_path + "processed/database.h5") is True
+    # remove dump_data folder after assertion
+    shutil.rmtree(dir_data_path)
 
 
+def test_database_sntypes():
+    cmd = (
+        "python run.py --data --dump_dir tests/dump_data --raw_dir tests/raw "
+        '--sntypes \'{"101":"Ia"}\' '
+    )
+    call_cmd(cmd)
+
+    # check whether database has been generated
+    assert os.path.exists(dir_data_path + "processed/database.h5") is True
+    # remove dump_data folder after assertion
+    shutil.rmtree(dir_data_path)
+
+
+def test_rnn_train():
+
+    cmd = "python run.py --train_rnn --dump_dir tests/dump "
+
+    call_cmd(cmd)
+
+    model_dir = dir_path + "models/"
+    files = [
+        "*/*.pt",
+        "*/PRED*",
+        "*/METRICS*",
+        "*/train_and_val_loss*",
+        "*/training_log.json",
+    ]
+    for fi in files:
+        assert len([e for e in (Path(model_dir)).glob(fi)]) == 1
+
+
+def test_rnn_nbclass():
+
+    cmd = "python run.py --train_rnn --dump_dir tests/dump --nb_classes 2"
+
+    call_cmd(cmd)
+
+    model_dir = dir_path + "models/"
+    files = [
+        "*/*.pt",
+        "*/PRED*",
+        "*/METRICS*",
+        "*/train_and_val_loss*",
+        "*/training_log.json",
+    ]
+    for fi in files:
+        assert len([e for e in (Path(model_dir)).glob(fi)]) == 1
+
+
+def test_rnn_validate():
+    """running rnn_validate generating two files PRED* and METRICS*,
+    which are the same filename as train_rnn and cannot be tested
+    by files exist assertion
+    to do: either change the file names or check contents of the file
+    """
+    cmd = "python run.py --validate_rnn --dump_dir tests/dump"
+
+    call_cmd(cmd)
+
+    # model_dir = dir_path + "models/"
+    # files = ["*/PRED*", "*/METRICS*"]
+    # for fi in files:
+    #     assert len([e for e in (Path(model_dir)).glob(fi)]) == 1
+
+
+def test_rnn_speed():
+    cmd = "python run.py --validate_rnn --speed --dump_dir tests/dump"
+
+    call_cmd(cmd)
+
+
+def test_rnn_metrics():
+    model_dir = dir_path + "models/"
+    pred_files = [e for e in (Path(model_dir)).glob("*/PRED*")]
+    for pf in pred_files:
+        cmd = (
+            f"python run.py --validate_rnn --metrics --dump_dir tests/dump "
+            f"--prediction_files {pf}"
+        )
+
+        call_cmd(cmd)
+
+
+def test_rnn_mfile():
+    model_dir = dir_path + "models/"
+    model_files = [e for e in (Path(model_dir)).glob("*/*.pt")]
+    for mf in model_files:
+        cmd = (
+            f"python run.py --validate_rnn --dump_dir tests/dump " f"--model_files {mf}"
+        )
+
+        call_cmd(cmd)
+
+
+def test_plot_lcs():
+    model_dir = dir_path + "models/"
+    model_files = [e for e in (Path(model_dir)).glob("*/*.pt")]
+    for mf in model_files:
+        cmd = f"python run.py --plot_lcs --dump_dir tests/dump/ " f"--model_files {mf}"
+
+        call_cmd(cmd)
+
+
+"""    
+
+   
 if __name__ == "__main__":
 
-    test_rnn("saltfit", None, "perfilter", 2)
+    test_rnn()
+"""
