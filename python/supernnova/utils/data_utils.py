@@ -1,8 +1,8 @@
+import os
 import h5py
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-from pathlib import Path
 from astropy.table import Table
 from collections import namedtuple
 
@@ -160,18 +160,17 @@ def load_fitfile(settings, verbose=True):
     if verbose:
         logging_utils.print_green("Loading FITRES file")
 
-    if Path(f"{settings.preprocessed_dir}/FITOPT000.FITRES.pickle").exists():
+    if os.access(f"{settings.preprocessed_dir}/FITOPT000.FITRES.pickle", os.R_OK):
         df = pd.read_pickle(f"{settings.preprocessed_dir}/FITOPT000.FITRES.pickle")
         if verbose:
             print(f"Loaded {settings.preprocessed_dir}/FITOPT000.FITRES.pickle")
 
-    elif (
-        Path(f"{settings.fits_dir}/FITOPT000.FITRES").exists()
-        or Path(f"{settings.fits_dir}/FITOPT000.FITRES.gz").exists()
+    elif os.access(f"{settings.fits_dir}/FITOPT000.FITRES", os.R_OK) or os.access(
+        f"{settings.fits_dir}/FITOPT000.FITRES.gz", os.R_OK
     ):
         fit_name = (
             f"{settings.fits_dir}/FITOPT000.FITRES"
-            if Path(f"{settings.fits_dir}/FITOPT000.FITRES").exists()
+            if os.access(f"{settings.fits_dir}/FITOPT000.FITRES", os.R_OK)
             else f"{settings.fits_dir}/FITOPT000.FITRES.gz"
         )
         df = pd.read_csv(
