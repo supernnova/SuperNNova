@@ -115,10 +115,6 @@ def get_predictions(settings, model_file=None):
         dump_dir = f"{settings.dump_dir}/models/{settings.pytorch_model_name}"
         os.makedirs(dump_dir, exist_ok=True)
 
-    if settings.override_source_data is not None:
-        settings.source_data = settings.override_source_data
-        settings.set_pytorch_model_name()
-
     prediction_file = f"{dump_dir}/PRED_{settings.pytorch_model_name}.pickle"
 
     rnn_state = torch.load(model_file, map_location=lambda storage, loc: storage)

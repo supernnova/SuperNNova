@@ -1,11 +1,8 @@
-import os
-import glob
 import h5py
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from pathlib import Path
-from natsort import natsorted
 from astropy.table import Table
 from collections import namedtuple
 
@@ -253,46 +250,47 @@ def process_header_csv(file_path, settings, columns=None):
     return df
 
 
-def add_redshift_features(settings, df):
-    """Add redshift features to pandas dataframe.
+# TODO: double-check the following function that been commented out before deleting. It seems only related to randomforest.
+# def add_redshift_features(settings, df):
+#     """Add redshift features to pandas dataframe.
 
-    Args:
-        settings (ExperimentSettings): controls experiment hyperparameters
-        df (str): pandas DataFrame with FIT data
+#     Args:
+#         settings (ExperimentSettings): controls experiment hyperparameters
+#         df (str): pandas DataFrame with FIT data
 
-    Returns:
-        (pandas.DataFrame) the dataframe, possibly with added redshift features
-    """
+#     Returns:
+#         (pandas.DataFrame) the dataframe, possibly with added redshift features
+#     """
 
-    # check if we use host redshift as feature
-    host_features = [f for f in settings.randomforest_features if "HOST" in f]
-    use_redshift = len(host_features) > 0
+#     # check if we use host redshift as feature
+#     host_features = [f for f in settings.randomforest_features if "HOST" in f]
+#     use_redshift = len(host_features) > 0
 
-    if use_redshift > 0:
-        logging_utils.print_green("Adding redshift features...")
+#     if use_redshift > 0:
+#         logging_utils.print_green("Adding redshift features...")
 
-        columns_to_read = ["SNID"] + host_features
-        # reading from batch pickles
-        list_files = natsorted(glob.glob(f"{settings.preprocessed_dir}/*_PHOT.pickle"))
-        # Check file with redshift features exist
-        error_msg = "Preprocessed_file not found. Call python run.py --data"
-        assert os.path.isfile(list_files[0]), error_msg
+#         columns_to_read = ["SNID"] + host_features
+#         # reading from batch pickles
+#         list_files = natsorted(glob.glob(f"{settings.preprocessed_dir}/*_PHOT.pickle"))
+#         # Check file with redshift features exist
+#         error_msg = "Preprocessed_file not found. Call python run.py --data"
+#         assert os.path.isfile(list_files[0]), error_msg
 
-        extra_info_df = pd.concat(
-            [pd.read_pickle(f)[columns_to_read] for f in list_files]
-        )
+#         extra_info_df = pd.concat(
+#             [pd.read_pickle(f)[columns_to_read] for f in list_files]
+#         )
 
-        # In extra_info_df, there are many SNID duplicates as each row corresponds to a time step in a given curve
-        # We use groupby + first to only select the first row of each lightcurve
-        # Then we can merge knowing there won't be SNID duplicates in extra_info_df
-        extra_info_df = (
-            extra_info_df.groupby("SNID")[host_features].first().reset_index()
-        )
+#         # In extra_info_df, there are many SNID duplicates as each row corresponds to a time step in a given curve
+#         # We use groupby + first to only select the first row of each lightcurve
+#         # Then we can merge knowing there won't be SNID duplicates in extra_info_df
+#         extra_info_df = (
+#             extra_info_df.groupby("SNID")[host_features].first().reset_index()
+#         )
 
-        # Add redshift info to df
-        df = df.merge(extra_info_df, how="left", on="SNID")
+#         # Add redshift info to df
+#         df = df.merge(extra_info_df, how="left", on="SNID")
 
-    return df
+#     return df
 
 
 def compute_delta_time(df):

@@ -59,16 +59,6 @@ if __name__ == "__main__":
 
             lu.print_blue("Finished rnn training, validating, testing and plotting lcs")
 
-        # if settings.train_rf:
-
-        #     train_randomforest.train(settings)
-        #     # Obtain predictions
-        #     validate_randomforest.get_predictions(settings)
-        #     # Compute metrics
-        #     metrics.get_metrics_singlemodel(settings, model_type="rf")
-
-        #     lu.print_blue("Finished rf training, validating and testing")
-
         ################
         # VALIDATION
         ################
@@ -81,11 +71,7 @@ if __name__ == "__main__":
             else:
                 for model_file in settings.model_files:
                     # Restore model settings
-                    model_settings = conf.get_settings_from_dump(
-                        settings,
-                        model_file,
-                        override_source_data=settings.override_source_data,
-                    )
+                    model_settings = conf.get_settings_from_dump(settings, model_file)
                     if (
                         settings.num_inference_samples
                         != model_settings.num_inference_samples
@@ -104,29 +90,6 @@ if __name__ == "__main__":
                         model_type="rnn",
                     )
 
-        # if settings.validate_rf:
-
-        #     if settings.model_files is None:
-        #         validate_randomforest.get_predictions(settings)
-        #         # Compute metrics
-        #         metrics.get_metrics_singlemodel(settings, model_type="rf")
-        #     else:
-        #         for model_file in settings.model_files:
-        #             # Restore model settings
-        #             model_settings = conf.get_settings_from_dump(
-        #                 settings,
-        #                 model_file,
-        #                 override_source_data=settings.override_source_data,
-        #             )
-        #             # Get predictions
-        #             prediction_file = validate_randomforest.get_predictions(
-        #                 model_settings, model_file=model_file
-        #             )
-        #             # Compute metrics
-        #             metrics.get_metrics_singlemodel(
-        #                 model_settings, prediction_file=prediction_file, model_type="rf"
-        #             )
-
         ##################################
         # VISUALIZE
         ##################################
@@ -139,22 +102,13 @@ if __name__ == "__main__":
         if settings.plot_lcs:
             if settings.model_files:
                 for model_file in settings.model_files:
-                    model_settings = conf.get_settings_from_dump(
-                        settings,
-                        model_file,
-                        override_source_data=settings.override_source_data,
-                    )
+                    model_settings = conf.get_settings_from_dump(settings, model_file)
             early_prediction.make_early_prediction(
                 model_settings, nb_lcs=100, do_gifs=False
             )
 
         if settings.plot_prediction_distribution:
             prediction_distribution.plot_prediction_distribution(settings)
-
-        if settings.science_plots:
-            # Provide a prediction_files argument to carry out plot
-            lu.print_yellow("Will fail if --prediction_files not specified")
-            sp.science_plots(settings, onlycnf=True)
 
         if settings.calibration:
             # Provide a metric_files arguments to carry out plot
@@ -166,6 +120,7 @@ if __name__ == "__main__":
 
         if settings.metrics:
             for prediction_file in settings.prediction_files:
+                # TODO: need to make sure only rnn model file is allowed in this step
                 model_type = "rf" if "randomforest" in prediction_file else "rnn"
                 metrics.get_metrics_singlemodel(
                     conf.get_settings_from_dump(settings, prediction_file),
@@ -174,14 +129,14 @@ if __name__ == "__main__":
                 )
             lu.print_blue("Finished computing metrics")
 
-        if settings.performance:
-            metrics.aggregate_metrics(settings)
-            lu.print_blue("Finished aggregating performance")
-            # Stats and plots in paper
-            # st.SuperNNova_stats_and_plots(settings)
-            # lu.print_blue("Finished assembling paper performance")
+        # if settings.performance:
+        #     metrics.aggregate_metrics(settings)
+        #     lu.print_blue("Finished aggregating performance")
+        #     # Stats and plots in paper
+        #     st.SuperNNova_stats_and_plots(settings)
+        #     lu.print_blue("Finished assembling paper performance")
 
-        # Speec benchmarks
+        # Speed benchmarks
         if settings.speed:
             validate_rnn.get_predictions_for_speed_benchmark(settings)
 
