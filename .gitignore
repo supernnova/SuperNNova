@@ -7,7 +7,7 @@ supernnova/**/.ipynb_checkpoints
 science_modules/**/*.pyc
 rfsn/**/*.pyc
 charnokmoss/**/*.pyc
-*.csv
+# *.csv
 *.h5
 .cache
 /data
