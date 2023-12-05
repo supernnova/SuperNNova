@@ -46,8 +46,6 @@ class ExperimentSettings:
             # Set the database file names
             self.set_database_file_names()
 
-            self.randomforest_features = self.get_randomforest_features()
-
             # Set the feature lists
             if "all_features" not in cli_args:
                 self.set_feature_lists()
@@ -64,40 +62,9 @@ class ExperimentSettings:
                 list_filters_combination = list_filters_combination + tmp
             self.list_filters_combination = list_filters_combination
 
-            self.set_randomforest_model_name()
             self.set_pytorch_model_name()
             # Get the feature normalization dict
             self.load_normalization()
-
-    def get_randomforest_features(self):
-        """Specify list of features to be used for RandomForest training"""
-
-        features = [
-            "x1",
-            "x1ERR",
-            "c",
-            "cERR",
-            "mB",
-            "mBERR",
-            "x0",
-            "x0ERR",  # 'COV_x1_c', 'COV_x1_x0','COV_c_x0', 'NDOF',
-            "FITCHI2",
-            "m0obs_r",
-            "m0obs_i",
-            "m0obs_g",
-            "m0obs_z",
-            "em0obs_i",
-            "em0obs_r",
-            "em0obs_g",
-            "em0obs_z",
-        ]
-
-        if self.redshift == "zpho":
-            features += ["HOSTGAL_PHOTOZ", "HOSTGAL_PHOTOZ_ERR"]
-        elif self.redshift == "zspe":
-            features += ["HOSTGAL_SPECZ", "HOSTGAL_SPECZ_ERR"]
-
-        return features
 
     def setup_dir(self):
         """Configure directories where data is read from or dumped to
@@ -158,24 +125,6 @@ class ExperimentSettings:
             # Dump the command line arguments (for model restoration)
             with open(Path(self.rnn_dir) / "cli_args.json", "w") as f:
                 json.dump(d_tmp, f, indent=4, sort_keys=True)
-
-    def set_randomforest_model_name(self):
-        """Define the model name for all RandomForest based classifiers"""
-
-        name = f"randomforest_S_{self.seed}_CLF_{self.nb_classes}"
-        name += f"_R_{self.redshift}"
-        name += f"_{self.source_data}_DF_{self.data_fraction}_N_{self.norm}"
-
-        self.randomforest_model_name = name
-        self.rf_dir = f"{self.models_dir}/{self.randomforest_model_name}"
-
-        if self.train_rf:
-            os.makedirs(self.rf_dir, exist_ok=True)
-            # Dump the command line arguments (for model restoration)
-            with open(Path(self.rf_dir) / "cli_args.json", "w") as f:
-                json.dump(self.cli_args, f, indent=4, sort_keys=True)
-
-        return name
 
     def check_data_exists(self):
         """Utility to check the database has been built"""
