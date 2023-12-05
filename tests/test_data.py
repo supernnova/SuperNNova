@@ -13,9 +13,12 @@ dir_data_path = os.path.dirname(os.path.realpath(__file__)) + "/dump_data/"
         "--list_filters g r",
         "--testing_ids tests/raw_csv/DES_HEAD.csv",
         '--sntypes \'{"101":"Ia"}\' ',
+        "--additional_train_var MWEBV",
     ],
 )
 def test_dataset_making(option):
+    shutil.rmtree(dir_data_path, ignore_errors=True)
+
     cmd = (
         "python run.py --data --dump_dir tests/dump_data --raw_dir tests/raw " + option
     )
