@@ -14,7 +14,6 @@ from supernnova.validation import (
     validate_rnn,
     metrics,
 )
-from supernnova.utils import logging_utils
 
 
 if __name__ == "__main__":
@@ -94,10 +93,7 @@ if __name__ == "__main__":
         # VISUALIZE
         ##################################
         if settings.explore_lightcurves:
-            if settings.debug:
-                visualize.visualize(settings)
-            else:
-                logging_utils.print_red("Use --debug --data for explore_lightcurves")
+            visualize.visualize(settings)
 
         if settings.plot_lcs:
             if settings.model_files:
@@ -130,6 +126,7 @@ if __name__ == "__main__":
             lu.print_blue("Finished computing metrics")
 
         # if settings.performance:
+        #     from supernnova.utils import logging_utils
         #     metrics.aggregate_metrics(settings)
         #     lu.print_blue("Finished aggregating performance")
         #     # Stats and plots in paper
