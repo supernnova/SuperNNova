@@ -32,16 +32,12 @@ jobs:
       # Uncomment if you need mpi
       # - name: Set-up MPI
       #   uses: mpi4py/setup-mpi@v1
-      
-      # - name: Check update
-      #   run: sudo apt-get update
 
       - name: Set-up Cuda Toolkit
         run: |
             sudo apt-get update
             sudo apt-get install nvidia-cuda-toolkit nvidia-cuda-toolkit-gcc
-        # run: sudo apt-get install nvidia-cuda-toolkit nvidia-cuda-toolkit-gcc
-
+        
       - name: Set-up Poetry
         uses: snok/install-poetry@v1
         with:
