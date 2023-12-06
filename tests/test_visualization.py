@@ -7,25 +7,18 @@ import pytest
 dir_data_path = os.path.dirname(os.path.realpath(__file__)) + "/dump_visual/"
 
 
-@pytest.fixture(scope="class")
-def setup():
-    shutil.rmtree(dir_data_path, ignore_errors=True)
-    cmd1 = (
-        "python run.py --data --dump_dir tests/dump_visual --raw_dir tests/raw --debug"
-    )
-    call_cmd(cmd1)
-    cmd2 = "python run.py --train_rnn --dump_dir tests/dump_visual --nb_epoch=10"
-    call_cmd(cmd2)
-    cmd3 = "python run.py --validate_rnn --dump_dir tests/dump_visual"
-    call_cmd(cmd3)
-    yield
-    shutil.rmtree(dir_data_path, ignore_errors=True)
-
-
 class TestVisualization:
     @pytest.fixture(autouse=True, scope="class")
-    def setup_class(self, setup):
-        pass
+    def setup_class(self):
+        shutil.rmtree(dir_data_path, ignore_errors=True)
+        cmd1 = "python run.py --data --dump_dir tests/dump_visual --raw_dir tests/raw --debug"
+        call_cmd(cmd1)
+        cmd2 = "python run.py --train_rnn --dump_dir tests/dump_visual --nb_epoch=10"
+        call_cmd(cmd2)
+        cmd3 = "python run.py --validate_rnn --dump_dir tests/dump_visual"
+        call_cmd(cmd3)
+        yield
+        shutil.rmtree(dir_data_path, ignore_errors=True)
 
     def test_explore_lightcurve(self):
         cmd = "python run.py --dump_dir tests/dump_visual --explore_lightcurves"
