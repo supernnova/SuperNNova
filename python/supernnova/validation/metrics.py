@@ -26,7 +26,7 @@ def aggregate_metrics(settings):
     list_files = Path(f"{settings.models_dir}").glob("**/*METRICS*.pickle")
     list_files = list(map(str, list_files))
     assert len(list_files) != 0, lu.str_to_redstr(
-        "No predictions found. Please train and validate randomforest and vanilla models"
+        "No predictions found. Please train and validate vanilla models"
     )
 
     # read all performance metrics
@@ -70,11 +70,19 @@ def get_metrics_singlemodel(settings, prediction_file=None, model_type="rnn"):
     Args:
         settings (ExperimentSettings): custom class to hold hyperparameters
         prediction_file (str): Path to saved predictions. Default: ``None``
-        model_type (str): Choose ``rnn`` or ``randomforest``
+        model_type (str): only ``rnn`` available for the moment
 
     Returns:
         (pandas.DataFrame) holds the performance metrics for this dataframe
     """
+    # list current support model type
+    supported_models = ["rnn"]
+
+    # check whether input model type is supported
+    if model_type not in supported_models:
+        raise ValueError(
+            f"Unsupported model type '{model_type}'. Currently supported models: {', '.join(supported_models)}"
+        )
 
     df_SNinfo = du.load_HDF5_SNinfo(settings)
     if Path(f"{settings.processed_dir}/hostspe_SNID.csv").exists():
@@ -94,12 +102,8 @@ def get_metrics_singlemodel(settings, prediction_file=None, model_type="rnn"):
             "photometry" if "photometry" in Path(prediction_file).name else "saltfit"
         )
     else:
-        model_name = (
-            settings.pytorch_model_name
-            if model_type == "rnn"
-            else settings.randomforest_model_name
-        )
-
+        if model_type == "rnn":
+            model_name = settings.pytorch_model_name
         dump_dir = f"{settings.models_dir}/{model_name}"
         prediction_file = f"{dump_dir}/" f"PRED_{model_name}.pickle"
         metrics_file = f"{dump_dir}/" f"METRICS_{model_name}.pickle"
@@ -114,7 +118,7 @@ def get_metrics_singlemodel(settings, prediction_file=None, model_type="rnn"):
 
     list_df_metrics = []
 
-    # Metrics shared between RF and RNN
+    # Metrics of RNN
     list_df_metrics.append(get_calibration_metrics_singlemodel(df))
 
     if model_type == "rnn":
@@ -126,13 +130,6 @@ def get_metrics_singlemodel(settings, prediction_file=None, model_type="rnn"):
         list_df_metrics.append(get_entropy_metrics_singlemodel(df, settings.nb_classes))
         list_df_metrics.append(
             get_classification_stats_singlemodel(df, settings.nb_classes)
-        )
-    else:
-        # RF-specific metrics
-        list_df_metrics.append(
-            get_randomforest_performance_metrics_singlemodel(
-                settings, df, host_zspe_list
-            )
         )
 
     df_metrics = pd.concat(list_df_metrics, axis=1)
@@ -221,69 +218,6 @@ def get_rnn_performance_metrics_singlemodel(settings, df, host_zspe_list):
 
     # Create a dataframe where the columns are the keys of perf_dic
     df_perf = pd.DataFrame.from_dict(perf_dic, orient="index").transpose()
-
-    return df_perf
-
-
-def get_randomforest_performance_metrics_singlemodel(settings, df, host_zspe_list):
-    """Compute performance metrics (accuracy, AUC, purity etc) for
-    a randomforest model
-
-    Args:
-        settings (ExperimentSettings): custom class to hold hyperparameters
-        df (pandas.DataFrame): dataframe containing a model's predictions
-        host_zspe_list (list): available host galaxy spectroscopic redshifts
-
-    Returns:
-        (pandas.DataFrame) holds the performance metrics for this dataframe
-    """
-
-    # Compute metrics
-    zspe_df = pu.reformat_df(df, "all", settings)
-    accuracy, auc, purity, efficiency, _ = pu.performance_metrics(zspe_df)
-    contamination_df = pu.contamination_by_SNTYPE(zspe_df, settings)
-
-    # Reweighted for SNe with zspe
-    zspe_df = zspe_df[zspe_df["SNID"].isin(host_zspe_list)]
-    if len(zspe_df) > 0:
-        (
-            accuracy_zspe,
-            auc_zspe,
-            purity_zspe,
-            efficiency_zspe,
-            _,
-        ) = pu.performance_metrics(zspe_df)
-    else:
-        accuracy_zspe, auc_zspe, purity_zspe, efficiency_zspe = (0.0, 0.0, 0.0, 0.0)
-
-    list_columns = [
-        "all_accuracy",
-        "all_auc",
-        "all_purity",
-        "all_efficiency",
-        "all_zspe_accuracy",
-        "all_zspe_auc",
-        "all_zspe_purity",
-        "all_zspe_efficiency",
-    ]
-
-    data = np.array(
-        [
-            accuracy,
-            auc,
-            purity,
-            efficiency,
-            accuracy_zspe,
-            auc_zspe,
-            purity_zspe,
-            efficiency_zspe,
-        ]
-    ).reshape(1, -1)
-
-    df_perf = pd.DataFrame(data, columns=list_columns)
-
-    for sntype, contamination_percentage in contamination_df.values:
-        df_perf[f"all_contamination_{int(sntype)}"] = contamination_percentage
 
     return df_perf
 
