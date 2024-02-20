@@ -51,6 +51,11 @@ jobs:
           python-version: '3.11'
           cache: 'poetry'
 
+      - name: Install pytorch
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch==2.0.1 
+       
       # Configure project
       - name: Set project version
         run: poetry version $(git describe --tags --abbrev=0)
