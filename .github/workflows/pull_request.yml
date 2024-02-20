@@ -71,6 +71,7 @@ jobs:
        
       # Configure project
       - name: Set project version
+        shell: bash -l {0}
         run: poetry version $(git describe --tags --abbrev=0)
 
       # Install the project (we need some of the tools installed here for liniting etc)
