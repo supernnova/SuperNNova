@@ -71,33 +71,41 @@ jobs:
        
       # Configure project
       - name: Set project version
+        shell: bash -l {0}
         run: poetry version $(git describe --tags --abbrev=0)
 
       # Install the project (we need some of the tools installed here for liniting etc)
       - name: Install the project
+        shell: bash -l {0}
         run: poetry install --no-interaction --extras "docs dev"
 
       # Enforce code formating standards
       - name: Enforce linting
+        shell: bash -l {0}
         run: poetry run ruff .
 
       - name: Enforce formating
+        shell: bash -l {0}
         run: poetry run black .
 
       # Make sure the Poetry project is properly maintained
       - name: Enforce maintainance of Poetry project
+        shell: bash -l {0}
         run: |
           poetry check
           poetry lock --check
 
       # Run tests
       - name: Generate build
+        shell: bash -l {0}
         run: poetry build
 
       - name: Code tests
+        shell: bash -l {0}
         run: poetry run pytest
 
       - name: Documentation build test
+        shell: bash -l {0}
         run: |
           cd docs
           poetry run make html
