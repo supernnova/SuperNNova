@@ -20,6 +20,13 @@ jobs:
 
   run_tests:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - conda_env: supernnova
+            conda_env_file: env/conda_env.yml
+          - conda_env: supernnova-cuda
+            conda_env_file: env/conda_gpu_env.yml
 
     steps:
 
@@ -37,30 +44,12 @@ jobs:
         run: |
             sudo apt-get update
             sudo apt-get install nvidia-cuda-toolkit nvidia-cuda-toolkit-gcc
-        
-      # - name: Set-up Poetry
-      #   uses: snok/install-poetry@v1
-      #   with:
-      #     virtualenvs-create: true
-      #     virtualenvs-in-project: true
-      #     installer-parallel: true
-
-      # - name: Set-up Python
-      #   uses: actions/setup-python@v4
-      #   with:
-      #     python-version: '3.11'
-      #     cache: 'poetry'
-
-      # - name: Install pytorch
-      #   run: |
-      #     python -m pip install --upgrade pip
-      #     pip install torch==2.0.1 
 
       - name: Setup miniconda
         uses: conda-incubator/setup-miniconda@v3
         with:
-          activate-environment: supernnova
-          environment-file: conda_env.yml
+          activate-environment: ${{matrix.conda_env}}
+          environment-file: ${{matrix.conda_env_file}}
 
       - name: Verify Environment
         shell: bash -l {0}
