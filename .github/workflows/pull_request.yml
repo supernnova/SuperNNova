@@ -57,7 +57,11 @@ jobs:
           conda info
           conda list
           
-       
+      - name: Verify cuda support
+        if: ${{ matrix.conda_env == 'supernnova-cuda' }}
+        shell: bash -l {0}
+        run: python env/verify_cuda_support.py
+
       # Configure project
       - name: Set project version
         shell: bash -l {0}
