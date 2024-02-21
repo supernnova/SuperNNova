@@ -53,7 +53,7 @@ if you create environment from "conda_gpu_env.yml".
     which poetry # should print <conda env>/bin/poetry
     poetry install
 
-For developers, please refer to `Notes for Developers <../notes_for_developers.md>`
+For developers, please refer to `Notes for Developers <../notes_for_developers.md>`_.
 
 
 .. _DockerConfigurations:
