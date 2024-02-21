@@ -20,43 +20,43 @@ The setup of environment can be done in two steps. Navigate to the root of the d
 
 1. Create a conda environment:
 
-.. code::
+.. code-block:: bash
 
     conda env create -f env/conda_env.yml
 
 or 
 
-.. code::
+.. code-block:: bash
 
     conda env create -f env/conda_gpu_env.yml
 
-if you want to install `pytorch` with cuda support.
+if you want to install ``pytorch`` with cuda support.
 
 2. Activate the conda environment:
 
-.. code::
+.. code-block:: bash
 
     conda activate supernnova
 
 or 
 
-.. code::
+.. code-block:: bash
 
     conda activate supernnova-cuda
 
 if you create environment from "conda_gpu_env.yml".
 
-3. A python project management tool `poetry` is installed via the above steps. Verify it and install python dependencies for this project:
+3. A python project management tool ``poetry`` is installed via the above steps. Verify it and install python dependencies for this project:
 
-.. code::
+.. code-block:: bash
 
     which poetry # should print <conda env>/bin/poetry
     poetry install
 
 If you want to install dev packages as well, run the following instead:
 
-.. code::
-    
+.. code-block:: bash
+
     poetry install --all-extras
 
 .. _DockerConfigurations:
