@@ -14,6 +14,48 @@ The preferred option to setup your environment is through conda environment as f
 
 example configuration files for linux-64 (cpu and gpu) and osx-64 are provided in ``SuperNNova/env``.
 
+**Update (02/2024)**
+
+The setup of environment can be done in two steps. Navigate to the root of the downloaded repository, then
+
+1. Create a conda environment:
+
+.. code-block:: bash
+
+    conda env create -f env/conda_env.yml
+
+or 
+
+.. code-block:: bash
+
+    conda env create -f env/conda_gpu_env.yml
+
+if you want to install ``pytorch`` with cuda support.
+
+2. Activate the conda environment:
+
+.. code-block:: bash
+
+    conda activate supernnova
+
+or 
+
+.. code-block:: bash
+
+    conda activate supernnova-cuda
+
+if you create environment from "conda_gpu_env.yml".
+
+3. A python project management tool ``poetry`` is installed via the above steps. Verify it and install python dependencies for this project:
+
+.. code-block:: bash
+
+    which poetry # should print <conda env>/bin/poetry
+    poetry install
+
+For developers, please refer to `Notes for Developers <../notes_for_developers.md# Installing Development Dependencies>`_.
+
+
 .. _DockerConfigurations:
 
 Docker

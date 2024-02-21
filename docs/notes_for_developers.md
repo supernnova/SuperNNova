@@ -42,11 +42,11 @@ Although not strictly necessary, it is recommended that you configure the branch
 
 # Poetry and Python environments for development
 
-Poetry is used to manage this project ([see here for an introduction](https://python-poetry.org)).  It simplifies & helps with managing the following:
+Both Conda and Poetry are used to manage this project ([see here for an introduction](https://python-poetry.org)).  It simplifies & helps with managing the following:
 
 1. **Creation and activation of a Python environment for the project**
 
-    Python development should always be managed using a Python environment.  Poetry makes this easy for you.  You simply run the following from within the project:
+    <!-- Python development should always be managed using a Python environment.  Poetry makes this easy for you.  You simply run the following from within the project:
 
     ``` console
     $ poetry shell
@@ -57,8 +57,10 @@ Poetry is used to manage this project ([see here for an introduction](https://py
     ``` console
     $ poetry config virtualenvs.prefer-active-python true
     ```
-    :::
+    ::: -->
 
+    We use Conda to manage the python version and directly handle the core dependency, `pytorch`, which makes it easiler to manage different versions of `pytorch` and cuda support, streamlining the upgrade process for future versions as part of our CI/CD best practices. Poetry is used to manage the rest of the python packages. 
+    
 2. **Dependency management**
 
     Poetry manages a "lock file" (which should be committed and maintained within the code repository) ensuring repeatible installs for all versions.
