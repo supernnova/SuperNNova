@@ -6,6 +6,7 @@ from pathlib import Path
 from sklearn import metrics
 import supernnova.utils.logging_utils as lu
 from supernnova.validation.validate_onthefly import classify_lcs, get_settings
+import time
 
 """
     Example code on how to run on the fly classifications
@@ -155,6 +156,9 @@ if __name__ == "__main__":
     # override model redshift_label to input data redshift
     settings.redshift_label = args.redshift_label
 
+    start = time.time()
+    start_cpu = time.process_time()
+
     # Input data
     # options: csv or manual data, choose one
     if args.manual_lc:
@@ -226,3 +230,8 @@ if __name__ == "__main__":
     except Exception:
         # silent error
         a = 0
+
+    end = time.time()
+    end_cpu = time.process_time()
+    print("total running time: ", end - start)
+    print("total cpu time: ", end_cpu - start_cpu)
