@@ -26,6 +26,8 @@ ruff = { version = "^0.0.243", optional = true}
 sphinx-click = { version = "^4.4.0", optional = true }
 mypy = { version = "^1.1.1", optional = true }
 sphinx-copybutton = { version = "^0.5.1", optional = true }
+line-profiler = { version = "^4.1.2", optional = true }
+memory-profiler = { version = "^0.61.0", optional = true }
 poetry = "^1.6.1"
 # torch = "2.0.0" # See here: https://github.com/pytorch/pytorch/issues/104259
 # torchvision = "0.15.1"
@@ -54,6 +56,8 @@ dev = ["pre-commit",
        "mypy",
        "black",
        "ruff",
+       "line-profiler",
+       "memory-profiler",
 ]
 
 [tool.poetry.scripts]
