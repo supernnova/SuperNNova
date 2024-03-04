@@ -152,8 +152,9 @@ def classify_lcs(df, model_file, device):
 
     # get packed data batches
     list_lcs = []
-    for idx in df.index.unique():
-        sel = df[df.index == idx]
+    # for idx in df.index.unique():
+    #     sel = df[df.index == idx]
+    for _, sel in df.groupby(level=0):
         ordered_features = [k for k in settings.all_features if k in sel.keys()]
         X_all = sel[ordered_features].values
         # check if normalization converges
