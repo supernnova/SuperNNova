@@ -303,7 +303,7 @@ def get_predictions(settings, model_file=None):
     df_pred_MFE = pd.DataFrame.from_dict(d_series_MFE)
 
     # Save predictions
-    df_pred.to_pickle(prediction_file)
+    df_pred.to_pickle(prediction_file, protocol=4)
 
     # Saving aggregated preds for bayesian models
     if settings.model == "variational" or settings.model == "bayesian":
@@ -315,7 +315,7 @@ def get_predictions(settings, model_file=None):
         df_bayes["SNID"] = df_bayes.index
         df_bayes["target"] = df_bayes["target_median"]
         bay_pred_file = prediction_file.replace(".pickle", "_aggregated.pickle")
-        df_bayes.to_pickle(bay_pred_file)
+        df_bayes.to_pickle(bay_pred_file, protocol=4)
 
     g_pred = df_pred.groupby("SNID").median()
     preds = g_pred[[f"all_class{i}" for i in range(settings.nb_classes)]].values

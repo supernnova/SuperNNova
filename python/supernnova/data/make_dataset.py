@@ -306,7 +306,7 @@ def build_traintestval_splits(settings):
                 logging_utils.print_green(f"{split_name} set", str_)
 
     # Save to pickle
-    df.to_pickle(f"{settings.processed_dir}/SNID.pickle")
+    df.to_pickle(f"{settings.processed_dir}/SNID.pickle", protocol=4)
 
     logging_utils.print_green("Done")
 
@@ -527,7 +527,8 @@ def process_single_FITS(file_path, settings):
         basename = f"{prefix}_{basename}"
 
     df.to_pickle(
-        f"{settings.preprocessed_dir}/{basename.replace('.FITS', '.pickle').replace('.gz','')}"
+        f"{settings.preprocessed_dir}/{basename.replace('.FITS', '.pickle').replace('.gz','')}",
+        protocol=4,
     )
 
     # getting SNIDs for SNe with Host_spec
@@ -663,7 +664,8 @@ def process_single_csv(file_path, settings):
     # Save for future use
     basename = os.path.basename(file_path)
     df.to_pickle(
-        f"{settings.preprocessed_dir}/{basename.replace('.FITS', '.pickle').replace('.gz','')}"
+        f"{settings.preprocessed_dir}/{basename.replace('.FITS', '.pickle').replace('.gz','')}",
+        protocol=4,
     )
 
     # getting SNIDs for SNe with Host_spec
@@ -741,7 +743,7 @@ def preprocess_data(settings):
     # Save host spe for plotting and performance tests
     host_spe = [item for sublist in host_spe_tmp for item in sublist]
     pd.DataFrame(host_spe, columns=["SNID"]).to_pickle(
-        f"{settings.processed_dir}/hostspe_SNID.pickle"
+        f"{settings.processed_dir}/hostspe_SNID.pickle", protocol=4
     )
     logging_utils.print_green("Finished preprocessing")
 
@@ -753,7 +755,7 @@ def pivot_dataframe_single(filename, settings):
 
     # Save to pickle
     dump_filename = filename.split(".pickle")[0] + "_pivot.pickle"
-    df.to_pickle(dump_filename)
+    df.to_pickle(dump_filename, protocol=4)
 
 
 def pivot_dataframe_single_from_df(df, settings):
