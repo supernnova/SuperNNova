@@ -113,6 +113,9 @@ def format_data(df, settings):
 
     df = pd.concat([df, FLT_onehot], axis=1)[settings.all_features]
 
+    ordered_features = [k for k in settings.all_features if k in df.keys()]
+    df = df[ordered_features]
+
     return df
 
 
@@ -152,11 +155,9 @@ def classify_lcs(df, model_file, device):
 
     # get packed data batches
     list_lcs = []
-    # for idx in df.index.unique():
-    #     sel = df[df.index == idx]
+
     for _, sel in df.groupby(level=0):
-        ordered_features = [k for k in settings.all_features if k in sel.keys()]
-        X_all = sel[ordered_features].values
+        X_all = sel.values
         # check if normalization converges
         # using clipping in case of min<model_min
         X_clip = X_all.copy()
