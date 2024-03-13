@@ -4,6 +4,7 @@ import h5py
 import itertools
 import numpy as np
 from pathlib import Path
+import yaml
 
 
 class ExperimentSettings:
@@ -21,13 +22,26 @@ class ExperimentSettings:
 
     def __init__(self, cli_args):
 
+        self.cli_args = {}
+
         # Transfer attributes
         if isinstance(cli_args, dict):
+            # Read from config file
+            if cli_args["config_file"]:
+                file_args = self._load_config(cli_args["config_file"])
+                self.__dict__.update(file_args)
+                self.cli_args.update(file_args)
+
             self.__dict__.update(cli_args)
-            self.cli_args = cli_args
+            self.cli_args.update(cli_args)
         else:
-            self.__dict__.update(cli_args.__dict__)
-            self.cli_args = cli_args.__dict__
+            # Read from config file
+            if cli_args.config_file:
+                file_args = self._load_config(cli_args.config_file)
+                self.__dict__.update(file_args)
+                self.cli_args.update(file_args)
+            self.__dict__.update(vars(cli_args))
+            self.cli_args.update(vars(cli_args))
 
         self.device = "cpu"
         if self.use_cuda:
@@ -65,6 +79,11 @@ class ExperimentSettings:
             self._set_pytorch_model_name()
             # Get the feature normalization dict
             self._load_normalization()
+
+    def _load_config(self, config_file):
+        with open(config_file, "r") as file:
+            config = yaml.safe_load(file)
+        return config
 
     def _setup_dir(self):
         """Configure directories where data is read from or dumped to

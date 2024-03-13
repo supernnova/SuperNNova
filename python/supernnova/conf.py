@@ -385,6 +385,8 @@ def get_args():
         help="Use mean field inference for bayesian models",
     )
 
+    parser.add_argument("--config_file", default=None, type=str)
+
     args = parser.parse_args()
 
     return args
