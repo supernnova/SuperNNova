@@ -42,13 +42,13 @@ class ExperimentSettings:
         if self.no_dump:
             pass
         else:
-            self.setup_dir()
+            self._setup_dir()
             # Set the database file names
-            self.set_database_file_names()
+            self._set_database_file_names()
 
             # Set the feature lists
             if "all_features" not in cli_args:
-                self.set_feature_lists()
+                self._set_feature_lists()
 
             self.overwrite = not self.no_overwrite
 
@@ -62,11 +62,11 @@ class ExperimentSettings:
                 list_filters_combination = list_filters_combination + tmp
             self.list_filters_combination = list_filters_combination
 
-            self.set_pytorch_model_name()
+            self._set_pytorch_model_name()
             # Get the feature normalization dict
-            self.load_normalization()
+            self._load_normalization()
 
-    def setup_dir(self):
+    def _setup_dir(self):
         """Configure directories where data is read from or dumped to
         during the course of an experiment
         """
@@ -88,7 +88,7 @@ class ExperimentSettings:
 
             Path(path).mkdir(exist_ok=True, parents=True)
 
-    def set_pytorch_model_name(self):
+    def _set_pytorch_model_name(self):
         """Define the model name for all NN based classifiers"""
         name = f"{self.model}_S_{self.seed}_CLF_{self.nb_classes}"
         name += f"_R_{self.redshift}"
@@ -126,13 +126,7 @@ class ExperimentSettings:
             with open(Path(self.rnn_dir) / "cli_args.json", "w") as f:
                 json.dump(d_tmp, f, indent=4, sort_keys=True)
 
-    def check_data_exists(self):
-        """Utility to check the database has been built"""
-
-        database_file = f"{self.processed_dir}/database.h5"
-        assert os.path.isfile(database_file)
-
-    def set_feature_lists(self):
+    def _set_feature_lists(self):
         """Utility to define the features used to train NN=based models"""
 
         self.training_features_to_normalize = [
@@ -174,7 +168,7 @@ class ExperimentSettings:
                         if k not in self.training_features
                     ]
 
-    def set_database_file_names(self):
+    def _set_database_file_names(self):
         """Create a unique database name based on the dataset required
         by the settings
         """
@@ -183,7 +177,7 @@ class ExperimentSettings:
         self.pickle_file_name = out_file + ".pickle"
         self.hdf5_file_name = out_file + ".h5"
 
-    def load_normalization(self):
+    def _load_normalization(self):
         """Create an array holding the data-normalization parameters
         used to normalize certain features in the NN-based classification
         pipeline
@@ -252,3 +246,9 @@ class ExperimentSettings:
                         list_norm.append([minv, meanv, stdv])
 
             self.arr_norm = np.array(list_norm)
+
+    def check_data_exists(self):
+        """Utility to check the database has been built"""
+
+        database_file = f"{self.processed_dir}/database.h5"
+        assert os.path.isfile(database_file)
