@@ -24,24 +24,19 @@ class ExperimentSettings:
 
         self.cli_args = {}
 
-        # Transfer attributes
-        if isinstance(cli_args, dict):
-            # Read from config file
-            if cli_args["config_file"]:
-                file_args = self._load_config(cli_args["config_file"])
-                self.__dict__.update(file_args)
-                self.cli_args.update(file_args)
+        # Ensure cli_args is of type dict
+        if not isinstance(cli_args, dict):
+            cli_args = vars(cli_args)
 
-            self.__dict__.update(cli_args)
-            self.cli_args.update(cli_args)
-        else:
-            # Read from config file
-            if cli_args.config_file:
-                file_args = self._load_config(cli_args.config_file)
-                self.__dict__.update(file_args)
-                self.cli_args.update(file_args)
-            self.__dict__.update(vars(cli_args))
-            self.cli_args.update(vars(cli_args))
+        # Read from config file
+        if cli_args["config_file"]:
+            conf_file_args = self._load_config_file(cli_args["config_file"])
+            self.__dict__.update(conf_file_args)
+            self.cli_args.update(conf_file_args)
+
+        # Update and overwrite options
+        self.__dict__.update(cli_args)
+        self.cli_args.update(cli_args)
 
         self.device = "cpu"
         if self.use_cuda:
@@ -80,7 +75,7 @@ class ExperimentSettings:
             # Get the feature normalization dict
             self._load_normalization()
 
-    def _load_config(self, config_file):
+    def _load_config_file(self, config_file):
         with open(config_file, "r") as file:
             config = yaml.safe_load(file)
         return config

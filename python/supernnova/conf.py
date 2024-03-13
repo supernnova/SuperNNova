@@ -385,7 +385,7 @@ def get_args():
         help="Use mean field inference for bayesian models",
     )
 
-    parser.add_argument("--config_file", default=None, type=str)
+    parser.add_argument("--config_file", default=None, type=str, help="YML config file")
 
     args = parser.parse_args()
 
@@ -423,6 +423,7 @@ def get_settings_from_dump(settings, model_or_pred_or_metrics_file):
             "calibration",
             "plot_lcs",
             "prediction_files",
+            "config_file",
         ]:
             cli_args[arg] = False
 
