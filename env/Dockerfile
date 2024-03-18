@@ -66,10 +66,7 @@ RUN apt-get update -y && \
 ###############################################################
 # Set some environment variables defining the user environment
 ###############################################################
-ENV HOME=/u/home
-ENV CONDA_HOME=${HOME}/.miniconda3
-ENV CONDA=${CONDA_HOME}/bin/conda \
-    CONDA_ENV_NAME=supernnova \
+ENV HOME=/u/home \
     TMP_PATH=${HOME}/dump \
     LANG=en_US.utf8
 
@@ -96,13 +93,23 @@ RUN mkdir -p ${HOME} && \
 USER ${USERNAME}
 WORKDIR ${HOME}
 
-##################
+#####################################################################################
 # Instal Anaconda
-##################
-COPY env/miniconda.sh ${HOME}
+#------------------------------------------------------------------------------------
+# n.b.: we don't add ${CONDA_HOME}/lib and ${CONDA_HOME}/bin to 
+# their respective paths here to avoid the following error:
+# https://stackoverflow.com/questions/72103046/libtinfo-so-6-no-version-information-available-message-using-conda-environment
+# If you do feel the need to do this, you may need to do the 
+# following to deal with this:
+# RUN ${CONDA} install -n ${CONDA_ENV_NAME} -c conda-forge --force-reinstall ncurses
+#####################################################################################
+ENV CONDA_HOME=${HOME}/.miniconda3
+ENV CONDA=${CONDA_HOME}/bin/conda \
+    CONDA_ENV_NAME=supernnova
+RUN curl -o ${HOME}/miniconda.sh -O  https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
+    chmod a+x ${HOME}/miniconda.sh
 RUN ${HOME}/miniconda.sh -b -p ${CONDA_HOME} && \
     rm ${HOME}/miniconda.sh
-    # chown -R ${USER_ID}:${USER_GID} ${HOME}/.conda
 
 ############################################################
 # Create Conda environment
@@ -114,7 +121,7 @@ RUN ${HOME}/miniconda.sh -b -p ${CONDA_HOME} && \
 ############################################################
 COPY env/conda_env.yml ${HOME}
 RUN ${CONDA} config --set auto_activate_base false
-RUN mkdir -p ${HOME}/.conda/envs 
+# RUN mkdir -p ${HOME}/.conda/envs 
 RUN ${CONDA} env create -f conda_env.yml 
 RUN ${CONDA} clean -ya  
 RUN rm conda_env.yml 
@@ -132,12 +139,8 @@ RUN ${CONDA} run -n ${CONDA_ENV_NAME} poetry install --no-root --all-extras && \
     rm pyproject.toml poetry.lock
 RUN echo export PATH=${CONDA_HOME}/bin:$PATH >> .bashrc
 RUN echo export PATH=${CONDA_HOME}/bin:$PATH >> .profile
-# RUN echo "${CONDA} activate ${CONDA_ENV_NAME}" >> .bashrc
 RUN ${CONDA} init --all
 RUN echo conda activate supernnova >> .bashrc
-
-# see https://stackoverflow.com/questions/72103046/libtinfo-so-6-no-version-information-available-message-using-conda-environment
-# RUN ${CONDA} install -n ${CONDA_ENV_NAME} -c conda-forge --force-reinstall ncurses
 
 ##################################################################################
 # zsh supposedly doesn't work with gpu images so the following is disabled for now
@@ -165,12 +168,9 @@ RUN echo conda activate supernnova >> .bashrc
 USER root
 COPY env/entry_script.sh /
 RUN chmod a+rx /entry_script.sh
-# RUN echo "${CONDA} activate ${CONDA_ENV_NAME}" >> .bashrc
-# RUN echo ". .bashrc" >> /entry_script.sh
 RUN echo su -m $USERNAME >> /entry_script.sh
 
 ###################################
 # Set-up the user's starting state
 ###################################
 ENTRYPOINT ["/bin/bash", "/entry_script.sh"]
-# ENTRYPOINT ["/bin/bash"]
