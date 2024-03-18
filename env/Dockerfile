@@ -25,6 +25,8 @@ FROM nvcr.io/nvidia/cuda:12.3.1-devel-ubuntu22.04 as gpu
 # Everything that follows is the same for all builds
 #####################################################
 FROM ${TARGET}
+ARG TARGET
+ENV DOCKER_TARGET=${TARGET}
 
 ################
 # Set user info
@@ -121,7 +123,6 @@ RUN ${HOME}/miniconda.sh -b -p ${CONDA_HOME} && \
 ############################################################
 COPY env/conda_env.yml ${HOME}
 RUN ${CONDA} config --set auto_activate_base false
-# RUN mkdir -p ${HOME}/.conda/envs 
 RUN ${CONDA} env create -f conda_env.yml 
 RUN ${CONDA} clean -ya  
 RUN rm conda_env.yml 
@@ -137,9 +138,10 @@ RUN ${CONDA} run -n ${CONDA_ENV_NAME} pip install poetry
 COPY pyproject.toml poetry.lock .
 RUN ${CONDA} run -n ${CONDA_ENV_NAME} poetry install --no-root --all-extras && \
     rm pyproject.toml poetry.lock
-RUN echo export PATH=${CONDA_HOME}/bin:$PATH >> .bashrc
-RUN echo export PATH=${CONDA_HOME}/bin:$PATH >> .profile
+
+
 RUN ${CONDA} init --all
+RUN echo PS1=\"\\u@docker-${DOCKER_TARGET}:\\w$ \" >> .bashrc
 RUN echo conda activate supernnova >> .bashrc
 
 ##################################################################################
@@ -162,9 +164,9 @@ RUN echo conda activate supernnova >> .bashrc
 # ENV ZSH=${HOME}/.oh-my-zsh \
 #     PATH_TO_COPY=${PATH}
 
-################################################
-# Copy and set persmissions of the entry script
-################################################
+##########################
+# Set-up the entry script
+##########################
 USER root
 COPY env/entry_script.sh /
 RUN chmod a+rx /entry_script.sh
