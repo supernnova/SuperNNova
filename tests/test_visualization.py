@@ -11,17 +11,17 @@ class TestVisualization:
     @pytest.fixture(autouse=True, scope="class")
     def setup_class(self):
         shutil.rmtree(dir_data_path, ignore_errors=True)
-        cmd1 = "python run.py --data --dump_dir tests/dump_visual --raw_dir tests/raw --debug"
+        cmd1 = "snn --data --dump_dir tests/dump_visual --raw_dir tests/raw --debug"
         call_cmd(cmd1)
-        cmd2 = "python run.py --train_rnn --dump_dir tests/dump_visual --nb_epoch=10"
+        cmd2 = "snn --train_rnn --dump_dir tests/dump_visual --nb_epoch=10"
         call_cmd(cmd2)
-        cmd3 = "python run.py --validate_rnn --dump_dir tests/dump_visual"
+        cmd3 = "snn --validate_rnn --dump_dir tests/dump_visual"
         call_cmd(cmd3)
         yield
         shutil.rmtree(dir_data_path, ignore_errors=True)
 
     def test_explore_lightcurve(self):
-        cmd = "python run.py --dump_dir tests/dump_visual --explore_lightcurves"
+        cmd = "snn --dump_dir tests/dump_visual --explore_lightcurves"
         call_cmd(cmd)
         assert os.path.exists(dir_data_path + "explore/sample_lightcurves.png") is True
         assert (
@@ -38,10 +38,7 @@ class TestVisualization:
         assert len(model_files) == 1
 
         model_file = model_files[0]
-        cmd = (
-            "python run.py --dump_dir tests/dump_visual --plot_lcs --model_files  "
-            + model_file
-        )
+        cmd = "snn --dump_dir tests/dump_visual --plot_lcs --model_files  " + model_file
         call_cmd(cmd)
 
         lc_files = glob.glob(dir_data_path + "lightcurves/*/early_prediction/*.png")
@@ -58,7 +55,7 @@ class TestVisualization:
         model_file = model_files[0]
         # the csv file not exist; it will trigger to plot 2 random lightcurves
         cmd = (
-            "python run.py --dump_dir tests/dump_visual --plot_lcs --model_files  "
+            "snn --dump_dir tests/dump_visual --plot_lcs --model_files  "
             + model_file
             + " --plot_file trigger_random.csv"
         )
