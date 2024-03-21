@@ -136,7 +136,7 @@ def get_metrics_singlemodel(settings, prediction_file=None, model_type="rnn"):
 
     df_metrics["model_name"] = model_name
     df_metrics["source_data"] = source_data
-    df_metrics.to_pickle(metrics_file)
+    df_metrics.to_pickle(metrics_file, protocol=4)
 
     lu.print_green("Finished getting metrics ")
 

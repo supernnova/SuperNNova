@@ -184,7 +184,7 @@ def load_fitfile(settings, verbose=True):
             df = df.rename(columns={"CID": "SNID"})
 
         # Save to pickle for later use and fast reload
-        df.to_pickle(f"{settings.preprocessed_dir}/FITOPT000.FITRES.pickle")
+        df.to_pickle(f"{settings.preprocessed_dir}/FITOPT000.FITRES.pickle", protocol=4)
         if verbose:
             print(f"Loaded {fit_name}")
     else:
