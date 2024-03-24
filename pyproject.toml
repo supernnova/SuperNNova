@@ -6,7 +6,8 @@ authors = [ "Anais Moller <amoller@swin.edu.au>","Thibault de Boissiere" ]
 license = "MIT-expat"
 readme = "README.md"
 packages = [
-    { include = "supernnova", from = "python" }
+    { include = "supernnova", from = "python" },
+    { include = "cli"}
 ]
 homepage = "https://github.com/ADACS-Australia/amoller_2023a"
 documentation = "https://supernnova.readthedocs.io/en/latest/"
@@ -61,7 +62,7 @@ dev = ["pre-commit",
 ]
 
 [tool.poetry.scripts]
-supernnova = "supernnova.cli:cli"
+snn = "cli.run:main"
 
 [tool.pytest.ini_options]
 addopts = "--cov"

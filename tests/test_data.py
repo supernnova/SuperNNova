@@ -19,9 +19,7 @@ dir_data_path = os.path.dirname(os.path.realpath(__file__)) + "/dump_data/"
 def test_dataset_making(option):
     shutil.rmtree(dir_data_path, ignore_errors=True)
 
-    cmd = (
-        "python run.py --data --dump_dir tests/dump_data --raw_dir tests/raw " + option
-    )
+    cmd = "snn --data --dump_dir tests/dump_data --raw_dir tests/raw " + option
     call_cmd(cmd)
 
     # check whether database has been generated

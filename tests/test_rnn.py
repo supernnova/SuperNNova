@@ -10,7 +10,7 @@ dir_path = os.path.dirname(os.path.realpath(__file__)) + "/dump/"
 @pytest.fixture(scope="module")
 def make_data():
     shutil.rmtree(dir_path, ignore_errors=True)
-    cmd = "python run.py --data --dump_dir tests/dump --raw_dir tests/raw"
+    cmd = "snn --data --dump_dir tests/dump --raw_dir tests/raw"
     call_cmd(cmd)
     yield
     shutil.rmtree(dir_path, ignore_errors=True)
@@ -18,7 +18,7 @@ def make_data():
 
 @pytest.mark.parametrize("option", ["", "--nb_classes 2"])
 def test_rnn_train(make_data, option):
-    cmd = "python run.py --train_rnn --dump_dir tests/dump --nb_epoch=5 " + option
+    cmd = "snn --train_rnn --dump_dir tests/dump --nb_epoch=5 " + option
 
     call_cmd(cmd)
 
@@ -41,16 +41,16 @@ class TestValidation:
     @pytest.fixture(scope="class", autouse=True)
     def setup(self):
         shutil.rmtree(dir_path, ignore_errors=True)
-        cmd1 = "python run.py --data --dump_dir tests/dump --raw_dir tests/raw"
+        cmd1 = "snn --data --dump_dir tests/dump --raw_dir tests/raw"
         call_cmd(cmd1)
-        cmd2 = "python run.py --train_rnn --dump_dir tests/dump --nb_epoch=5"
+        cmd2 = "snn --train_rnn --dump_dir tests/dump --nb_epoch=5"
         call_cmd(cmd2)
         yield
         shutil.rmtree(dir_path, ignore_errors=True)
 
     def test_rnn_validate(self):
         """test fails if the line command exits with error"""
-        cmd = "python run.py --validate_rnn --dump_dir tests/dump"
+        cmd = "snn --validate_rnn --dump_dir tests/dump"
 
         call_cmd(cmd)
 
@@ -60,7 +60,7 @@ class TestValidation:
 
         for pf in pred_files:
             cmd = (
-                f"python run.py --validate_rnn --metrics --dump_dir tests/dump "
+                f"snn --validate_rnn --metrics --dump_dir tests/dump "
                 f"--prediction_files {pf}"
             )
 

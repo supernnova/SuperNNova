@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import numpy as np
 from pathlib import Path
 from supernnova import conf
@@ -16,8 +18,7 @@ from supernnova.validation import (
 )
 
 
-if __name__ == "__main__":
-
+def main():
     try:
 
         # Get conf parameters
@@ -147,3 +148,7 @@ if __name__ == "__main__":
             with open(Path(settings.done_file), "w") as the_file:
                 the_file.write("FAILURE\n")
         raise e
+
+
+if __name__ == "__main__":
+    main()
