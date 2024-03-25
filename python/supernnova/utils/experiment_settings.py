@@ -54,7 +54,6 @@ class ExperimentSettings:
             self._setup_dir()
             # Set the database file names
             self._set_database_file_names()
-
             # Set the feature lists
             if "all_features" not in cli_args:
                 self._set_feature_lists()
@@ -70,10 +69,6 @@ class ExperimentSettings:
                 ]
                 list_filters_combination = list_filters_combination + tmp
             self.list_filters_combination = list_filters_combination
-
-            self._set_pytorch_model_name()
-            # Get the feature normalization dict
-            self._load_normalization()
 
     def _load_config_file(self, config_file):
         with open(config_file, "r") as file:
@@ -102,7 +97,56 @@ class ExperimentSettings:
 
             Path(path).mkdir(exist_ok=True, parents=True)
 
-    def _set_pytorch_model_name(self):
+    def _set_database_file_names(self):
+        """Create a unique database name based on the dataset required
+        by the settings
+        """
+
+        out_file = f"{self.processed_dir}/database"
+        self.pickle_file_name = out_file + ".pickle"
+        self.hdf5_file_name = out_file + ".h5"
+
+    def _set_feature_lists(self):
+        """Utility to define the features used to train NN=based models"""
+
+        self.training_features_to_normalize = [
+            f"FLUXCAL_{f}" for f in self.list_filters
+        ]
+        self.training_features_to_normalize += [
+            f"FLUXCALERR_{f}" for f in self.list_filters
+        ]
+        self.training_features_to_normalize += ["delta_time"]
+
+    def _add_feature_lists(self):
+        # If the database has been created, add the list of all features
+        with h5py.File(self.hdf5_file_name, "r") as hf:
+            self.all_features = hf["features"][:].astype(str)
+
+            self.non_redshift_features = [
+                f for f in self.all_features if "HOSTGAL" not in f
+            ]
+
+            # Optionally add redshift
+            self.redshift_features = []
+            if self.redshift == "zpho":
+                self.redshift_features = [
+                    f for f in self.all_features if "HOSTGAL_PHOTOZ" in f
+                ]
+            elif self.redshift == "zspe":
+                self.redshift_features = [
+                    f for f in self.all_features if "HOSTGAL_SPECZ" in f
+                ]
+
+            self.training_features = self.non_redshift_features + self.redshift_features
+
+            if self.additional_train_var:
+                self.training_features += [
+                    k
+                    for k in self.additional_train_var
+                    if k not in self.training_features
+                ]
+
+    def _set_pytorch_model_name(self, train_init):
         """Define the model name for all NN based classifiers"""
         name = f"{self.model}_S_{self.seed}_CLF_{self.nb_classes}"
         name += f"_R_{self.redshift}"
@@ -134,132 +178,83 @@ class ExperimentSettings:
                 v = v.tolist()
             d_tmp[k] = v
 
-        if self.train_rnn:
+        if train_init:
             os.makedirs(self.rnn_dir, exist_ok=True)
             # Dump the command line arguments (for model restoration)
             with open(Path(self.rnn_dir) / "cli_args.json", "w") as f:
                 json.dump(d_tmp, f, indent=4, sort_keys=True)
-
-    def _set_feature_lists(self):
-        """Utility to define the features used to train NN=based models"""
-
-        self.training_features_to_normalize = [
-            f"FLUXCAL_{f}" for f in self.list_filters
-        ]
-        self.training_features_to_normalize += [
-            f"FLUXCALERR_{f}" for f in self.list_filters
-        ]
-        self.training_features_to_normalize += ["delta_time"]
-
-        if not self.data:
-            # If the database has been created, add the list of all features
-            with h5py.File(self.hdf5_file_name, "r") as hf:
-                self.all_features = hf["features"][:].astype(str)
-
-                self.non_redshift_features = [
-                    f for f in self.all_features if "HOSTGAL" not in f
-                ]
-
-                # Optionally add redshift
-                self.redshift_features = []
-                if self.redshift == "zpho":
-                    self.redshift_features = [
-                        f for f in self.all_features if "HOSTGAL_PHOTOZ" in f
-                    ]
-                elif self.redshift == "zspe":
-                    self.redshift_features = [
-                        f for f in self.all_features if "HOSTGAL_SPECZ" in f
-                    ]
-
-                self.training_features = (
-                    self.non_redshift_features + self.redshift_features
-                )
-
-                if self.additional_train_var:
-                    self.training_features += [
-                        k
-                        for k in self.additional_train_var
-                        if k not in self.training_features
-                    ]
-
-    def _set_database_file_names(self):
-        """Create a unique database name based on the dataset required
-        by the settings
-        """
-
-        out_file = f"{self.processed_dir}/database"
-        self.pickle_file_name = out_file + ".pickle"
-        self.hdf5_file_name = out_file + ".h5"
 
     def _load_normalization(self):
         """Create an array holding the data-normalization parameters
         used to normalize certain features in the NN-based classification
         pipeline
         """
+        self.idx_features = [
+            i for (i, f) in enumerate(self.all_features) if f in self.training_features
+        ]
 
-        if not self.data:
+        self.idx_specz = [
+            i for (i, f) in enumerate(self.training_features) if "HOSTGAL_SPECZ" in f
+        ]
 
-            self.idx_features = [
-                i
-                for (i, f) in enumerate(self.all_features)
-                if f in self.training_features
-            ]
+        self.idx_flux = [
+            i for (i, f) in enumerate(self.training_features) if "FLUXCAL_" in f
+        ]
 
-            self.idx_specz = [
-                i
-                for (i, f) in enumerate(self.training_features)
-                if "HOSTGAL_SPECZ" in f
-            ]
+        self.idx_fluxerr = [
+            i for (i, f) in enumerate(self.training_features) if "FLUXCALERR_" in f
+        ]
 
-            self.idx_flux = [
-                i for (i, f) in enumerate(self.training_features) if "FLUXCAL_" in f
-            ]
+        self.idx_delta_time = [
+            i for (i, f) in enumerate(self.training_features) if "delta_time" in f
+        ]
 
-            self.idx_fluxerr = [
-                i for (i, f) in enumerate(self.training_features) if "FLUXCALERR_" in f
-            ]
+        self.idx_features_to_normalize = [
+            i
+            for (i, f) in enumerate(self.all_features)
+            if f in self.training_features_to_normalize
+        ]
 
-            self.idx_delta_time = [
-                i for (i, f) in enumerate(self.training_features) if "delta_time" in f
-            ]
+        self.d_feat_to_idx = {f: i for i, f in enumerate(self.all_features)}
 
-            self.idx_features_to_normalize = [
-                i
-                for (i, f) in enumerate(self.all_features)
-                if f in self.training_features_to_normalize
-            ]
+        list_norm = []
 
-            self.d_feat_to_idx = {f: i for i, f in enumerate(self.all_features)}
+        with h5py.File(self.hdf5_file_name, "r") as hf:
 
-            list_norm = []
+            for f in self.training_features_to_normalize:
 
-            with h5py.File(self.hdf5_file_name, "r") as hf:
+                if self.norm == "perfilter":
 
-                for f in self.training_features_to_normalize:
+                    minv = np.array(hf[f"normalizations/{f}/min"])
+                    meanv = np.array(hf[f"normalizations/{f}/mean"])
+                    stdv = np.array(hf[f"normalizations/{f}/std"])
 
-                    if self.norm == "perfilter":
+                    list_norm.append([minv, meanv, stdv])
 
+                else:
+
+                    if "FLUX" in f:
+                        prefix = f.split("_")[0]
+                        minv = np.array(hf[f"normalizations_global/{prefix}/min"])
+                        meanv = np.array(hf[f"normalizations_global/{prefix}/mean"])
+                        stdv = np.array(hf[f"normalizations_global/{prefix}/std"])
+                    else:
                         minv = np.array(hf[f"normalizations/{f}/min"])
                         meanv = np.array(hf[f"normalizations/{f}/mean"])
                         stdv = np.array(hf[f"normalizations/{f}/std"])
 
-                        list_norm.append([minv, meanv, stdv])
+                    list_norm.append([minv, meanv, stdv])
 
-                    else:
+        self.arr_norm = np.array(list_norm)
 
-                        if "FLUX" in f:
-                            prefix = f.split("_")[0]
-                            minv = np.array(hf[f"normalizations_global/{prefix}/min"])
-                            meanv = np.array(hf[f"normalizations_global/{prefix}/mean"])
-                            stdv = np.array(hf[f"normalizations_global/{prefix}/std"])
-                        else:
-                            minv = np.array(hf[f"normalizations/{f}/min"])
-                            meanv = np.array(hf[f"normalizations/{f}/mean"])
-                            stdv = np.array(hf[f"normalizations/{f}/std"])
+    def init_training_setting(self, train_init=False):
+        """Init settings needed for training and the following actions"""
+        if "all_features" not in self.cli_args.keys():
+            self._add_feature_lists()
 
-                        list_norm.append([minv, meanv, stdv])
-
-            self.arr_norm = np.array(list_norm)
+        self._set_pytorch_model_name(train_init)
+        # Get the feature normalization dict
+        self._load_normalization()
 
     def check_data_exists(self):
         """Utility to check the database has been built"""

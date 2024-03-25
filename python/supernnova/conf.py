@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import argparse
 from pathlib import Path
@@ -387,7 +388,7 @@ def get_args():
 
     parser.add_argument("--config_file", default=None, type=str, help="YML config file")
 
-    args = parser.parse_args()
+    args = parser.parse_args(sys.argv[2:])
 
     return args
 
@@ -398,6 +399,7 @@ def get_settings(args=None):
         args = get_args()
 
     # Initialize a settings instance
+
     settings = experiment_settings.ExperimentSettings(args)
 
     assert args.rho_scale_lower >= args.rho_scale_upper
