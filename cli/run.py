@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import sys
 import re
 import os.path as osp
@@ -161,32 +159,36 @@ def performance_action(settings):
 
 
 def main():
-    # Workaround for optparse limitation: insert -- before first negative
-    # number found.
-    negint = re.compile("-[0-9]+")
-    for n, arg in enumerate(sys.argv):
-        if negint.match(arg):
-            sys.argv.insert(n, "--")
-            break
+    if len(sys.argv) == 2 and sys.argv[1] == "--help":
+        print_usage()
 
-    # Get config parameters
-    settings = conf.get_settings()
-    # setting random seeds
-    np.random.seed(settings.seed)
-    import torch
+    else:
+        # Workaround for optparse limitation: insert -- before first negative
+        # number found.
+        negint = re.compile("-[0-9]+")
+        for n, arg in enumerate(sys.argv):
+            if negint.match(arg):
+                sys.argv.insert(n, "--")
+                break
 
-    torch.manual_seed(settings.seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(settings.seed)
+        # Get config parameters
+        settings = conf.get_settings()
+        # setting random seeds
+        np.random.seed(settings.seed)
+        import torch
 
-    actions = {
-        "make_data": make_data_action,
-        "train_rnn": train_rnn_action,
-        "validate_rnn": validate_rnn_action,
-        "show": show_action,
-        "performance": performance_action,
-    }
-    actions[get_action()](settings)
+        torch.manual_seed(settings.seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(settings.seed)
+
+        actions = {
+            "make_data": make_data_action,
+            "train_rnn": train_rnn_action,
+            "validate_rnn": validate_rnn_action,
+            "show": show_action,
+            "performance": performance_action,
+        }
+        actions[get_action()](settings)
 
 
 # def main():
