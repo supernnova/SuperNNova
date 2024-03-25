@@ -16,20 +16,20 @@ def get_args():
 
     parser.add_argument("--seed", type=int, default=0, help="Random seed to be used")
 
-    #######################
-    # General parameters
-    #######################
-    parser.add_argument(
-        "--data",
-        action="store_true",
-        help="Create dataset for ML training",  # write data
-    )
+    # #######################
+    # # General parameters
+    # #######################
+    # parser.add_argument(
+    #     "--data",
+    #     action="store_true",
+    #     help="Create dataset for ML training",  # write data
+    # )
 
-    parser.add_argument("--train_rnn", action="store_true", help="Train RNN model")
+    # parser.add_argument("--train_rnn", action="store_true", help="Train RNN model")
 
-    parser.add_argument(
-        "--validate_rnn", action="store_true", help="Validate RNN model"
-    )
+    # parser.add_argument(
+    #     "--validate_rnn", action="store_true", help="Validate RNN model"
+    # )
 
     parser.add_argument(
         "--explore_lightcurves",  # use it without using debbug
@@ -165,7 +165,7 @@ def get_args():
         "--data_training",
         default=False,
         action="store_true",
-        help="Create database with mostly training set of 99.5%",
+        help="Create database with mostly training set of 99.5%%",
     )
 
     parser.add_argument(
