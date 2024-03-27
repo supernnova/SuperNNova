@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import argparse
 from pathlib import Path
@@ -28,7 +29,7 @@ helps = {
     "performance": PERFORMANCE_OPTIONS,
 }
 
-
+# customize help, so it only print out relevant to the provide command
 def generate_command_help(parser, command_options):
     """Generate a help message for specific command options."""
     help_message = "usage: snn [command] [options]\n\n"
@@ -48,7 +49,8 @@ def handle_custom_help(parser, command_arg):
     if command_arg in helps.keys():
         print(generate_command_help(parser, helps[command_arg]))
     else:
-        parser.print_help()
+        print("The command {} is not valid.".format(command_arg))
+        sys.exit()
 
 
 class CustomHelpAction(argparse.Action):
