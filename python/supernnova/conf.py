@@ -1,5 +1,4 @@
 import os
-import sys
 import json
 import argparse
 from pathlib import Path
@@ -9,10 +8,71 @@ from distutils.util import strtobool
 from .utils import experiment_settings
 from supernnova.utils import logging_utils as lu
 
+# group options to show in print_help for different actions
+COMMON_OPTIONS = [
+    "--seed",
+    "--use_cuda",
+    "--dump_dir",
+]
+MAKE_DATA_OPTIONS = COMMON_OPTIONS + ["--debug", "--raw_dir"]
+TRAIN_RNN_OPTIONS = COMMON_OPTIONS + []
+VALIDATE_RNN_OPTIONS = COMMON_OPTIONS + []
+SHOW_OPTIONS = COMMON_OPTIONS + []
+PERFORMANCE_OPTIONS = COMMON_OPTIONS + []
 
-def get_args():
+helps = {
+    "make_data": MAKE_DATA_OPTIONS,
+    "train_rnn": TRAIN_RNN_OPTIONS,
+    "validate_rnn": VALIDATE_RNN_OPTIONS,
+    "show": SHOW_OPTIONS,
+    "performance": PERFORMANCE_OPTIONS,
+}
 
-    parser = argparse.ArgumentParser(description="SNIa classification")
+
+def generate_command_help(parser, command_options):
+    """Generate a help message for specific command options."""
+    help_message = "usage: snn [command] [options]\n\n"
+    help_message += "optional arguments:\n"
+    for action in parser._actions:
+        # Check if the option is relevant to the command
+        if any(opt in command_options for opt in action.option_strings):
+            option_str = ", ".join(action.option_strings)
+            help_descr = f"{option_str:20} {action.help}"
+            help_message += f"  {help_descr}\n"
+    return help_message
+
+
+def handle_custom_help(parser, command_arg):
+    """Display help messages for provided command"""
+
+    if command_arg in helps.keys():
+        print(generate_command_help(parser, helps[command_arg]))
+    else:
+        parser.print_help()
+
+
+class CustomHelpAction(argparse.Action):
+    command_arg = None
+
+    def __init__(self, option_strings, dest, help=None):
+        super(CustomHelpAction, self).__init__(
+            option_strings=option_strings, dest=dest, nargs=0, help=help
+        )
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        handle_custom_help(parser, self.__class__.command_arg)
+        parser.exit()  # Exit after printing the custom help message
+
+
+def get_args(command_arg):
+
+    CustomHelpAction.command_arg = command_arg
+
+    parser = argparse.ArgumentParser(description="SNIa classification", add_help=False)
+
+    parser.add_argument(
+        "--help", action=CustomHelpAction, help="Show custom help message"
+    )
 
     parser.add_argument("--seed", type=int, default=0, help="Random seed to be used")
 
@@ -388,15 +448,14 @@ def get_args():
 
     parser.add_argument("--config_file", default=None, type=str, help="YML config file")
 
-    args = parser.parse_args(sys.argv[2:])
-
+    args = parser.parse_args()
     return args
 
 
-def get_settings(args=None):
+def get_settings(command_arg, args=None):
 
     if not args:
-        args = get_args()
+        args = get_args(command_arg)
 
     # Initialize a settings instance
 

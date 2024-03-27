@@ -171,16 +171,6 @@ def main():
                 sys.argv.insert(n, "--")
                 break
 
-        # Get config parameters
-        settings = conf.get_settings()
-        # setting random seeds
-        np.random.seed(settings.seed)
-        import torch
-
-        torch.manual_seed(settings.seed)
-        if torch.cuda.is_available():
-            torch.cuda.manual_seed_all(settings.seed)
-
         actions = {
             "make_data": make_data_action,
             "train_rnn": train_rnn_action,
@@ -188,7 +178,21 @@ def main():
             "show": show_action,
             "performance": performance_action,
         }
-        actions[get_action()](settings)
+
+        action = get_action()
+
+        # Get config parameters
+        settings = conf.get_settings(action)
+        # setting random seeds
+        np.random.seed(settings.seed)
+
+        import torch
+
+        torch.manual_seed(settings.seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(settings.seed)
+
+        actions[action](settings)
 
 
 # def main():
