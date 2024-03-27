@@ -15,7 +15,26 @@ COMMON_OPTIONS = [
     "--use_cuda",
     "--dump_dir",
 ]
-MAKE_DATA_OPTIONS = COMMON_OPTIONS + ["--debug", "--raw_dir"]
+MAKE_DATA_OPTIONS = (
+    COMMON_OPTIONS
+    + [
+        "--data_fraction",
+        "--data_testing",
+        "--data_training",
+        "--debug",
+        "--norm",
+        "--no_overwrite",
+        "--raw_dir",
+        "--testing_ids",
+        "--photo_window_files",
+        "--photo_window_var",
+        "--photo_window_min",
+        "--photo_window_max",
+        "--list_filters",
+        "--phot_reject_list",
+        "--redshift_label",
+    ],
+)
 TRAIN_RNN_OPTIONS = COMMON_OPTIONS + []
 VALIDATE_RNN_OPTIONS = COMMON_OPTIONS + []
 SHOW_OPTIONS = COMMON_OPTIONS + []
