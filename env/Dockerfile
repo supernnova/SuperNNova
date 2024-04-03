@@ -162,8 +162,6 @@ RUN ${CONDA} run -n ${CONDA_ENV_NAME} pip install poetry
 # Copy and install Poetry dependencies (but not the actual 
 # application, which will get installed by the entry_point 
 # script when we start the container)
-#--------------------------------------------------------------
-# n.b.: If the dependencies change, the image should be rebuilt
 ################################################################
 COPY pyproject.toml poetry.lock .
 RUN ${CONDA} run -n ${CONDA_ENV_NAME} poetry install --no-root --all-extras && \
