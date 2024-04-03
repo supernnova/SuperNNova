@@ -158,10 +158,13 @@ RUN rm conda_env.yml
 #################
 RUN ${CONDA} run -n ${CONDA_ENV_NAME} pip install poetry
 
-########################################################################
-# Copy and install Poetry dependencies (but not the actual application)
-# n.b.: If the dependencies change, then the image should be rebuilt
-########################################################################
+################################################################
+# Copy and install Poetry dependencies (but not the actual 
+# application, which will get installed by the entry_point 
+# script when we start the container)
+#--------------------------------------------------------------
+# n.b.: If the dependencies change, the image should be rebuilt
+################################################################
 COPY pyproject.toml poetry.lock .
 RUN ${CONDA} run -n ${CONDA_ENV_NAME} poetry install --no-root --all-extras && \
     rm pyproject.toml poetry.lock
@@ -197,5 +200,8 @@ ENV ZSH=${HOME}/.oh-my-zsh \
 USER root
 COPY env/entry_script.sh /
 RUN chmod a+rx /entry_script.sh
+# Make sure that the 'SuperNNova' path used here matches what gets used
+# in the 'launch_docker.py' script
+RUN echo "cd SuperNNova && ${CONDA} run -n ${CONDA_ENV_NAME} poetry install --all-extras --only-root" >> /entry_script.sh
 RUN echo su -m $USERNAME >> /entry_script.sh
 ENTRYPOINT ["sh", "-c", "/entry_script.sh"]
