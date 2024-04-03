@@ -34,6 +34,7 @@ def launch_docker():
         cmd += f" -v {args.raw_dir}:/u/home/raw"
 
     cmd += (
+        f" -e HOST_USERNAME={os.getlogin()} "
         f" -e HOST_USER_ID={os.getuid()} "
         f" -e HOST_USER_GID={os.getgid()} "
         f" rnn-{args.image}:latest"

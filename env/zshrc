@@ -3,7 +3,7 @@ ZSH_THEME="refined"
 export PATH=$PATH_TO_COPY
 
 # Plugins
-plugins=(git zsh_reload)
+plugins=(git)
 
 source "$ZSH/oh-my-zsh.sh"
 

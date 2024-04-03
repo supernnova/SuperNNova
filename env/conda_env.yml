@@ -10,4 +10,3 @@ dependencies:
   - pip
   - pip:
       - poetry>1.6.1
-
