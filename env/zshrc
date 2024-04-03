@@ -1,6 +1,9 @@
 # Theme
 ZSH_THEME="refined"
-export PATH=$PATH_TO_COPY
+
+# Make sure to append here, because Conda has added itself
+# to the PATH at this point, and we want to keep that
+export PATH=${PATH_TO_COPY}:${PATH}
 
 # Plugins
 plugins=(git)
@@ -13,3 +16,6 @@ if [[ -n $SSH_CONNECTION ]]; then
 else
   export EDITOR='vim'
 fi
+
+# Remove any duplicates from the 
+typeset -U PATH

@@ -23,7 +23,7 @@ FROM nvcr.io/nvidia/cuda:9.0-devel-ubuntu16.04 as gpu9
 ARG USER_SHELL="/bin/bash"
 
 # Use the GPU version of the Conda environment file
-ENV CONDA_ENV_FILE=conda_env.yml
+ENV CONDA_ENV_FILE=conda_gpu_env.yml
 
 ###########################################################
 # Base image for 'gpu' builds, using a recent CUDA version
@@ -37,7 +37,7 @@ FROM nvcr.io/nvidia/cuda:12.3.1-devel-ubuntu22.04 as gpu
 ARG USER_SHELL="/bin/bash"
 
 # Use the GPU version of the Conda environment file
-ENV CONDA_ENV_FILE=conda_env.yml
+ENV CONDA_ENV_FILE=conda_gpu_env.yml
 
 #####################################################
 # Everything that follows is the same for all builds
