@@ -52,6 +52,11 @@ def get_action():
 
 
 def make_data_action(settings):
+    # Validate command-line arguments
+    # explore_lightcurves should be used with debug
+    if settings.explore_lightcurves and not settings.debug:
+        raise ValueError("--explore_lightcurves must be used with --debug")
+
     # Build an HDF5 database
     make_dataset.make_dataset(settings)
     lu.print_blue("Finished constructing dataset")

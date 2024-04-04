@@ -31,6 +31,7 @@ MAKE_DATA_OPTIONS = COMMON_OPTIONS + [
     "--list_filters",
     "--phot_reject_list",
     "--redshift_label",
+    "--explore_lightcurves",
 ]
 TRAIN_RNN_OPTIONS = COMMON_OPTIONS + []
 VALIDATE_RNN_OPTIONS = COMMON_OPTIONS + []
