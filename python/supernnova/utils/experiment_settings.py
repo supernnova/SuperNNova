@@ -4,7 +4,6 @@ import h5py
 import itertools
 import numpy as np
 from pathlib import Path
-import yaml
 
 
 class ExperimentSettings:
@@ -27,12 +26,6 @@ class ExperimentSettings:
         # Ensure cli_args is of type dict
         if not isinstance(cli_args, dict):
             cli_args = vars(cli_args)
-
-        # Read from config file
-        if cli_args["config_file"]:
-            conf_file_args = self._load_config_file(cli_args["config_file"])
-            self.__dict__.update(conf_file_args)
-            self.cli_args.update(conf_file_args)
 
         # Update and overwrite options
         self.__dict__.update(cli_args)
@@ -69,11 +62,6 @@ class ExperimentSettings:
                 ]
                 list_filters_combination = list_filters_combination + tmp
             self.list_filters_combination = list_filters_combination
-
-    def _load_config_file(self, config_file):
-        with open(config_file, "r") as file:
-            config = yaml.safe_load(file)
-        return config
 
     def _setup_dir(self):
         """Configure directories where data is read from or dumped to

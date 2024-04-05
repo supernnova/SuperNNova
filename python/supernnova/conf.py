@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import yaml
 import argparse
 from pathlib import Path
 from natsort import natsorted
@@ -94,21 +95,6 @@ def get_args(command_arg):
     )
 
     parser.add_argument("--seed", type=int, default=0, help="Random seed to be used")
-
-    # #######################
-    # # General parameters
-    # #######################
-    # parser.add_argument(
-    #     "--data",
-    #     action="store_true",
-    #     help="Create dataset for ML training",  # write data
-    # )
-
-    # parser.add_argument("--train_rnn", action="store_true", help="Train RNN model")
-
-    # parser.add_argument(
-    #     "--validate_rnn", action="store_true", help="Validate RNN model"
-    # )
 
     parser.add_argument(
         "--explore_lightcurves",  # use it without using debbug
@@ -468,6 +454,31 @@ def get_args(command_arg):
     parser.add_argument("--config_file", default=None, type=str, help="YML config file")
 
     args = parser.parse_args()
+
+    # The following block of code deal with the case when YAML config file is provided alone
+    # or together with other options
+    if args.config_file:
+        # keep track of user provide arguments
+        _args = sys.argv[1:]
+        _user_namespace, _ = parser._parse_known_args(
+            _args, namespace=argparse.Namespace()
+        )
+        _user_args = vars(_user_namespace)
+
+        # update args from config_file
+        yml_args = load_config_file(args.config_file)
+        for key in yml_args.keys():
+            if hasattr(args, key):
+                setattr(args, key, yml_args[key])
+                print(getattr(args, key))
+            else:
+                print("{} is not a valid option.".format(key))
+
+        # update user provided value again in case user provides default value
+        if len(_user_args) > 1:
+            for key in _user_args.keys():
+                setattr(args, key, _user_args[key])
+
     return args
 
 
@@ -560,3 +571,9 @@ def get_norm_from_model(model_file, settings):
     settings.arr_norm = np.array(list_norm)
 
     return settings
+
+
+def load_config_file(config_file):
+    with open(config_file, "r") as file:
+        config = yaml.safe_load(file)
+    return config
