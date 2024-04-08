@@ -69,20 +69,20 @@ Create a docker image:
 
 .. code::
 
-    cd env && make {image}
+    make {image}
 
-where ``image`` is one of ``cpu`` or ``gpu`` (for cuda 9.) or ``gpu10`` (for cuda 10.)
+where ``image`` is one of ``cpu`` or ``gpu`` (for the latest supported CUDA version; currently 12.3.1) or ``gpu9`` (for cuda 9.0)
 
-- This images contains all of this repository's dependencies.
+- This image contains all of this repository's dependencies.
 - Image construction will typically take a few minutes
 
 Enter docker environment by calling:
 
 .. code::
 
-    python launch_docker.py --image <image> --dump_dir </path/to/data>
+    python env/launch_docker.py --image <image> --dump_dir </path/to/data>
 
-- Add ``--image image`` where image is ``cpu`` or ``gpu`` (for cuda 9.) or ``gpu10`` (for cuda 10.)
+- Add ``--image image`` where image is ``cpu`` or ``gpu`` (latest version) or ``gpu9`` (for cuda 9)
 - Add ``--dump_dir /path/to/data`` to mount the folder where you stored the data (see :ref:`DataStructure`) into the container. If unspecified, will use the default location (i.e. ``snndump``)
 
 This will launch an interactive session in the docker container, with zsh support.
