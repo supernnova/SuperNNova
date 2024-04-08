@@ -12,7 +12,8 @@ FROM ubuntu:22.04 as cpu
 ARG USER_SHELL="/usr/bin/zsh"
 
 # Use the CPU version of the Conda environment file
-ENV CONDA_ENV_FILE=conda_env.yml
+ENV CONDA_ENV_FILE="conda_env.yml"
+ENV CONDA_ENV_NAME="supernnova"
 
 ################################################
 # Base image for 'gpu9' builds, using CUDA v9.0
@@ -23,7 +24,8 @@ FROM nvcr.io/nvidia/cuda:9.0-devel-ubuntu16.04 as gpu9
 ARG USER_SHELL="/bin/bash"
 
 # Use the GPU version of the Conda environment file
-ENV CONDA_ENV_FILE=conda_gpu_env.yml
+ENV CONDA_ENV_FILE="conda_gpu_env.yml"
+ENV CONDA_ENV_NAME="supernnova-cuda"
 
 ###########################################################
 # Base image for 'gpu' builds, using a recent CUDA version
@@ -37,7 +39,8 @@ FROM nvcr.io/nvidia/cuda:12.3.1-devel-ubuntu22.04 as gpu
 ARG USER_SHELL="/bin/bash"
 
 # Use the GPU version of the Conda environment file
-ENV CONDA_ENV_FILE=conda_gpu_env.yml
+ENV CONDA_ENV_FILE="conda_gpu_env.yml"
+ENV CONDA_ENV_NAME="supernnova-cuda"
 
 #####################################################
 # Everything that follows is the same for all builds
@@ -104,7 +107,7 @@ RUN echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen && \
 #       one who builds the image.
 ###########################################################################
 RUN mkdir -p ${HOME} && \
-    groupadd --gid ${USER_GID} ${USERNAME} && \
+    groupadd --force --gid ${USER_GID} ${USERNAME} && \
     useradd \
     --uid ${USER_ID} \
     --gid ${USER_GID} \
@@ -131,8 +134,7 @@ WORKDIR ${HOME}
 # RUN ${CONDA} install -n ${CONDA_ENV_NAME} -c conda-forge --force-reinstall ncurses
 #####################################################################################
 ENV CONDA_HOME=${HOME}/.miniconda3
-ENV CONDA=${CONDA_HOME}/bin/conda \
-    CONDA_ENV_NAME=supernnova
+ENV CONDA=${CONDA_HOME}/bin/conda
 RUN curl -o ${HOME}/miniconda.sh -O  https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
     chmod a+x ${HOME}/miniconda.sh
 RUN ${HOME}/miniconda.sh -b -p ${CONDA_HOME} && \
