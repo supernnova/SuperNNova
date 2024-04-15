@@ -1,4 +1,3 @@
-import os
 import sys
 import json
 import yaml
@@ -85,6 +84,10 @@ class CustomHelpAction(argparse.Action):
         parser.exit()  # Exit after printing the custom help message
 
 
+def absolute_path(path):
+    return str(Path(path).resolve())
+
+
 def get_args(command_arg):
 
     CustomHelpAction.command_arg = command_arg
@@ -148,16 +151,24 @@ def get_args(command_arg):
         help="Plot lcs and the histogram of probability for each class",
     )
     parser.add_argument(
-        "--model_files", nargs="+", help="Path to model files"
+        "--model_files", nargs="+", type=absolute_path, help="Path to model files"
     )  # test it
     parser.add_argument(
-        "--prediction_files", nargs="+", help="Path to prediction files"  # test it
+        "--prediction_files",
+        nargs="+",
+        type=absolute_path,
+        help="Path to prediction files",  # test it
     )
 
-    parser.add_argument("--metric_files", nargs="+", help="Path to metric files")
+    parser.add_argument(
+        "--metric_files", nargs="+", type=absolute_path, help="Path to metric files"
+    )
 
     parser.add_argument(
-        "--done_file", default=None, type=str, help="Done or failure file name"
+        "--done_file",
+        default=None,
+        type=absolute_path,
+        help="Done or failure file name",
     )
 
     parser.add_argument(
@@ -173,25 +184,26 @@ def get_args(command_arg):
     ########################
     # Data parameters
     ########################
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    default_dump_dir = str(Path(dir_path).parent.parent / "snndump")
+    # dir_path = os.path.dirname(os.path.realpath(__file__))
+    # default_dump_dir = str(Path(dir_path).parent.parent / "snndump")
+    default_dump_dir = absolute_path("snndump")
     parser.add_argument(
         "--dump_dir",
-        type=str,
+        type=absolute_path,
         default=default_dump_dir,
         help="Default path where data and models are dumped",
     )
 
     parser.add_argument(
         "--fits_dir",  # eliminate it
-        type=str,
+        type=absolute_path,
         default=f"{default_dump_dir}/fits",
         help="Default path where fits to photometry are",
     )
 
     parser.add_argument(
         "--raw_dir",
-        type=str,
+        type=absolute_path,
         default=f"{default_dump_dir}/raw",
         help="Default path where raw data is",
     )
@@ -251,6 +263,7 @@ def get_args(command_arg):
     parser.add_argument(
         "--photo_window_files",
         nargs="+",
+        type=absolute_path,
         help="Path to fits with PEAKMJD estimation",  # test it
     )
 
@@ -452,7 +465,9 @@ def get_args(command_arg):
         help="Use mean field inference for bayesian models",
     )
 
-    parser.add_argument("--config_file", default=None, type=str, help="YML config file")
+    parser.add_argument(
+        "--config_file", default=None, type=absolute_path, help="YML config file"
+    )
 
     args = parser.parse_args()
 
@@ -574,6 +589,9 @@ def get_norm_from_model(model_file, settings):
 
 
 def load_config_file(config_file):
-    with open(config_file, "r") as file:
-        config = yaml.safe_load(file)
+    with open(config_file, "r") as f:
+        if config_file.endswith(".yml"):
+            config = yaml.safe_load(f)
+        if config_file.endswith(".json"):
+            config = json.load(f)
     return config
