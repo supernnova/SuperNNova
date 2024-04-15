@@ -63,8 +63,6 @@ def make_data_action(settings):
 
 
 def train_rnn_action(settings):
-    # init additional training settings
-    settings.init_training_setting(train_init=True)
 
     # Train
     if settings.cyclic:
@@ -83,8 +81,6 @@ def train_rnn_action(settings):
 
 
 def validate_rnn_action(settings):
-    # init additional training settings
-    settings.init_training_setting()
 
     if settings.model_files is None:
         validate_rnn.get_predictions(settings)
@@ -109,8 +105,6 @@ def validate_rnn_action(settings):
 
 
 def show_action(settings):
-    # init additional training settings
-    settings.init_training_setting()
 
     if settings.explore_lightcurves:
         visualize.visualize(settings)
@@ -132,8 +126,6 @@ def show_action(settings):
 
 
 def performance_action(settings):
-    # init additional training settings
-    settings.init_training_setting()
 
     if settings.metrics:
         for prediction_file in settings.prediction_files:

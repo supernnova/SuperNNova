@@ -17,6 +17,7 @@ COMMON_OPTIONS = [
     "--dump_dir",
 ]
 MAKE_DATA_OPTIONS = COMMON_OPTIONS + [
+    "--config_file",
     "--data_fraction",
     "--data_testing",
     "--data_training",
@@ -489,8 +490,7 @@ def get_settings(command_arg, args=None):
 
     # Initialize a settings instance
 
-    settings = experiment_settings.ExperimentSettings(args)
-
+    settings = experiment_settings.ExperimentSettings(args, action=command_arg)
     assert args.rho_scale_lower >= args.rho_scale_upper
 
     return settings

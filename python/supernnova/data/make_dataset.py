@@ -953,6 +953,8 @@ def make_dataset(settings):
             # Dont throw error if folder exists with exist_ok Flag.
             for f in glob.glob(f"{folder}/*"):
                 os.remove(f)
+            # Save cli args
+            settings._save_to_json(settings.processed_dir)
 
     # split dataset in train test and validation
     build_traintestval_splits(settings)

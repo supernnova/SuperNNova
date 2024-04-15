@@ -19,7 +19,7 @@ class ExperimentSettings:
         cli_args (argparse.Namespace) command line arguments
     """
 
-    def __init__(self, cli_args):
+    def __init__(self, cli_args, action=None):
 
         self.cli_args = {}
 
@@ -30,6 +30,8 @@ class ExperimentSettings:
         # Update and overwrite options
         self.__dict__.update(cli_args)
         self.cli_args.update(cli_args)
+
+        self.action = action
 
         self.device = "cpu"
         if self.use_cuda:
@@ -62,6 +64,12 @@ class ExperimentSettings:
                 ]
                 list_filters_combination = list_filters_combination + tmp
             self.list_filters_combination = list_filters_combination
+            # action: make_data
+            if self.action == "make_data":
+                self._save_to_json(self.processed_dir)
+            # other actions: train_rnn, validate_rnn, show, performance or not specified
+            if self.action != "make_data":
+                self.set_training_setting()
 
     def _setup_dir(self):
         """Configure directories where data is read from or dumped to
@@ -134,7 +142,19 @@ class ExperimentSettings:
                     if k not in self.training_features
                 ]
 
-    def _set_pytorch_model_name(self, train_init):
+    def _save_to_json(self, save_to_dir):
+        d_tmp = {}
+        for k, v in self.__dict__.items():
+            if isinstance(v, np.ndarray):
+                v = v.tolist()
+            d_tmp[k] = v
+
+        os.makedirs(save_to_dir, exist_ok=True)
+        # Dump the command line arguments (for model restoration)
+        with open(Path(save_to_dir) / "cli_args.json", "w") as f:
+            json.dump(d_tmp, f, indent=4, sort_keys=True)
+
+    def _set_pytorch_model_name(self):
         """Define the model name for all NN based classifiers"""
         name = f"{self.model}_S_{self.seed}_CLF_{self.nb_classes}"
         name += f"_R_{self.redshift}"
@@ -166,11 +186,8 @@ class ExperimentSettings:
                 v = v.tolist()
             d_tmp[k] = v
 
-        if train_init:
-            os.makedirs(self.rnn_dir, exist_ok=True)
-            # Dump the command line arguments (for model restoration)
-            with open(Path(self.rnn_dir) / "cli_args.json", "w") as f:
-                json.dump(d_tmp, f, indent=4, sort_keys=True)
+        if self.action == "train_rnn":
+            self._save_to_json(self.rnn_dir)
 
     def _load_normalization(self):
         """Create an array holding the data-normalization parameters
@@ -235,12 +252,12 @@ class ExperimentSettings:
 
         self.arr_norm = np.array(list_norm)
 
-    def init_training_setting(self, train_init=False):
+    def set_training_setting(self):
         """Init settings needed for training and the following actions"""
         if "all_features" not in self.cli_args.keys():
             self._add_feature_lists()
 
-        self._set_pytorch_model_name(train_init)
+        self._set_pytorch_model_name()
         # Get the feature normalization dict
         self._load_normalization()
 
