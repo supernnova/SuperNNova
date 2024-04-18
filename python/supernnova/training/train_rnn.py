@@ -2,6 +2,7 @@ import torch
 import json
 import numpy as np
 import torch.nn as nn
+from torch.optim.swa_utils import AveragedModel
 from tqdm import tqdm
 from time import time
 from pathlib import Path
@@ -259,6 +260,10 @@ def train(settings):
     criterion = nn.CrossEntropyLoss()
     optimizer = tu.get_optimizer(settings, rnn)
 
+    # SWA model
+    if settings.swa:
+        swa_rnn = AveragedModel(rnn)
+
     # Prepare for GPU if required
     if settings.use_cuda:
         rnn.cuda()
@@ -349,6 +354,11 @@ def train(settings):
                     rnn.state_dict(),
                     f"{settings.rnn_dir}/{settings.pytorch_model_name}.pt",
                 )
+
+        # Activate SWA
+        if settings.swa:
+            if epoch > settings.swa_start_epoch:
+                swa_rnn.update_parameters(rnn)
 
     lu.print_green("Finished training")
 

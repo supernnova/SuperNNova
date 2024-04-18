@@ -385,6 +385,18 @@ def get_args():
         help="Use mean field inference for bayesian models",
     )
 
+    parser.add_argument(
+        "--swa",
+        action="store_true",
+        help="enable SWA",
+    )
+    parser.add_argument(
+        "--swa_start_epoch",
+        type=int,
+        default=83,
+        help="epoch at which start to collect SWA average",
+    )
+
     args = parser.parse_args()
 
     return args
