@@ -2,12 +2,12 @@ import torch
 import json
 import numpy as np
 import torch.nn as nn
-from torch.optim.swa_utils import AveragedModel
 from tqdm import tqdm
 from time import time
 from pathlib import Path
 from ..utils import training_utils as tu
 from ..utils import logging_utils as lu
+from ..utils.swag_utils import SwagModel
 
 
 def get_lr(settings):
@@ -262,7 +262,7 @@ def train(settings):
 
     # SWA model
     if settings.swa:
-        swa_rnn = AveragedModel(rnn)
+        swa_rnn = SwagModel(rnn)
 
     # Prepare for GPU if required
     if settings.use_cuda:
