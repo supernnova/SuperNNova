@@ -17,6 +17,17 @@ def swa_update(
     return averaged_param + (current_param - averaged_param) / (num_averaged + 1)
 
 
+@torch.no_grad()
+def second_moment_update(
+    averaged_second_moment: Tensor,
+    current_param: Tensor,
+    num_averaged: Union[Tensor, int],
+):
+    return averaged_second_moment + (
+        current_param * current_param - averaged_second_moment
+    ) / (num_averaged + 1)
+
+
 class SwagModel(Module):
     r"""Implements averaged model for Stochastic Weight Averaging (SWA).
 
@@ -135,14 +146,24 @@ class SwagModel(Module):
             else model.parameters()
         )
 
-        for p_swa, p_model in zip(self_param, model_param):
+        if not hasattr(self, "sec_moment_collect"):
+            self.sec_moment_collect = [
+                torch.zeros_like(p) for p in self.module.parameters()
+            ]
+
+        for i, (p_swa, p_model) in enumerate(zip(self_param, model_param)):
             device = p_swa.device
+            p_swa_ = p_swa.detach()
             p_model_ = p_model.detach().to(device)
             if self.n_averaged == 0:
-                p_swa.detach().copy_(p_model_)
+                p_swa_.copy_(p_model_)
+                self.sec_moment_collect[i] = p_model_ * p_model_
             else:
-                p_swa.detach().copy_(
+                p_swa_.copy_(
                     self.avg_fn(p_swa.detach(), p_model_, self.n_averaged.to(device))
+                )
+                self.sec_moment_collect[i] = second_moment_update(
+                    self.sec_moment_collect[i], p_model_, self.n_averaged.to(device)
                 )
 
         if not self.use_buffers:
