@@ -151,6 +151,11 @@ class SwagModel(Module):
                 torch.zeros_like(p) for p in self.module.parameters()
             ]
 
+        if not hasattr(self, "cov_collect"):
+            self.cov_collect = [
+                p.new_empty((p.numel(), 0)).zero_() for p in self.module.parameters()
+            ]
+
         for i, (p_swa, p_model) in enumerate(zip(self_param, model_param)):
             device = p_swa.device
             p_swa_ = p_swa.detach()
@@ -165,6 +170,8 @@ class SwagModel(Module):
                 self.sec_moment_collect[i] = second_moment_update(
                     self.sec_moment_collect[i], p_model_, self.n_averaged.to(device)
                 )
+                dev = (p_model_ - p_swa_).view(-1, 1)
+                self.cov_collect[i] = torch.cat((self.cov_collect[i], dev), dim=1)
 
         if not self.use_buffers:
             # If not apply running averages to the buffers,
