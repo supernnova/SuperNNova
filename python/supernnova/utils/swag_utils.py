@@ -1,5 +1,6 @@
 # This file is originally from https://github.com/pytorch/pytorch/blob/v2.0.1/torch/optim/swa_utils.py
 # and https://github.com/pytorch/pytorch/blob/main/torch/optim/swa_utils.py with modifications.
+# with reference from https://github.com/wjmaddox/swa_gaussian/tree/master
 
 import itertools
 from copy import deepcopy
@@ -26,6 +27,23 @@ def second_moment_update(
     return averaged_second_moment + (
         current_param * current_param - averaged_second_moment
     ) / (num_averaged + 1)
+
+
+def flatten(lst):
+    tmp = [i.contiguous().view(-1, 1) for i in lst]
+    return torch.cat(tmp).view(-1)
+
+
+def unflatten_like(vector, likeTensorList):
+    # Takes a flat torch.tensor and unflattens it to a list of torch.tensors
+    #    shaped like likeTensorList
+    outList = []
+    i = 0
+    for tensor in likeTensorList:
+        n = tensor.numel()
+        outList.append(vector[:, i : i + n].view(tensor.shape))
+        i += n
+    return outList
 
 
 class SwagModel(Module):
@@ -151,8 +169,8 @@ class SwagModel(Module):
                 torch.zeros_like(p) for p in self.module.parameters()
             ]
 
-        if not hasattr(self, "cov_collect"):
-            self.cov_collect = [
+        if not hasattr(self, "dev_collect"):
+            self.dev_collect = [
                 p.new_empty((p.numel(), 0)).zero_() for p in self.module.parameters()
             ]
 
@@ -171,7 +189,7 @@ class SwagModel(Module):
                     self.sec_moment_collect[i], p_model_, self.n_averaged.to(device)
                 )
                 dev = (p_model_ - p_swa_).view(-1, 1)
-                self.cov_collect[i] = torch.cat((self.cov_collect[i], dev), dim=1)
+                self.dev_collect[i] = torch.cat((self.dev_collect[i], dev), dim=1)
 
         if not self.use_buffers:
             # If not apply running averages to the buffers,
@@ -179,3 +197,45 @@ class SwagModel(Module):
             for b_swa, b_model in zip(self.module.buffers(), model.buffers()):
                 b_swa.detach().copy_(b_model.detach().to(device))
         self.n_averaged += 1
+
+    def sample(self, scale=0.5, cov=True, var_clamp=1e-30):
+        """sampling of SWAG model; should be used when the training is finished"""
+        self.sample_model = deepcopy(self.module)
+
+        scale_sqrt = scale**0.5
+
+        # get the mean, second moment
+        mean_list = [p for p in self.module.parameters()]
+        mean = flatten(mean_list)
+        sec_moment = flatten(self.sec_moment_collect)
+
+        # draw diagonal variance sample
+        var = torch.clamp(sec_moment - mean**2, var_clamp)
+        var_sample = var.sqrt() * torch.randn_like(var, requires_grad=False)
+
+        # if covariance draw low rank sample
+        if cov:
+            dev = torch.cat(self.dev_collect, dim=0)
+
+            cov_sample = dev.matmul(
+                dev.new_empty((dev.size(1),), requires_grad=False).normal_()
+            )
+            cov_sample /= (self.n_averaged - 1) ** 0.5
+
+            rand_sample = var_sample + cov_sample
+        else:
+            rand_sample = var_sample
+
+        # update sample with mean and scale
+        sample = mean + scale_sqrt * rand_sample
+        sample = sample.unsqueeze(0)
+
+        # unflatten new sample like the mean sample
+        samples_list = unflatten_like(sample, mean_list)
+
+        # update sample model
+        for p_sample, sample_tensor in zip(
+            self.sample_model.parameters(), samples_list
+        ):
+            p_sample_ = p_sample.detach()
+            p_sample_.copy_(sample_tensor)
