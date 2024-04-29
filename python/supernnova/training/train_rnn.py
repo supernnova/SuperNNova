@@ -385,6 +385,7 @@ def train_swag(settings):
 
     # Initiate SWAG model
     swag_rnn = SwagModel(rnn)
+    swag_start = 1
 
     # Prepare for GPU if required
     if settings.use_cuda:
@@ -395,6 +396,7 @@ def train_swag(settings):
     loss_str = ""
     d_monitor_train = {"loss": [], "AUC": [], "Acc": [], "epoch": []}
     d_monitor_val = {"loss": [], "AUC": [], "Acc": [], "epoch": []}
+
     if "bayesian" in settings.pytorch_model_name:
         d_monitor_train["KL"] = []
         d_monitor_val["KL"] = []
@@ -472,7 +474,10 @@ def train_swag(settings):
                 )
 
         if epoch > settings.swa_start_epoch:
-            lu.print_green("Start SWAG process")
+            if swag_start == 1:
+                lu.print_green("Starting SWAG process")
+                swag_start = 0
+
             swag_rnn.update_parameters(rnn)
 
     lu.print_green("Finished training")
