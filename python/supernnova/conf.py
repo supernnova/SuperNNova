@@ -397,6 +397,26 @@ def get_args():
         help="epoch at which start to collect SWA average",
     )
 
+    parser.add_argument(
+        "--swag_samples",
+        type=int,
+        default=30,
+        help="The number of SWAG samples to generate",
+    )
+
+    parser.add_argument(
+        "--swag_scale",
+        type=float,
+        default=0.5,
+        help="Scale parameter for covariance; if equals to 0, SWA model is sampled",
+    )
+
+    parser.add_argument(
+        "--swag_no_cov",
+        action="store_true",
+        help="Disable calculating low-rank covariance",
+    )
+
     args = parser.parse_args()
 
     return args
