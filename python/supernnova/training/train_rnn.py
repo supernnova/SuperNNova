@@ -479,6 +479,15 @@ def train_swag(settings):
                 swag_start = 0
 
             swag_rnn.update_parameters(rnn)
+            if epoch > settings.swa_start_epoch + 1:
+                d_losses_train_swag = tu.get_evaluation_metrics(
+                    settings,
+                    list_data_train,
+                    swag_rnn,
+                    sample_size=len(list_data_val),
+                    swag_sampling=True,
+                )
+                print("swag metrics:", d_losses_train_swag)
 
     lu.print_green("Finished training")
 

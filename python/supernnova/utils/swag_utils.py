@@ -200,19 +200,24 @@ class SwagModel(Module):
 
     def sample(self, scale=0.5, cov=True, var_clamp=1e-30):
         """sampling of SWAG model; should be used when the training is finished"""
-        self.sample_model = deepcopy(self.module)
+        sample_model = deepcopy(self.module)
 
         scale_sqrt = scale**0.5
 
         # get the mean, second moment
         mean_list = [p for p in self.module.parameters()]
         mean = flatten(mean_list)
+        if torch.isnan(mean).any():
+            print("mean contains NAN value")
+            breakpoint()
         sec_moment = flatten(self.sec_moment_collect)
 
         # draw diagonal variance sample
         var = torch.clamp(sec_moment - mean**2, var_clamp)
         var_sample = var.sqrt() * torch.randn_like(var, requires_grad=False)
-
+        if torch.isnan(var_sample).any():
+            print("var_sample contain NAN value")
+            breakpoint()
         # if covariance draw low rank sample
         if cov:
             dev = torch.cat(self.dev_collect, dim=0)
@@ -220,8 +225,11 @@ class SwagModel(Module):
             cov_sample = dev.matmul(
                 dev.new_empty((dev.size(1),), requires_grad=False).normal_()
             )
-            cov_sample /= (self.n_averaged - 1) ** 0.5
 
+            cov_sample /= (self.n_averaged - 1) ** 0.5
+            if torch.isnan(cov_sample).any():
+                print("cov_sample contains NAN value")
+                breakpoint()
             rand_sample = var_sample + cov_sample
         else:
             rand_sample = var_sample
@@ -234,8 +242,8 @@ class SwagModel(Module):
         samples_list = unflatten_like(sample, mean_list)
 
         # update sample model
-        for p_sample, sample_tensor in zip(
-            self.sample_model.parameters(), samples_list
-        ):
+        for p_sample, sample_tensor in zip(sample_model.parameters(), samples_list):
             p_sample_ = p_sample.detach()
             p_sample_.copy_(sample_tensor)
+
+        return sample_model

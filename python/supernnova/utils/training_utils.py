@@ -1,6 +1,7 @@
 import torch.nn as nn
 import torch
 from supernnova.utils import logging_utils as lu
+from supernnova.utils.swag_utils import SwagModel
 from supernnova.training import bayesian_rnn
 from supernnova.training import bayesian_rnn_2
 from supernnova.training import variational_rnn
@@ -522,6 +523,23 @@ def eval_step(rnn, packed_tensor, batch_size):
     return output
 
 
+def eval_step_swag(
+    model: SwagModel, n_samples: int, scale: float, cov: bool, packed_tensor, batch_size
+):
+    output = torch.empty((batch_size, 2))
+
+    for _ in range(n_samples):
+        sample_model = model.sample(scale, cov)
+
+        # Set NN to eval mode
+        sample_model.eval()
+
+        # Forward pass
+        output += sample_model(packed_tensor)
+
+    return output / n_samples
+
+
 def plot_loss(d_train, d_val, epoch, settings):
     """Plot loss curves
 
@@ -551,7 +569,9 @@ def plot_loss(d_train, d_val, epoch, settings):
         plt.clf()
 
 
-def get_evaluation_metrics(settings, list_data, model, sample_size=None):
+def get_evaluation_metrics(
+    settings, list_data, model, sample_size=None, swag_sampling=False
+):
     """Compute evaluation metrics on a list of data points
 
     Args:
@@ -586,14 +606,31 @@ def get_evaluation_metrics(settings, list_data, model, sample_size=None):
             list_data, batch_idxs, settings
         )
         settings.random_length = random_length
-        output = eval_step(model, packed_tensor, X_tensor.size(1))
+
+        if swag_sampling:
+            scale = settings.swag_scale
+            n_samples = settings.swag_samples
+            cov = True
+            if settings.swag_no_cov:
+                cov = False
+            output = eval_step_swag(
+                model, n_samples, scale, cov, packed_tensor, X_tensor.size(1)
+            )
+        else:
+            output = eval_step(model, packed_tensor, X_tensor.size(1))
+
+        if torch.isnan(output).any():
+            print("output contains NAN value")
+            breakpoint()
 
         if "bayesian" in settings.pytorch_model_name:
             list_kl.append(model.kl.detach().cpu().item())
 
         # Apply softmax
         pred_proba = nn.functional.softmax(output, dim=1)
-
+        if torch.isnan(pred_proba).any():
+            print("pred_proba contains NAN vlaue")
+            breakpoint()
         # Convert to numpy array
         pred_proba = pred_proba.data.cpu().numpy()
         target_numpy = target_tensor.data.cpu().numpy()
@@ -606,7 +643,9 @@ def get_evaluation_metrics(settings, list_data, model, sample_size=None):
         list_target.append(target_numpy)
     targets = np.concatenate(list_target, axis=0)
     preds = np.concatenate(list_pred, axis=0)
-
+    if np.isnan(preds).any():
+        print("preds contains NAN value")
+        breakpoint()
     # Check outputs size
     assert len(targets.shape) == 1
     assert len(preds.shape) == 2
