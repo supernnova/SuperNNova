@@ -199,7 +199,7 @@ class SwagModel(Module):
         self.n_averaged += 1
 
     def sample(self, scale=0.5, cov=True, var_clamp=1e-30):
-        """sampling of SWAG model; should be used when the training is finished"""
+        """sampling of SWAG model"""
         sample_model = deepcopy(self.module)
 
         scale_sqrt = scale**0.5
@@ -225,8 +225,10 @@ class SwagModel(Module):
             cov_sample = dev.matmul(
                 dev.new_empty((dev.size(1),), requires_grad=False).normal_()
             )
+            # we start deviation collect when self.n_averaged = 1 instead of 0
+            # so K = self.n_averaged -1
+            cov_sample /= (self.n_averaged - 2) ** 0.5
 
-            cov_sample /= (self.n_averaged - 1) ** 0.5
             if torch.isnan(cov_sample).any():
                 print("cov_sample contains NAN value")
                 breakpoint()
