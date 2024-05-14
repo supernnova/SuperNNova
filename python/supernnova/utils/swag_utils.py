@@ -214,7 +214,11 @@ class SwagModel(Module):
 
         # draw diagonal variance sample
         var = torch.clamp(sec_moment - mean**2, var_clamp)
-        var_sample = var.sqrt() * torch.randn_like(var, requires_grad=False)
+        with torch.no_grad():
+            var_sample = var.sqrt() * torch.randn_like(var)
+        # temp: just for debugging
+        self.var_sample = var_sample
+
         if torch.isnan(var_sample).any():
             print("var_sample contain NAN value")
             breakpoint()
@@ -225,6 +229,9 @@ class SwagModel(Module):
             cov_sample = dev.matmul(
                 dev.new_empty((dev.size(1),), requires_grad=False).normal_()
             )
+            # temp: just for debugging
+            self.cov_sample = cov_sample
+
             # we start deviation collect when self.n_averaged = 1 instead of 0
             # so K = self.n_averaged -1
             cov_sample /= (self.n_averaged - 2) ** 0.5

@@ -537,6 +537,14 @@ def eval_step_swag(
         # Forward pass
         output += sample_model(packed_tensor)
 
+        if torch.isnan(sample_model(packed_tensor)).any():
+            print("sample_model output contains NAN value")
+            breakpoint()
+
+        if torch.isnan(output).any():
+            print("sum of sample model output contain NAN value")
+            breakpoint()
+
     return output / n_samples
 
 
