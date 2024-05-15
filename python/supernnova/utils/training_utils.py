@@ -526,7 +526,11 @@ def eval_step(rnn, packed_tensor, batch_size):
 def eval_step_swag(
     model: SwagModel, n_samples: int, scale: float, cov: bool, packed_tensor, batch_size
 ):
-    output = torch.empty((batch_size, 2))
+    output = torch.zeros((batch_size, 2))
+
+    if torch.isnan(output).any():
+        print("init value of output contains NAN value")
+        breakpoint()
 
     for _ in range(n_samples):
         sample_model = model.sample(scale, cov)

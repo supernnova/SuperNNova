@@ -27,6 +27,9 @@ def main():
         np.random.seed(settings.seed)
         import torch
 
+        # Enable deterministic algorithms
+        torch.use_deterministic_algorithms(True)
+
         torch.manual_seed(settings.seed)
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(settings.seed)
