@@ -490,6 +490,10 @@ def train_swag(settings):
                     swag_sampling=True,
                 )
                 print("swag metrics:", d_losses_train_swag)
+                torch.save(
+                    swag_rnn,
+                    f"{settings.rnn_dir}/{settings.pytorch_model_name}_swag.pt",
+                )
 
     lu.print_green("Finished training")
 
