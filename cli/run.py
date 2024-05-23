@@ -54,9 +54,12 @@ def main():
                 train_rnn.train(settings)
 
             # Obtain predictions
-            validate_rnn.get_predictions(settings)
+            predict_files = validate_rnn.get_predictions(settings)
             # Compute metrics
-            metrics.get_metrics_singlemodel(settings, model_type="rnn")
+            for pf in predict_files:
+                metrics.get_metrics_singlemodel(
+                    settings, prediction_file=pf, model_type="rnn"
+                )
             # Plot some lightcurves
             early_prediction.make_early_prediction(settings)
 
@@ -68,9 +71,13 @@ def main():
         if settings.validate_rnn:
 
             if settings.model_files is None:
-                validate_rnn.get_predictions(settings)
+                predict_files = validate_rnn.get_predictions(settings)
+
                 # Compute metrics
-                metrics.get_metrics_singlemodel(settings, model_type="rnn")
+                for pf in predict_files:
+                    metrics.get_metrics_singlemodel(
+                        settings, prediction_file=pf, model_type="rnn"
+                    )
             else:
                 for model_file in settings.model_files:
                     # Restore model settings
@@ -83,15 +90,16 @@ def main():
                             settings.num_inference_samples
                         )
                     # Get predictions
-                    prediction_file = validate_rnn.get_predictions(
+                    predict_files = validate_rnn.get_predictions(
                         model_settings, model_file=model_file
                     )
                     # Compute metrics
-                    metrics.get_metrics_singlemodel(
-                        model_settings,
-                        prediction_file=prediction_file,
-                        model_type="rnn",
-                    )
+                    for pf in predict_files:
+                        metrics.get_metrics_singlemodel(
+                            model_settings,
+                            prediction_file=pf,
+                            model_type="rnn",
+                        )
 
         ##################################
         # VISUALIZE

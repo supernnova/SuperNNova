@@ -252,6 +252,9 @@ def get_predictions(settings, model_file=None):
     no_rnn = 0
     no_swag = 1
 
+    # set output file
+    out_files = []
+
     # Load model files
     if model_file is None:
         dump_dir = f"{settings.models_dir}/{settings.pytorch_model_name}"
@@ -399,6 +402,8 @@ def get_predictions(settings, model_file=None):
         # Specify output file name
         prediction_file = f"{dump_dir}/PRED_{settings.pytorch_model_name}.pickle"
 
+        out_files.append(prediction_file)
+
         # Prepare output dicts
         d_pred = construct_predict_dict(
             num_elem, settings.num_inference_samples, settings.nb_classes
@@ -448,7 +453,10 @@ def get_predictions(settings, model_file=None):
         prediction_file_swa = (
             f"{dump_dir}/PRED_{settings.pytorch_model_name}_swa.pickle"
         )
+        out_files.append(prediction_file_swa)
+
         prediction_file_swag = f"{dump_dir}/PRED_{settings.pytorch_model_name}_scale_{settings.swag_scale}_{cov_str}_swag.pickle"
+        out_files.append(prediction_file_swag)
 
         # Prepare output dicts
         d_pred_SWA = construct_predict_dict(num_elem, 1, settings.nb_classes)
@@ -491,6 +499,8 @@ def get_predictions(settings, model_file=None):
         get_other_accuracy(df_pred_SWAG, settings, "SWAG MC")
 
         lu.print_green("Finished getting SWA/SWAG predictions ")
+
+    return out_files
 
 
 def get_predictions_for_speed_benchmark(settings):
