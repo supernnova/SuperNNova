@@ -61,6 +61,10 @@ def make_data_action(settings):
     make_dataset.make_dataset(settings)
     lu.print_blue("Finished constructing dataset")
 
+    # Visualize lightcurves
+    if settings.explore_lightcurves:
+        visualize.visualize(settings)
+
 
 def train_rnn_action(settings):
 
@@ -105,9 +109,6 @@ def validate_rnn_action(settings):
 
 
 def show_action(settings):
-
-    if settings.explore_lightcurves:
-        visualize.visualize(settings)
 
     if settings.plot_lcs:
         if settings.model_files:
