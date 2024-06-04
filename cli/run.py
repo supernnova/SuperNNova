@@ -51,11 +51,24 @@ def get_action():
     return sys.argv.pop(1)
 
 
+def get_plot_lcs(settings):
+    if settings.model_files is None:
+        early_prediction.make_early_prediction(settings, nb_lcs=100, do_gifs=False)
+
+    elif settings.model_files:
+        for model_file in settings.model_files:
+            model_settings = conf.get_settings_from_dump(settings, model_file)
+        early_prediction.make_early_prediction(
+            model_settings, nb_lcs=100, do_gifs=False
+        )
+
+
 def make_data_action(settings):
     # Validate command-line arguments
     # explore_lightcurves should be used with debug
     if settings.explore_lightcurves and not settings.debug:
-        raise ValueError("--explore_lightcurves must be used with --debug")
+        message = "--explore_lightcurves must be used with --debug"
+        raise ValueError(message)
 
     # Build an HDF5 database
     make_dataset.make_dataset(settings)
@@ -75,22 +88,29 @@ def train_rnn_action(settings):
         train_rnn.train(settings)
 
     # Obtain predictions
-    validate_rnn.get_predictions(settings)
+    prediction_file = validate_rnn.get_predictions(settings)
+
     # Compute metrics
     metrics.get_metrics_singlemodel(settings, model_type="rnn")
+
     # Plot some lightcurves
     early_prediction.make_early_prediction(settings)
 
     lu.print_blue("Finished rnn training, validating, testing and plotting lcs")
 
+    if settings.calibration:
+        sp.plot_calibration(settings, prediction_files=prediction_file)
+
 
 def validate_rnn_action(settings):
 
     if settings.model_files is None:
-        validate_rnn.get_predictions(settings)
+        prediction_file = validate_rnn.get_predictions(settings)
         # Compute metrics
         metrics.get_metrics_singlemodel(settings, model_type="rnn")
+        pf = prediction_file
     else:
+        prediction_files = []
         for model_file in settings.model_files:
             # Restore model settings
             model_settings = conf.get_settings_from_dump(settings, model_file)
@@ -100,23 +120,32 @@ def validate_rnn_action(settings):
             prediction_file = validate_rnn.get_predictions(
                 model_settings, model_file=model_file
             )
+            prediction_files.append(prediction_file)
             # Compute metrics
             metrics.get_metrics_singlemodel(
                 model_settings,
                 prediction_file=prediction_file,
                 model_type="rnn",
             )
+        pf = prediction_files
+
+    if settings.plot_lcs:
+        get_plot_lcs(settings)
+
+    if settings.calibration:
+        sp.plot_calibration(settings, prediction_files=pf)
+
+    if settings.plot_prediction_distribution:
+        prediction_distribution.plot_prediction_distribution(settings)
+
+    if settings.speed:
+        validate_rnn.get_predictions_for_speed_benchmark(settings)
 
 
 def show_action(settings):
 
     if settings.plot_lcs:
-        if settings.model_files:
-            for model_file in settings.model_files:
-                model_settings = conf.get_settings_from_dump(settings, model_file)
-        early_prediction.make_early_prediction(
-            model_settings, nb_lcs=100, do_gifs=False
-        )
+        get_plot_lcs(settings)
 
     if settings.plot_prediction_distribution:
         prediction_distribution.plot_prediction_distribution(settings)
@@ -127,6 +156,11 @@ def show_action(settings):
 
 
 def performance_action(settings):
+    # Validate command-line arguments
+    # Need to provide prediction files when calculating metrics
+    if settings.metrics and not settings.prediction_files:
+        message = "--metrics should be used with --prediction_files"
+        raise ValueError(message)
 
     if settings.metrics:
         for prediction_file in settings.prediction_files:

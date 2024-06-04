@@ -206,7 +206,7 @@ def plot_acc_vs_nsn(df, settings):
     plt.clf()
 
 
-def plot_calibration(settings):
+def plot_calibration(settings, prediction_files=None):
     """Plot reliability diagram
 
     Args:
@@ -216,11 +216,38 @@ def plot_calibration(settings):
         figure (png)
     """
 
-    if len(settings.prediction_files) == 0:
-        print(
-            lu.str_to_yellowstr("Warning: no prediction files provided. Not plotting")
+    if settings.prediction_files is None and prediction_files is None:
+
+        lu.print_yellow(
+            "Warning: Calibration plot cannot be generated. Please provide at least one prediction file."
         )
+
         return
+
+    elif prediction_files is not None:
+        if isinstance(prediction_files, str):
+            prediction_files = [prediction_files]
+
+        metric_files = [
+            pf.replace("PRED", "METRICS")
+            for pf in prediction_files
+            if os.path.exists(pf.replace("PRED", "METRICS"))
+        ]
+        tmp_not_found = [
+            pf.replace("PRED", "METRICS")
+            for pf in prediction_files
+            if not os.path.exists(pf.replace("PRED", "METRICS"))
+        ]
+
+        if len(tmp_not_found) > 0:
+            lu.print_red(f"Files not found {tmp_not_found}")
+
+        if len(metric_files) == 0:
+            lu.print_yellow(
+                "Warning: Metric file is not found. Calibration plot cannot be generated."
+            )
+            return
+
     else:
         metric_files = [
             f.replace("PRED", "METRICS")
@@ -232,8 +259,15 @@ def plot_calibration(settings):
             for f in settings.prediction_files
             if not os.path.exists(f.replace("PRED", "METRICS"))
         ]
+
         if len(tmp_not_found) > 0:
-            print(lu.str_to_redstr(f"Files not found {tmp_not_found}"))
+            lu.print_red(f"Files not found {tmp_not_found}")
+
+        if len(metric_files) == 0:
+            lu.print_yellow(
+                "Warning: Metric file is not found. Calibration plot cannot be generated."
+            )
+            return
 
     plt.figure(figsize=(10, 10))
     ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
@@ -286,6 +320,7 @@ def plot_calibration(settings):
     plt.savefig(nameout)
     plt.close()
     plt.clf()
+    lu.print_green("Finished generating calibration plots.")
 
 
 def plot_confusion_matrix(
