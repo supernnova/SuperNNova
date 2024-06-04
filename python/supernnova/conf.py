@@ -14,9 +14,11 @@ COMMON_OPTIONS = [
     "--seed",
     "--use_cuda",
     "--dump_dir",
+    "--config_file",
+    "--no_dump",
+    "--help",
 ]
 MAKE_DATA_OPTIONS = COMMON_OPTIONS + [
-    "--config_file",
     "--data_fraction",
     "--data_testing",
     "--data_training",
@@ -30,14 +32,72 @@ MAKE_DATA_OPTIONS = COMMON_OPTIONS + [
     "--photo_window_min",
     "--photo_window_max",
     "--list_filters",
+    "--phot_reject",
     "--phot_reject_list",
+    "--redshift",
     "--redshift_label",
     "--explore_lightcurves",
 ]
-TRAIN_RNN_OPTIONS = COMMON_OPTIONS + []
-VALIDATE_RNN_OPTIONS = COMMON_OPTIONS + []
-SHOW_OPTIONS = COMMON_OPTIONS + []
-PERFORMANCE_OPTIONS = COMMON_OPTIONS + []
+
+TRAIN_RNN_OPTIONS = COMMON_OPTIONS + [
+    "--cyclic",
+    "--cyclic_phases",
+    "--random_length",
+    "--random_redshift",
+    "--weight_decay",
+    "--layer_type",
+    "--model",
+    "--learning_rate",
+    "--nb_classes",
+    "--sntypes",
+    "--sntype_var",
+    "--additional_train_var",
+    "--nb_epoch",
+    "--batch_size",
+    "--hidden_dim",
+    "--num_layers",
+    "--dropout",
+    "--bidirectional",
+    "--rnn_output_option",
+    "--pi",
+    "--log_sigma1",
+    "--log_sigma2",
+    "--rho_scale_lower",
+    "--rho_scale_upper",
+    "--log_sigma1_output",
+    "--log_sigma2_output",
+    "--rho_scale_lower_output",
+    "--rho_scale_upper_output",
+    "--num_inference_samples",
+    "--mean_field_inference",
+    "--monitor_interval",
+    "--calibration",
+    "--plot_file",
+]
+
+VALIDATE_RNN_OPTIONS = COMMON_OPTIONS + [
+    "--model_files",
+    "--plot_lcs",
+    "--plot_file",
+    "--calibration",
+    "--plot_prediction_distribution",
+    "--speed",
+]
+
+SHOW_OPTIONS = COMMON_OPTIONS + [
+    "--model_files",
+    "--plot_lcs",
+    "--plot_file",
+    "--plot_prediction_distribution",
+    "--calibration",
+]
+
+PERFORMANCE_OPTIONS = COMMON_OPTIONS + [
+    "--metrics",
+    "--prediction_files",
+    "--speed",
+    "--done_files",
+]
 
 helps = {
     "make_data": MAKE_DATA_OPTIONS,
@@ -52,12 +112,20 @@ def generate_command_help(parser, command_options):
     """Generate a help message for specific command options."""
     help_message = "usage: snn [command] [options]\n\n"
     help_message += "optional arguments:\n"
-    for action in parser._actions:
-        # Check if the option is relevant to the command
-        if any(opt in command_options for opt in action.option_strings):
-            option_str = ", ".join(action.option_strings)
-            help_descr = f"{option_str:20} {action.help}"
-            help_message += f"  {help_descr}\n"
+
+    # Filter and sort actions based on their option strings
+    relevant_actions = [
+        action
+        for action in parser._actions
+        if any(opt in command_options for opt in action.option_strings)
+    ]
+
+    sorted_actions = sorted(relevant_actions, key=lambda a: a.option_strings[0])
+
+    for action in sorted_actions:
+        option_str = ", ".join(action.option_strings)
+        help_descr = f"{option_str:30} {action.help}"
+        help_message += f"  {help_descr}\n"
     return help_message
 
 
@@ -195,7 +263,7 @@ def get_args(command_arg):
     )
 
     parser.add_argument(
-        "--fits_dir",  # eliminate it
+        "--fits_dir",
         type=absolute_path,
         default=f"{default_dump_dir}/fits",
         help="Default path where fits to photometry are",
@@ -223,7 +291,7 @@ def get_args(command_arg):
     )
 
     parser.add_argument(
-        "--source_data",  # eliminate it
+        "--source_data",
         choices=["saltfit", "photometry"],
         default="photometry",
         help="Data source used to select light-curves for supernnova",
