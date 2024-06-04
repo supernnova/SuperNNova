@@ -18,6 +18,7 @@ COMMON_OPTIONS = [
     "--no_dump",
     "--help",
 ]
+
 MAKE_DATA_OPTIONS = COMMON_OPTIONS + [
     "--data_fraction",
     "--data_testing",
