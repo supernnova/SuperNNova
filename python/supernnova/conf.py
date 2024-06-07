@@ -27,6 +27,7 @@ MAKE_DATA_OPTIONS = COMMON_OPTIONS + [
     "--norm",
     "--no_overwrite",
     "--raw_dir",
+    "--fits_dir",
     "--testing_ids",
     "--photo_window_files",
     "--photo_window_var",
@@ -109,12 +110,13 @@ helps = {
 }
 
 # customize help, so it only print out relevant to the provide command
-def generate_command_help(parser, command_options):
+def generate_command_help(parser, command_arg):
     """Generate a help message for specific command options."""
-    help_message = "usage: snn [command] [options]\n\n"
+    help_message = f"usage: snn {command_arg} [options]\n\n"
     help_message += "optional arguments:\n"
 
     # Filter and sort actions based on their option strings
+    command_options = helps[command_arg]
     relevant_actions = [
         action
         for action in parser._actions
@@ -134,7 +136,7 @@ def handle_custom_help(parser, command_arg):
     """Display help messages for provided command"""
 
     if command_arg in helps.keys():
-        print(generate_command_help(parser, helps[command_arg]))
+        print(generate_command_help(parser, command_arg))
     else:
         print("The command {} is not valid.".format(command_arg))
         sys.exit()
