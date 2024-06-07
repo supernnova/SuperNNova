@@ -7,45 +7,60 @@ Activate the environment
 
 **Either use docker**
 
-.. code::
+.. code-block:: bash
 
     cd env && python launch_docker.py (--use_cuda optional)
 
 **Or activate your conda environment**
 
-.. code::
+.. code-block:: bash
 
     source activate <conda_env_name>
 
 
 
-Validation
+Validation an RNN model
 -------------------------------
+To validate an RNN model, you can use ``snn validate_rnn`` with valid options:
 
-Assuming a database has been created and models have been trained, a model can be validated as follows:
+.. code-block:: bash
 
-**Using command line:**
-.. code::
+    snn validate_rnn [option]
 
-    python run.py --validate_rnn --dump_dir /path/to/dump_dir
-    python run.py --validate_rnn --dump_dir /path/to/dump_dir
+A list of valid options can be shown by using the ``--help`` flag:
 
-**Using Yaml:**
-.. code::
+.. code-block:: bash
 
-    python run_yaml.py <yaml_file_with_config> --mode validate_rnn 
+    snn validate_rnn --help
 
-an example ``<yaml_file_with_config>`` is at ``configs_yml``.
+.. code-block:: none
+
+    usage: snn validate_rnn [options]
+
+    optional arguments:
+    --calibration                  Plot calibration of trained classifiers
+    --config_file                  YML config file
+    --dump_dir                     Default path where data and models are dumped
+    --help                         Show custom help message
+    --model_files                  Path to model files
+    ... ...
+
+
+Assuming a database has been created (see :ref:`DataStructure`) and models have been trained (see :ref:`TrainRnn`), a model can be validated as follows:
+
+.. code-block:: bash
+
+    snn validate_rnn --dump_dir /path/to/dump_dir
+
 
 In that case, the model corresponding to the command line arguments will be loaded and validated. Output will be written in ``dump_dir/models/yourmodelname/``.
 
 Alternatively, one or more model files can be specified
 
-.. code::
+.. code-block:: bash
 
-    python run.py --validate_rnn --dump_dir /path/to/dump_dir --model_files /path/to/model/file(s)
-    python run.py --validate_rnn --dump_dir /path/to/dump_dir --model_files /path/to/model/file(s)
-
+    snn validate_rnn --dump_dir /path/to/dump_dir --model_files /path/to/model/file(s)
+    
 In that case, validation will be carried out for each of the models specified by the model files. This will use the database in ``dump_dir/processed`` directory. 
 
 
@@ -58,9 +73,9 @@ This will:
 
 To make predictions on an independent database than the one used to train a given model
 
-.. code::
+.. code-block:: bash
 
-    python run.py --dump_dir  /path/to/dump_dir --validate_rnn --model_files path/to/modelfile/modelfile.pt
+    snn validate_rnn --dump_dir /path/to/dump_dir --model_files path/to/modelfile/modelfile.pt
 
 In this case it will run the model provided in ``model_files`` with the features and normalization of the model on the database available in ``dump_dir/processed``. Predictions will be saved in ``dump_dir/models/modelname/``. If uncertain about the model features, take a look at the ``cli_args.json`` in the model directory.
 
@@ -68,7 +83,7 @@ Predictions format
 ~~~~~~~~~~~~~~~~~~~~~
 For a binary classification task, predictions files contain the following columns:
 
-.. code::
+.. code-block:: none
 
     all_class0            float32  - probability of classifying complete light-curves as --sntype [0] (usually Ia)
     all_class1            float32  - probability of classifying complete light-curves as --sntype [1:] (usually nonIas)
@@ -95,16 +110,17 @@ For a binary classification task, predictions files contain the following column
 
 these columns rely on maximum light information and target (original type) from simulations. Out-of-distribution classifications are done on the fly. Bayesian Networks (variational and Bayes by Backprop) have an entry for each probability distribution sampling, to get the mean and std of the classification read the ``_aggregated.pickle`` file.
 
+You can also use a YAML file to specify option arguments. Please see :ref:`UseYaml` for more information.
 
 RNN speed
 -------------------------------
 
 Run RNN classification speed benchmark as follows
 
-.. code::
+.. code-block:: bash
 
-    python run.py --data --dump_dir /path/to/dump_dir  # create database
-    python run.py --speed --dump_dir /path/to/dump_dir
+    snn make_data --dump_dir /path/to/dump_dir --raw_dir tests/raw # create database
+    snn validate_rnn --speed --dump_dir /path/to/dump_dir
 
 This will create ``tests/dump/stats/rnn_speed.csv`` showing the classification throughput of RNN models.
 
@@ -114,35 +130,11 @@ Calibration
 
 Assuming a database has been created and models have been trained, evaluate classifier calibration as follows:
 
-.. code::
+.. code-block:: bash
 
-    python run.py --calibration --dump_dir /path/to/dump_dir --metric_files /path/to/metric_file
+    snn validate_rnn --calibration --dump_dir /path/to/dump_dir 
 
 This will output a figure in ``path/to/dump_dir/figures`` showing how well a given model is calibrated.
 A metric file looks like this: ``METRICS_{model_name}.pickle``. For instance: ``METRICS_DES_vanilla_S_0_CLF_2_R_None_saltfit_DF_1.0_N_global_lstm_32x2_0.05_128_True_mean.pickle``
 Multiple metric files can be specified, the results will be charted on the same graph.
 
-
-Science plots
--------------------------------
-
-Assuming a database has been created and models have been trained, how some graphs of scientific interest:
-
-.. code::
-
-    python run.py --science_plots --dump_dir /path/to/dump_dir --prediction_files /path/to/prediction_file
-
-This will output figures in ``path/to/dump_dir/figures`` showing various plots of interest: Hubble residuals, purity vs redshift etc.
-A prediction file looks like this: ``PRED_{model_name}.pickle``. For instance: ``PRED_DES_vanilla_S_0_CLF_2_R_None_saltfit_DF_1.0_N_global_lstm_32x2_0.05_128_True_mean.pickle``
-
-
-Performance metrics
--------------------------------
-
-Assuming a database has been created and models have been trained, compute performance metrics
-
-.. code::
-
-    python run.py --performance --dump_dir /path/to/dump_dir
-
-This will output a csv file in ``path/to/dump_dir/stats``, which aggregates various performance metrics for each model that has been trained and for which a ``METRICS`` file has been created.

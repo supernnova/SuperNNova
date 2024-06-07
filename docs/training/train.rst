@@ -33,15 +33,6 @@ RNN trainer
     :members:
     :show-inheritance:
 
-RandomForest trainer
-~~~~~~~~~~~~~~~~~~~~
-
-.. currentmodule:: supernnova.training
-
-.. automodule:: supernnova.training.train_randomforest
-    :members:
-    :show-inheritance:
-
 
 Training utilities
 ~~~~~~~~~~~~~~~~~~~~
