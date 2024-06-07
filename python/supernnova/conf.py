@@ -312,14 +312,12 @@ def get_args(command_arg):
 
     parser.add_argument(
         "--data_training",
-        default=False,
         action="store_true",
         help="Create database with mostly training set of 99.5%%",
     )
 
     parser.add_argument(
         "--data_testing",
-        default=False,
         action="store_true",
         help="Create database with only validation set",
     )
