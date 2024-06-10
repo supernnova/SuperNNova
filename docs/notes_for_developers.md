@@ -40,44 +40,51 @@ A local development copy of the code base can be obtained and configured as foll
 Although not strictly necessary, it is recommended that you configure the branch permissions of any forked repositories as detailed in the *GitHub* configuration section below.
 :::
 
-# Poetry and Python environments for development
+# Python environments for development
 
-Both Conda and Poetry are used to manage this project ([see here for an introduction](https://python-poetry.org)).  It simplifies & helps with managing the following:
+Python development should always be managed using a Python environment. Both Conda and Poetry ([see here for an introduction](https://python-poetry.org)) are used to manage this project. It simplifies & helps with managing the following:
 
 1. **Creation and activation of a Python environment for the project**
 
-    <!-- Python development should always be managed using a Python environment.  Poetry makes this easy for you.  You simply run the following from within the project:
+    Once the code is locally installed, move to the project's root directory, and use Conda to create and activate a Python environment:
 
     ``` console
-    $ poetry shell
+    $ conda env create -f env/conda_env.yml 
+    $ conda activate supernnova
     ```
-    
-    ::: {note}
-    You don't have to use Poetry to manage your Python environment if you would rather not.  You can instruct Poetry to respect your Python environemnts (e.g. created with `pyenv`) by setting the following option:
-    ``` console
-    $ poetry config virtualenvs.prefer-active-python true
-    ```
-    ::: -->
+    or 
 
-    We use Conda to manage the python version and directly handle the core dependency, `pytorch`, which makes it easiler to manage different versions of `pytorch` and cuda support, streamlining the upgrade process for future versions as part of our CI/CD best practices. Poetry is used to manage the rest of the python packages. 
+    ``` console
+    $ conda env create -f env/conda_gpu_env.yml
+    $ conda activate supernnova-cuda
+    ```
+    if you use `PyTorch` with CUDA support.
+
     
 2. **Dependency management**
 
-    Poetry manages a "lock file" (which should be committed and maintained within the code repository) ensuring repeatible installs for all versions.
+    As shown above, we establish a Python environment using either `env/conda_env.yml` or `conda_gpu_env.yml`. These configurations manage the Python version and directly handle our core dependency, `PyTorch`, as well as the installation of the `poetry` package, which is used to manage all other Python dependencies listed in `pyproject.toml`. This setup makes it easiler to manage different versions of `PyTorch` and CUDA support, streamlining the upgrade process for future versions as part of our CI/CD best practices. 
+    
+    Poetry maintains a "lock file" (which should be committed and maintained within the code repository) ensuring repeatable installs for all versions.
+
+    After setting up the environment as described, proceed with installing all other development dependencies by executing:
+
+    ``` console
+    $ poetry install --all-extras
+    ```
+    In what follows, it will be assumed that this has been done.
+
+    ::: {note}
+    You can also use your preferred method of environment management, and install dependencies manually. But if you choose to use Conda + Poetry to manage the Python development environment as described above, please ensure you use `poetry` as installed by Conda. You can verify the installation path of `poetry` by running:
+
+    ``` console
+    $ which poetry
+    ```
+    ::: -->
 
 3. **Publication of the project to the Python Package Index (*PyPI*) so that people can easily install it for themselves**
 
     Once properly configured, publishing to *PyPI* with Poetry is extremely easy.  This is generally managed by the CI/CD workflow for the project though, and developers should never have to manually do this.
-
-# Installing Development Dependencies
-
-Once the code is locally installed, development dependencies should be installed by moving to the project's root directory and executing the following:
-
-``` console
-$ poetry install --all-extras
-```
-
-In what follows, it will be assumed that this has been done.
 
 # Guidelines
 
