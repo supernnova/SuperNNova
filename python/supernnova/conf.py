@@ -539,6 +539,38 @@ def get_args(command_arg):
         "--config_file", default=None, type=absolute_path, help="YML config file"
     )
 
+    parser.add_argument(
+        "--swa",
+        action="store_true",
+        help="enable SWA",
+    )
+    parser.add_argument(
+        "--swa_start_epoch",
+        type=int,
+        default=83,
+        help="epoch at which start to collect SWA average",
+    )
+
+    parser.add_argument(
+        "--swag_samples",
+        type=int,
+        default=30,
+        help="The number of SWAG samples to generate",
+    )
+
+    parser.add_argument(
+        "--swag_scale",
+        type=float,
+        default=0.5,
+        help="Scale parameter for covariance; if equals to 0, SWA model is sampled",
+    )
+
+    parser.add_argument(
+        "--swag_no_cov",
+        action="store_true",
+        help="Disable calculating low-rank covariance",
+    )
+
     args = parser.parse_args()
 
     # The following block of code deal with the case when YAML config file is provided alone
