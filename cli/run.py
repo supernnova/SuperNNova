@@ -143,6 +143,11 @@ def validate_rnn_action(settings):
 
 
 def show_action(settings):
+    # Validate command-line arguments
+    # prediction_files should be provided for calibration
+    if settings.calibration and not settings.prediction_files:
+        message = "--calibration must be used with --prediction_files"
+        raise ValueError(message)
 
     if settings.plot_lcs:
         get_plot_lcs(settings)
@@ -151,7 +156,6 @@ def show_action(settings):
         prediction_distribution.plot_prediction_distribution(settings)
 
     if settings.calibration:
-        # Provide a metric_files arguments to carry out plot
         sp.plot_calibration(settings)
 
 

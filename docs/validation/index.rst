@@ -125,6 +125,8 @@ Run RNN classification speed benchmark as follows
 This will create ``tests/dump/stats/rnn_speed.csv`` showing the classification throughput of RNN models.
 
 
+.. _ValidateCalibration:
+
 Calibration
 -------------------------------
 
@@ -135,6 +137,3 @@ Assuming a database has been created and models have been trained, evaluate clas
     snn validate_rnn --calibration --dump_dir /path/to/dump_dir 
 
 This will output a figure in ``path/to/dump_dir/figures`` showing how well a given model is calibrated.
-A metric file looks like this: ``METRICS_{model_name}.pickle``. For instance: ``METRICS_DES_vanilla_S_0_CLF_2_R_None_saltfit_DF_1.0_N_global_lstm_32x2_0.05_128_True_mean.pickle``
-Multiple metric files can be specified, the results will be charted on the same graph.
-

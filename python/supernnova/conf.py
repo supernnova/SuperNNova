@@ -91,6 +91,7 @@ SHOW_OPTIONS = COMMON_OPTIONS + [
     "--plot_lcs",
     "--plot_file",
     "--plot_prediction_distribution",
+    "--prediction_files",
     "--calibration",
 ]
 

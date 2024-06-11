@@ -6,15 +6,7 @@ Environment configuration
 Conda virtual env
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The preferred option to setup your environment is through conda environment as follows:
-
-.. code::
-
-	conda create --name <env> --file conda_env.txt
-
-example configuration files for linux-64 (cpu and gpu) and osx-64 are provided in ``SuperNNova/env``.
-
-**Update (02/2024)**
+The preferred option to setup your environment is through conda environment.
 
 The setup of environment can be done in two steps. Navigate to the root of the downloaded repository, then
 
@@ -30,7 +22,7 @@ or
 
     conda env create -f env/conda_gpu_env.yml
 
-if you want to install ``pytorch`` with cuda support.
+if you want to install ``PyTorch`` with cuda support.
 
 2. Activate the conda environment:
 
