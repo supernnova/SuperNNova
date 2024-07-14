@@ -78,7 +78,6 @@ Below, we detail several of the most frequently used approaches to create a data
 - This creates a database for a very small subset of all available data
 - This is intended for debugging purposes (training, validation can run very fast with this small database)
 - The database is saved to the specified ``tests/dump/processed``
-- An additional SALT2 fits can be provided as ``--fits_dir tests/fits`` for training of RF and interpretation
 
 
 2. Create a database
@@ -87,8 +86,6 @@ Below, we detail several of the most frequently used approaches to create a data
 .. code-block:: bash
 
     snn make_data --dump_dir <path/to/full/database/> --raw_dir <path/to/raw/data/> 
-
-- An additional SALT2 fits can be provided as ``--fits_dir <path/to/fits/>`` for training of RF and interpretation
 
 
 - You **DO NEED** to download the raw data for this database or point where your data is.

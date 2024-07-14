@@ -588,7 +588,7 @@ def get_args(command_arg):
         for key in yml_args.keys():
             if hasattr(args, key):
                 setattr(args, key, yml_args[key])
-                print(getattr(args, key))
+                # print(getattr(args, key))
             else:
                 print("{} is not a valid option.".format(key))
 

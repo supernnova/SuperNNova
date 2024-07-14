@@ -124,9 +124,9 @@ You can also update option specified in the YAML file by using command-line opti
 
 .. code-block:: bash
 
-    snn make_data --config_file config_yml/simple.yml --dump_dir tests/dump2
+    snn make_data --config_file configs_yml/simple.yml --dump_dir tests/dump2
     # or
-    snn make_data --dump_dir tests/dump2 --config_file config_yml/simple.yml
+    snn make_data --dump_dir tests/dump2 --config_file configs_yml/simple.yml
 
 The data will be dumpped to ``tests/dump2`` instead of ``tests/dump`` specified in ``config_yml/simple.yml``.
 
