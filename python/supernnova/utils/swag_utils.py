@@ -96,6 +96,16 @@ class SwagModel(Module):
         )
         self.avg_fn = avg_fn
         self.use_buffers = use_buffers
+        self._init_swag_params()
+
+    def _init_swag_params(self):
+        for i, p in enumerate(self.module.parameters()):
+            sec_moment_name = f"sec_moment_{i}"
+            sec_moment_tensor = torch.zeros_like(p)
+            self.register_buffer(sec_moment_name, sec_moment_tensor)
+            dev_name = f"dev_{i}"
+            dev_tensor = p.new_empty((p.numel(), 0)).zero_()
+            self.register_buffer(dev_name, dev_tensor)
 
     def forward(self, *args, **kwargs):
         return self.module(*args, **kwargs)
@@ -106,21 +116,12 @@ class SwagModel(Module):
             if self.use_buffers
             else self.parameters()
         )
+
         model_param = (
             itertools.chain(model.parameters(), model.buffers())
             if self.use_buffers
             else model.parameters()
         )
-
-        if not hasattr(self, "sec_moment_collect"):
-            self.sec_moment_collect = [
-                torch.zeros_like(p) for p in self.module.parameters()
-            ]
-
-        if not hasattr(self, "dev_collect"):
-            self.dev_collect = [
-                p.new_empty((p.numel(), 0)).zero_() for p in self.module.parameters()
-            ]
 
         for i, (p_swa, p_model) in enumerate(zip(self_param, model_param)):
             device = p_swa.device
@@ -128,22 +129,29 @@ class SwagModel(Module):
             p_model_ = p_model.detach().to(device)
             if self.n_averaged == 0:
                 p_swa_.copy_(p_model_)
-                self.sec_moment_collect[i] = p_model_ * p_model_
+                setattr(self, f"sec_moment_{i}", p_model_ * p_model_)
+
             else:
-                p_swa_.copy_(
-                    self.avg_fn(p_swa.detach(), p_model_, self.n_averaged.to(device))
+                p_swa_.copy_(self.avg_fn(p_swa_, p_model_, self.n_averaged.to(device)))
+
+                sec_moment_value = second_moment_update(
+                    getattr(self, f"sec_moment_{i}"),
+                    p_model_,
+                    self.n_averaged.to(device),
                 )
-                self.sec_moment_collect[i] = second_moment_update(
-                    self.sec_moment_collect[i], p_model_, self.n_averaged.to(device)
-                )
+                setattr(self, f"sec_moment_{i}", sec_moment_value)
+
                 dev = (p_model_ - p_swa_).view(-1, 1)
-                self.dev_collect[i] = torch.cat((self.dev_collect[i], dev), dim=1)
+                dev_value = torch.cat((getattr(self, f"dev_{i}"), dev), dim=1)
+
+                setattr(self, f"dev_{i}", dev_value)
 
         if not self.use_buffers:
             # If not apply running averages to the buffers,
             # keep the buffers in sync with the source model.
             for b_swa, b_model in zip(self.module.buffers(), model.buffers()):
                 b_swa.detach().copy_(b_model.detach().to(device))
+
         self.n_averaged += 1
 
     def sample(self, scale=0.5, cov=True, var_clamp=1e-30):
@@ -158,7 +166,9 @@ class SwagModel(Module):
         if torch.isnan(mean).any():
             print("mean contains NAN value")
             breakpoint()
-        sec_moment = flatten(self.sec_moment_collect)
+        num_param = len(list(self.module.parameters()))
+        sec_moment_list = [getattr(self, f"sec_moment_{i}") for i in range(num_param)]
+        sec_moment = flatten(sec_moment_list)
 
         # draw diagonal variance sample
         var = torch.clamp(sec_moment - mean**2, var_clamp)
@@ -172,13 +182,11 @@ class SwagModel(Module):
             breakpoint()
         # if covariance draw low rank sample
         if cov:
-            dev = torch.cat(self.dev_collect, dim=0)
-
+            dev_list = [getattr(self, f"dev_{i}") for i in range(num_param)]
+            dev = torch.cat(dev_list, dim=0)
             cov_sample = dev.matmul(
                 dev.new_empty((dev.size(1),), requires_grad=False).normal_()
             )
-            # temp: just for debugging
-            self.cov_sample = cov_sample
 
             # we start deviation collect when self.n_averaged = 1 instead of 0
             # so K = self.n_averaged -1
