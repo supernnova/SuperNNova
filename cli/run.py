@@ -5,18 +5,9 @@ import numpy as np
 from pathlib import Path
 from supernnova import conf
 from supernnova.utils import logging_utils as lu
-from supernnova.visualization import (
-    visualize,
-    early_prediction,
-    prediction_distribution,
-)
-from supernnova.training import train_rnn
-from supernnova.paper import superNNova_plots as sp
-from supernnova.data import make_dataset
-from supernnova.validation import (
-    validate_rnn,
-    metrics,
-)
+
+# Notice: This script serves as the entry point of the program. By design, only one action can be executed at a time.
+# To optimize performance, heavy imports are deferred until their corresponding actions are invoked.
 
 ALL_ACTIONS = ("make_data", "train_rnn", "validate_rnn", "show", "performance")
 
@@ -52,6 +43,8 @@ def get_action():
 
 
 def get_plot_lcs(settings):
+    from supernnova.visualization import early_prediction
+
     if settings.model_files is None:
         early_prediction.make_early_prediction(settings, nb_lcs=100, do_gifs=False)
 
@@ -64,6 +57,9 @@ def get_plot_lcs(settings):
 
 
 def make_data_action(settings):
+    from supernnova.data import make_dataset
+    from supernnova.visualization import visualize
+
     # Validate command-line arguments
     # explore_lightcurves should be used with debug
     if settings.explore_lightcurves and not settings.debug:
@@ -80,6 +76,18 @@ def make_data_action(settings):
 
 
 def train_rnn_action(settings):
+    from supernnova.training import train_rnn
+    from supernnova.validation import validate_rnn, metrics
+    from supernnova.visualization import early_prediction
+    from supernnova.paper import superNNova_plots as sp
+
+    # Validate command-line arguments
+    if settings.swa:
+        if settings.cyclic:
+            lu.print_yellow("SWA is not available with training cyclic")
+        if settings.swa_start_epoch + 2 >= settings.nb_epoch:
+            message = "(swa_start_epoch +2) must be smaller than nb_epoch"
+            raise ValueError(message)
 
     # Train
     if settings.cyclic:
@@ -103,6 +111,9 @@ def train_rnn_action(settings):
 
 
 def validate_rnn_action(settings):
+    from supernnova.validation import validate_rnn, metrics
+    from supernnova.visualization import prediction_distribution
+    from supernnova.paper import superNNova_plots as sp
 
     if settings.model_files is None:
         prediction_file = validate_rnn.get_predictions(settings)
@@ -143,6 +154,9 @@ def validate_rnn_action(settings):
 
 
 def show_action(settings):
+    from supernnova.visualization import prediction_distribution
+    from supernnova.paper import superNNova_plots as sp
+
     # Validate command-line arguments
     # prediction_files should be provided for calibration
     if settings.calibration and not settings.prediction_files:
@@ -160,6 +174,8 @@ def show_action(settings):
 
 
 def performance_action(settings):
+    from supernnova.validation import validate_rnn, metrics
+
     # Validate command-line arguments
     # Need to provide prediction files when calculating metrics
     if settings.metrics and not settings.prediction_files:
