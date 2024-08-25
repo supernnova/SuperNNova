@@ -75,6 +75,11 @@ TRAIN_RNN_OPTIONS = COMMON_OPTIONS + [
     "--monitor_interval",
     "--calibration",
     "--plot_file",
+    "--swag",
+    "--swag_start_epoch",
+    "--swag_samples",
+    "--swag_scale",
+    "--swag_no_cov",
 ]
 
 VALIDATE_RNN_OPTIONS = COMMON_OPTIONS + [
@@ -540,22 +545,22 @@ def get_args(command_arg):
     )
 
     parser.add_argument(
-        "--swa",
+        "--swag",
         action="store_true",
-        help="enable SWA",
+        help="enable SWAG",
     )
     parser.add_argument(
-        "--swa_start_epoch",
+        "--swag_start_epoch",
         type=int,
         default=83,
-        help="epoch at which start to collect SWA average",
+        help="Epoch from which SWAG averaging begins",
     )
 
     parser.add_argument(
         "--swag_samples",
         type=int,
         default=30,
-        help="The number of SWAG samples to generate",
+        help="The number of SWAG samples to draw",
     )
 
     parser.add_argument(

@@ -82,11 +82,11 @@ def train_rnn_action(settings):
     from supernnova.paper import superNNova_plots as sp
 
     # Validate command-line arguments
-    if settings.swa:
+    if settings.swag:
         if settings.cyclic:
-            lu.print_yellow("SWA is not available with training cyclic")
-        if settings.swa_start_epoch + 2 >= settings.nb_epoch:
-            message = "(swa_start_epoch +2) must be smaller than nb_epoch"
+            lu.print_yellow("SWAG is not available with training cyclic")
+        if settings.swag_start_epoch + 2 >= settings.nb_epoch:
+            message = "(swag_start_epoch +2) must be smaller than nb_epoch"
             raise ValueError(message)
 
     # Train

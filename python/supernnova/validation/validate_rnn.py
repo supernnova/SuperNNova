@@ -261,17 +261,17 @@ def get_predictions(settings, model_file=None):
         model_file = f"{dump_dir}/{settings.pytorch_model_name}.pt"
 
         # Load SWAG model
-        if settings.swa:
+        if settings.swag:
             no_swag = 0
-            swa_model_file = f"{dump_dir}/{settings.pytorch_model_name}_swag.pt"
-            if not os.path.exists(swa_model_file):
+            swag_model_file = f"{dump_dir}/{settings.pytorch_model_name}_swag.pt"
+            if not os.path.exists(swag_model_file):
                 warnings.warn("SWAG model does not exist.")
                 no_swag = 1
     else:
         dump_dir = f"{settings.dump_dir}/models/{settings.pytorch_model_name}"
         os.makedirs(dump_dir, exist_ok=True)
         if model_file.endswith("_swag.pt"):
-            swa_model_file = model_file
+            swag_model_file = model_file
             no_rnn = 1
             no_swag = 0
 
@@ -446,7 +446,7 @@ def get_predictions(settings, model_file=None):
             cov_str = "cov"
 
         # Load SWAG model
-        swag_rnn = torch.load(swa_model_file)
+        swag_rnn = torch.load(swag_model_file)
         swag_rnn.to(settings.device)
 
         # Specify output file names
