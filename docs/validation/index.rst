@@ -112,6 +112,25 @@ these columns rely on maximum light information and target (original type) from 
 
 You can also use a YAML file to specify option arguments. Please see :ref:`UseYaml` for more information.
 
+Validation of SWAG RNN model
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+If you enabled SWAG during training, you can validate the model with ``--swag`` flag:
+
+.. code-block:: bash
+
+    snn validate_rnn --dump_dir /path/to/dump_dir --swag
+
+SWAG Configuration Options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Number of Samples: The number of samples to draw during validation is controlled by the ``--swag_samples`` flag. The default is ``30``.
+
+- Scaling Parameter: The scaling parameter for the covariance is set using the ``--swag_scale`` flag, with a default value of ``0.5``, as recommended in the original paper. Setting the scale to ``0`` disables covariance calculation, effectively reducing SWAG to standard Stochastic Weight Averaging (SWA).
+
+- Covariance Calculation: If you wish to disable the calculation of low-rank covariance, use the ``--swag_no_cov`` flag.
+
+You can generate multiple prediction files with different configuration options (e.g. varying the scaling parameter) with the same SWAG model. 
+
+
 RNN speed
 -------------------------------
 

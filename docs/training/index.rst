@@ -74,3 +74,32 @@ For ``global, perfilter`` normalizations, features (f) are first log transformed
 
 When using ``--redshift`` for classification, we suggest to use either ``cosmo,cosmo_quantile`` norms. These normalizations blur the distance information that SNe Ia provide with apparent flux which together with redshift information may bias the classification for cosmology. For this, light-curves are normalized to a flux ~1 using either the maximum flux at any filter (``cosmo``) or the 99 quantile of the flux distribution (``cosmo_quantile``). The latter is mroe robust against outliers.
 
+Training an RNN model with Stochastic Weight Averaging Gaussian (SWAG) enabled
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Stochastic Weight Averaging Gaussian (SWAG) is a widely used technique for approximate Bayesian inference in deep learning. It was introduced in the paper `A Simple Baseline for Bayesian Uncertainty in Deep Learning <https://arxiv.org/abs/1902.02476>`_ by Wesley Maddox, Timur Garipov, Pavel Izmailov, Dmitry Vetrov, and Andrew Gordon Wilson.
+
+This technique is implementd in **supernnova** (version xxx). You can enable SWAG during training with the ``--swag`` flag:
+
+.. code-block:: bash
+
+    snn train_rnn --dump_dir /path/to/your/dump/dir --swag
+
+This will generate all the files for standard RNN model training described above, with the following addition items:
+
+- SWAG model: ``vanilla_*_swag.pt``
+
+- SWA prediction: ``PRED_vanilla_*_swa.pickle``
+
+- SWAG prediction: ``PRED_vanilla_*_scale_0.5_cov_swag.pickle``
+
+- SWAG prediction aggregated: ``PRED_vanilla_*_scale_0.5_cov_swag_aggregated.pickle``
+
+SWAG Configuration Options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Starting Epoch: SWAG typically begins towards the end of training, with a default start at Epoch ``83``. You can adjust this with the ``--swag_start_epoch`` flag.
+
+- Number of Samples: The number of samples to draw during validation is controlled by the ``--swag_samples`` flag. The default is ``30``.
+
+- Scaling Parameter: The scaling parameter for the covariance is set using the ``--swag_scale`` flag, with a default value of ``0.5``, as recommended in the original paper. Setting the scale to ``0`` disables covariance calculation, effectively reducing SWAG to standard Stochastic Weight Averaging (SWA).
+
+- Covariance Calculation: If you wish to disable the calculation of low-rank covariance, use the ``--swag_no_cov`` flag.
