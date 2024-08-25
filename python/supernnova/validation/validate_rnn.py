@@ -93,8 +93,8 @@ def get_batch_predictions_SWAG(model: SwagModel, X, target, scale: float, cov=Tr
         model: The SwagModel model
         X (torch.Tensor): The batch on which to carry out predictions
         target (torch.longTensor): The true class of each element in the batch
-        scale (float): The scale prameter for covariance;
-        cov (bool): If True, enable calculating low-rank covariance.
+        scale (float): The scale parameter for covariance
+        cov (bool): If True, enable calculating low-rank covariance
 
     Returns:
         Tuple containing

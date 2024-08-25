@@ -505,7 +505,7 @@ def eval_step(rnn, packed_tensor):
     """Eval step: Forward pass only
 
     Args:
-        rnn (torch.nn Model): pytorch model to train
+        rnn (torch.nn Model): pytorch model to evaluate
         packed_tensor (torch PackedSequence): input tensor in packed form
 
     Returns:
@@ -521,7 +521,17 @@ def eval_step(rnn, packed_tensor):
 
 
 def eval_step_swag(model: SwagModel, scale: float, cov: bool, packed_tensor):
+    """Draw a sample of SwagModel and evaluate: Forward pass only
 
+    Args:
+        model (SwagModel): SwagModel
+        scale (float): The scale parameter for covariance
+        cov (bool): If True, enable calculating low-rank covariance
+        packed_tensor (torch PackedSequence): Input tensor in packed form
+
+    Returns:
+        output (torch Tensor): Output of a sample model
+    """
     # draw a sample of SwagModel
     sample_model = model.sample(scale, cov)
 
@@ -582,6 +592,7 @@ def get_evaluation_metrics(
         list_data (list): contains data to evaluate
         model (torch.nn Model): pytorch model
         sample_size (int): subset of the data to use for validation. Default: ``None``
+        swag_sampling (bool): if True, enable to draw swag samplings. Default: ``False``
 
     Returns:
         d_losses (dict) maps metrics to their computed value

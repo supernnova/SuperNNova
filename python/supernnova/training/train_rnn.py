@@ -243,6 +243,11 @@ def save_normalizations(settings):
 
 
 def train(settings):
+    """Train RNN models
+
+    Args:
+        settings (ExperimentSettings): controls experiment hyperparameters
+    """
     if settings.swa:
         train_swag(settings)
     else:
@@ -473,7 +478,7 @@ def train_swag(settings):
                     f"{settings.rnn_dir}/{settings.pytorch_model_name}.pt",
                 )
 
-        if epoch > settings.swa_start_epoch:
+        if epoch >= settings.swa_start_epoch:
             if swag_start == 1:
                 lu.print_green("Starting SWA process")
                 swag_start = 0
@@ -481,7 +486,7 @@ def train_swag(settings):
             swag_rnn.update_parameters(rnn)
 
             # start SWAG samplling when K > 1, i.e. swag_rnn.n_averaged > 2
-            if epoch > settings.swa_start_epoch + 2:
+            if epoch >= settings.swa_start_epoch + 2:
                 d_losses_train_swag = tu.get_evaluation_metrics(
                     settings,
                     list_data_train,

@@ -266,7 +266,16 @@ class SwagModel(Module):
         self.n_averaged += 1
 
     def sample(self, scale=0.5, cov=True, var_clamp=1e-30):
-        """sampling of SWAG model"""
+        """Draw SWAG sample model.
+
+        Args:
+             scale (float): The scale parameter for covariance. Default: ``0.5``. When scale = 0.0, the ``sample`` function returns a SWA model.
+             cov (bool): If True, enable calculating low-rank covariance. ``True``.
+             var_clamp (float): A small positive value used to clamp the computed variance to prevent numerical issues. Default: ``1.e-30``
+
+         Returns:
+             sample_model (rnn model): A sampled SWAG model
+        """
         sample_model = deepcopy(self.module)
 
         scale_sqrt = scale**0.5
@@ -291,6 +300,7 @@ class SwagModel(Module):
         if torch.isnan(var_sample).any():
             print("var_sample contain NAN value")
             breakpoint()
+
         # if covariance draw low rank sample
         if cov:
             dev_list = [getattr(self, f"dev_{i}") for i in range(num_param)]
