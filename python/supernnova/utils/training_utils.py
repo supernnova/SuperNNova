@@ -498,17 +498,15 @@ def train_step(
     # Backward pass
     loss.backward()
     optimizer.step()
-
     return loss
 
 
-def eval_step(rnn, packed_tensor, batch_size):
+def eval_step(rnn, packed_tensor):
     """Eval step: Forward pass only
 
     Args:
         rnn (torch.nn Model): pytorch model to train
         packed_tensor (torch PackedSequence): input tensor in packed form
-        batch_size (int): batch size
 
     Returns:
         output (torch Tensor): output of rnn
@@ -519,37 +517,30 @@ def eval_step(rnn, packed_tensor, batch_size):
 
     # Forward pass
     output = rnn(packed_tensor)
-
     return output
 
 
-def eval_step_swag(
-    model: SwagModel, n_samples: int, scale: float, cov: bool, packed_tensor, batch_size
-):
-    output = torch.zeros((batch_size, 2))
+def eval_step_swag(model: SwagModel, scale: float, cov: bool, packed_tensor):
 
-    if torch.isnan(output).any():
-        print("init value of output contains NAN value")
+    # draw a sample of SwagModel
+    sample_model = model.sample(scale, cov)
+
+    # Set NN to eval mode
+    sample_model.eval()
+
+    # Forward pass
+    output = sample_model(packed_tensor)
+
+    # for debug only
+    if torch.isnan(sample_model(packed_tensor)).any():
+        print("sample_model output contains NAN value")
         breakpoint()
 
-    for _ in range(n_samples):
-        sample_model = model.sample(scale, cov)
+    if torch.isnan(output).any():
+        print("sum of sample model output contain NAN value")
+        breakpoint()
 
-        # Set NN to eval mode
-        sample_model.eval()
-
-        # Forward pass
-        output += sample_model(packed_tensor)
-
-        if torch.isnan(sample_model(packed_tensor)).any():
-            print("sample_model output contains NAN value")
-            breakpoint()
-
-        if torch.isnan(output).any():
-            print("sum of sample model output contain NAN value")
-            breakpoint()
-
-    return output / n_samples
+    return output
 
 
 def plot_loss(d_train, d_val, epoch, settings):
@@ -621,16 +612,14 @@ def get_evaluation_metrics(
 
         if swag_sampling:
             scale = settings.swag_scale
-            n_samples = settings.swag_samples
             cov = True
             if settings.swag_no_cov:
                 cov = False
-            output = eval_step_swag(
-                model, n_samples, scale, cov, packed_tensor, X_tensor.size(1)
-            )
+            output = eval_step_swag(model, scale, cov, packed_tensor)
         else:
-            output = eval_step(model, packed_tensor, X_tensor.size(1))
+            output = eval_step(model, packed_tensor)
 
+        # for debug only
         if torch.isnan(output).any():
             print("output contains NAN value")
             breakpoint()
@@ -640,6 +629,7 @@ def get_evaluation_metrics(
 
         # Apply softmax
         pred_proba = nn.functional.softmax(output, dim=1)
+        # for debug only
         if torch.isnan(pred_proba).any():
             print("pred_proba contains NAN vlaue")
             breakpoint()
@@ -655,6 +645,7 @@ def get_evaluation_metrics(
         list_target.append(target_numpy)
     targets = np.concatenate(list_target, axis=0)
     preds = np.concatenate(list_pred, axis=0)
+    # for debug only
     if np.isnan(preds).any():
         print("preds contains NAN value")
         breakpoint()
