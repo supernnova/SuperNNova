@@ -126,7 +126,7 @@ SWAG Configuration Options
 
 - Scaling Parameter: The scaling parameter for the covariance is set using the ``--swag_scale`` flag, with a default value of ``0.5``, as recommended in the original paper. Setting the scale to ``0`` disables covariance calculation, effectively reducing SWAG to standard Stochastic Weight Averaging (SWA).
 
-- Covariance Calculation: If you wish to disable the calculation of low-rank covariance, use the ``--swag_no_cov`` flag.
+- Covariance Calculation: If you wish to disable the calculation of low-rank covariance, use the ``--swag_no_lr_cov`` flag.
 
 You can generate multiple prediction files with different configuration options (e.g. varying the scaling parameter) with the same SWAG model. 
 

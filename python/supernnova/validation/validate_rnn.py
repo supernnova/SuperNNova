@@ -438,9 +438,9 @@ def get_predictions(settings, model_file=None):
         lu.print_green("Processing prediction using SWA/SWAG model")
 
         # Check setting for cov
-        if settings.swag_no_cov:
+        if settings.swag_no_lr_cov:
             swag_cov = False
-            cov_str = "no_cov"
+            cov_str = "no_lr_cov"
         else:
             swag_cov = True
             cov_str = "cov"
@@ -455,7 +455,7 @@ def get_predictions(settings, model_file=None):
         )
         out_files.append(prediction_file_swa)
 
-        prediction_file_swag = f"{dump_dir}/PRED_{settings.pytorch_model_name}_scale_{settings.swag_scale}_{cov_str}_swag.pickle"
+        prediction_file_swag = f"{dump_dir}/PRED_{settings.pytorch_model_name}_nsample_{settings.swag_samples}_scale_{settings.swag_scale}_{cov_str}_swag.pickle"
         out_files.append(prediction_file_swag)
 
         # Prepare output dicts

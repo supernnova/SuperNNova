@@ -624,7 +624,7 @@ def get_evaluation_metrics(
         if swag_sampling:
             scale = settings.swag_scale
             cov = True
-            if settings.swag_no_cov:
+            if settings.swag_no_lr_cov:
                 cov = False
             output = eval_step_swag(model, scale, cov, packed_tensor)
         else:

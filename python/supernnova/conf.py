@@ -79,7 +79,7 @@ TRAIN_RNN_OPTIONS = COMMON_OPTIONS + [
     "--swag_start_epoch",
     "--swag_samples",
     "--swag_scale",
-    "--swag_no_cov",
+    "--swag_no_lr_cov",
 ]
 
 VALIDATE_RNN_OPTIONS = COMMON_OPTIONS + [
@@ -89,6 +89,10 @@ VALIDATE_RNN_OPTIONS = COMMON_OPTIONS + [
     "--calibration",
     "--plot_prediction_distribution",
     "--speed",
+    "--swag",
+    "--swag_samples",
+    "--swag_scale",
+    "--swag_no_lr_cov",
 ]
 
 SHOW_OPTIONS = COMMON_OPTIONS + [
@@ -571,7 +575,7 @@ def get_args(command_arg):
     )
 
     parser.add_argument(
-        "--swag_no_cov",
+        "--swag_no_lr_cov",
         action="store_true",
         help="Disable calculating low-rank covariance",
     )
