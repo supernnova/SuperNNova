@@ -1,9 +1,14 @@
-name: supernnova
+name: supernnova-cuda
 channels:
+  - pytorch
+  - nvidia
   - conda-forge
   - defaults
 dependencies:
   - python=3.11
+  - pytorch=2.0
+  - pytorch-cuda=11.8
+
   - pip
   - pip:
       - poetry>1.6.1

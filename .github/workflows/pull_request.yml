@@ -20,6 +20,13 @@ jobs:
 
   run_tests:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - conda_env: supernnova
+            conda_env_file: env/conda_env.yml
+          - conda_env: supernnova-cuda
+            conda_env_file: env/conda_gpu_env.yml
 
     steps:
 
@@ -32,55 +39,66 @@ jobs:
       # Uncomment if you need mpi
       # - name: Set-up MPI
       #   uses: mpi4py/setup-mpi@v1
-      
-      - name: Check update
-        run: sudo apt-get update
 
       - name: Set-up Cuda Toolkit
-        run: sudo apt-get install nvidia-cuda-toolkit nvidia-cuda-toolkit-gcc
+        run: |
+            sudo apt-get update
+            sudo apt-get install nvidia-cuda-toolkit nvidia-cuda-toolkit-gcc
 
-      - name: Set-up Poetry
-        uses: snok/install-poetry@v1
+      - name: Setup miniconda
+        uses: conda-incubator/setup-miniconda@v3
         with:
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-          installer-parallel: true
+          activate-environment: ${{matrix.conda_env}}
+          environment-file: ${{matrix.conda_env_file}}
 
-      - name: Set-up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-          cache: 'poetry'
+      - name: Verify Environment
+        shell: bash -l {0}
+        run: |
+          conda info
+          conda list
+          
+      - name: Verify cuda support
+        if: ${{ matrix.conda_env == 'supernnova-cuda' }}
+        shell: bash -l {0}
+        run: python env/verify_cuda_support.py
 
       # Configure project
       - name: Set project version
-        run: poetry version $(git describe --tags --abbrev=0)
+        shell: bash -l {0}
+        run: poetry version $(git describe --tags --match "v[0-9]*" --abbrev=0)
 
       # Install the project (we need some of the tools installed here for liniting etc)
       - name: Install the project
+        shell: bash -l {0}
         run: poetry install --no-interaction --extras "docs dev"
 
       # Enforce code formating standards
       - name: Enforce linting
+        shell: bash -l {0}
         run: poetry run ruff .
 
       - name: Enforce formating
+        shell: bash -l {0}
         run: poetry run black .
 
       # Make sure the Poetry project is properly maintained
       - name: Enforce maintainance of Poetry project
+        shell: bash -l {0}
         run: |
           poetry check
           poetry lock --check
 
       # Run tests
       - name: Generate build
+        shell: bash -l {0}
         run: poetry build
 
       - name: Code tests
+        shell: bash -l {0}
         run: poetry run pytest
 
       - name: Documentation build test
+        shell: bash -l {0}
         run: |
           cd docs
           poetry run make html

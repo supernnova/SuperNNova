@@ -10,7 +10,7 @@ Recommended code organization structure:
     ├── snndump        (to save the data)
     │
     ├── SuperNNova
-    │   ├── supernnova
+    │   ├── python/supernnova
     │   ├── env
     │   ├── docs
     │   ├── tests
@@ -30,143 +30,157 @@ Activate the environment
 
 **Either use docker**
 
-.. code::
+.. code-block:: bash
 
     cd env && python launch_docker.py (--use_cuda optional)
 
 **Or activate your conda environment**
 
-.. code::
+.. code-block:: bash
 
     source activate <conda_env_name>
 
-
-Creating a debugging database
+Create a database
 -------------------------------
-**Using command line:**
-.. code::
+To create a database, you can use ``snn make_data`` with valid options:
 
-    python run.py --data --dump_dir tests/dump --raw_dir tests/raw 
+.. code-block:: bash
+
+    snn make_data [option]
+
+A list of valid options can be shown by using the ``--help`` flag:
+
+.. code-block:: bash
+
+    snn make_data --help
+
+.. code-block:: none
+
+    usage: snn make_data [options]
+
+    optional arguments:
+    --config_file                  YML config file
+    --data_fraction                Fraction of data to use
+    --data_testing                 Create database with only validation set
+    --data_training                Create database with mostly training set of 99.5%%
+    --debug                        Debug database creation: one file processed only
+    ... ...
+
+Below, we detail several of the most frequently used approaches to create a database. You can also use a YAML file to specify option arguments. Please see :ref:`UseYaml` for more information.
+
+1. Create a debugging database
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+    snn make_data --dump_dir tests/dump --raw_dir tests/raw 
 
 - This creates a database for a very small subset of all available data
 - This is intended for debugging purposes (training, validation can run very fast with this small database)
 - The database is saved to the specified ``tests/dump/processed``
-- An additional SALT2 fits can be provided as ``--fits_dir tests/fits`` for training of RF and interpretation
-
-**Using yaml:** 
-.. code::
-
-    python run_yaml.py <yaml_file_with_config> --mode data 
-
-an example ``<yaml_file_with_config>`` is at ``configs_yml``.
-
-Creating a database
-------------------------------
-**Using command line:**
-.. code::
-
-    python run.py --data --dump_dir <path/to/full/database/> --raw_dir <path/to/raw/data/> 
-
-- An additional SALT2 fits can be provided as ``--fits_dir <path/to/fits/>`` for training of RF and interpretation
 
 
-**Using yaml:** modify the configuration file
-.. code::
+2. Create a database
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    python run_yaml.py <yaml_file_with_config> --mode data 
+.. code-block:: bash
+
+    snn make_data --dump_dir <path/to/full/database/> --raw_dir <path/to/raw/data/> 
+
 
 - You **DO NEED** to download the raw data for this database or point where your data is.
 - This creates a database for all the available data with 80/10/10 train/validate/test splits. 
-- Splits can be changed using ``--data_training`` (use data only for raining and validation) or ``--data_testing`` (use data only for testing) commands. For yaml just add ``data_training: True`` or ``--data_testing: True``.
+- Splits can be changed using ``--data_training`` (use data only for raining and validation) or ``--data_testing`` (use data only for testing) commands. For yaml just add ``data_training: True`` or ``data_testing: True``.
 - The database is saved to the specified ``dump_dir``, in the ``processed`` subfolder.
 - There is no need to specify salt2fits file to make the dataset. It can be used if available but it is not needed ``--fits_dir <empty/path/>``.
 - Raw data can be in csv format with columns:
- - `` DES_PHOT.csv ``: SNID,MJD, FLUXCAL, FLUXCALERR, FLT 
- - `` DES_HEAD.csv``: SNID, PEAKMJD, HOSTGAL_PHOTOZ, HOSTGAL_PHOTOZ_ERR, HOSTGAL_SPECZ, HOSTGAL_SPECZ_ERR, SIM_REDSHIFT_CMB, SIM_PEAKMAG_z, SIM_PEAKMAG_g, SIM_PEAKMAG_r, SIM_PEAKMAG_i, SNTYPE.
+- `` DES_PHOT.csv``: SNID,MJD, FLUXCAL, FLUXCALERR, FLT 
+- `` DES_HEAD.csv``: SNID, PEAKMJD, HOSTGAL_PHOTOZ, HOSTGAL_PHOTOZ_ERR, HOSTGAL_SPECZ, HOSTGAL_SPECZ_ERR, SIM_REDSHIFT_CMB, SIM_PEAKMAG_z, SIM_PEAKMAG_g, SIM_PEAKMAG_r, SIM_PEAKMAG_i, SNTYPE.
 
 
-Creating a database for testing a trained model
-------------------------------
+3. Create a database for testing a trained model
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 This is how to create a database with only lightcurves to evaluate.
 
-.. code::
+.. code-block:: bash
 
-    python run.py --dump_dir <path/to/save/database/> --data --data_testing  --raw_dir <path/to/raw/data/> 
+    snn make_data --dump_dir <path/to/save/database/> --data_testing  --raw_dir <path/to/raw/data/> 
 
 Note that:
 - using ``--data_testing`` option will generate a 100% testing set (see below for more details).
-**Using command yaml:** modify the configuration file with ``data_testing: True`` and use the ``--mode data``.
+**Using command yaml:** modify the configuration file with ``data_testing: True``.
 
 
-Creating a database using some SNIDs for testing and the rest for training and validating
-------------------------------
+4. Create a database using some SNIDs for testing and the rest for training and validating
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 This is how to create a database using a list of SNIDs for testing. 
 
-.. code::
+.. code-block:: bash
 
-    python run.py --dump_dir <path/to/save/database/> --data --raw_dir <path/to/raw/data/> --testing_ids <path/to/ids/file>
+    snn make_data --dump_dir <path/to/save/database/> --raw_dir <path/to/raw/data/> --testing_ids <path/to/ids/file>
 
 You can provide the SNIDs in ``.csv`` or ``.npy`` format. The ``.csv`` must contain a column ``SNID``.
 
 
-Creating a database with photometry limited to a time window
-------------------------------
+5. Create a database with photometry limited to a time window
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Photometric measurements may span over a larger time range than the one desired for classification. For example, a year of photometry is much larger than the usual SN timespan. Therefore, it may be desirable to just use a subset of this photometry (observed epochs cuts). To do so:
 
-.. code::
+.. code-block:: bash
 
-    python run.py --dump_dir <path/to/save/database/> --data --raw_dir <path/to/raw/data/>  --photo_window_files <path/to/csv/with/peakMJD> --photo_window_var <name/of/variable/in/csv/to/cut/on> --photo_window_min <negative/int/indicating/days/before/var> --photo_window_max <positive/int/indicating/days/after/var> 
+    snn make_data --dump_dir <path/to/save/database/> --raw_dir <path/to/raw/data/>  --photo_window_files <path/to/csv/with/peakMJD> --photo_window_var <name/of/variable/in/csv/to/cut/on> --photo_window_min <negative/int/indicating/days/before/var> --photo_window_max <positive/int/indicating/days/after/var> 
 
-Creating a database with different survey
-------------------------------
+6. Create a database with different survey
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The default filter set is the one from the Dark Energy Survey Supernova Survey ``g,r,i,z``. If you want to use your own survey, you'll need to specify your filters.
 
-.. code::
+.. code-block:: bash
 
-    python run.py --dump_dir <path/to/save/database/> --data --raw_dir <path/to/raw/data/>  --list_filters <your/filters>
+    snn make_data --dump_dir <path/to/save/database/> --raw_dir <path/to/raw/data/>  --list_filters <your/filters>
 
-e.g. ``--list_filters g r ``. 
+e.g. ``--list_filters g r``. 
 
-Using a different redshift label
-------------------------------
+7. Use a different redshift label
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The default redshift label is either ``HOSTGAL_SPECZ``/``HOSTGAL_PHOTOZ`` (with option ``zspe``/``zpho``). If you want to use your own label, you'll need to specify it. Beware, this will override also ``SIM_REDSHIFT_CMB`` used for the title of plotted light-curves.
 
-.. code::
+.. code-block:: bash
 
-    python run.py --dump_dir <path/to/save/database/> --data --raw_dir <path/to/raw/data/>  --redshift_label <your/label>
+    snn make_data --dump_dir <path/to/save/database/> --raw_dir <path/to/raw/data/>  --redshift_label <your/label>
 
 e.g. ``--redshift_label REDSHIFT_FINAL``. 
 
-Using a different sntype label
-------------------------------
+8. Use a different sntype label
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The default sntype label is ``SNTYPE``. If you want to use your own label, you'll need to specify it. 
 
-.. code::
+.. code-block:: bash
 
-    python run.py --dump_dir <path/to/save/database/> --data --raw_dir <path/to/raw/data/>  --sntype_var <your/label>
+    snn make_data --dump_dir <path/to/save/database/> --raw_dir <path/to/raw/data/>  --sntype_var <your/label>
 
 e.g. ``--redshift_label SIM_SNTYPE``. 
 
-Masking photometry
-------------------------------
+9. Mask photometry
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The default is to use all available photometry for classification. However, we support masking photometric epochs with a power of two mask. Any combination of these power of two integers, and with other numbers, will be eliminated from the database.
 
-.. code::
+.. code-block:: bash
 
-    python run.py --dump_dir <path/to/save/database/> --data --raw_dir <path/to/raw/data/>  --phot_reject <your/label> --phot_reject_list <list/to/reject>
+    snn make_data --dump_dir <path/to/save/database/> --raw_dir <path/to/raw/data/>  --phot_reject <your/label> --phot_reject_list <list/to/reject>
 
 e.g. ``--phot_reject PHOTFLAG --phot_reject_list 8 16 32 64 128 256 512``. 
 
 
-Adding another training variable
-------------------------------
+10. Add another training variable
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 You may want to add another feature for training and classification from the metadata (HEAD for .fits)
 
-.. code::
+.. code-block:: bash
 
-    python run.py --dump_dir <path/to/save/database/> --data --raw_dir <path/to/raw/data/>  --additional_train_var <additional_column_name>
+    snn make_data --dump_dir <path/to/save/database/> --raw_dir <path/to/raw/data/>  --additional_train_var <additional_column_name>
 
 e.g. ``--additional_train_var MWEBV``. 
+
 
 Under the hood
 -------------------------------

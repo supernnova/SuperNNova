@@ -184,10 +184,6 @@ def visualize(settings):
         SNIDs = hf["SNID"][:][SNID_idxs]
     SNIDs = [i for i in np.array([k for k in SNIDs]).astype(str)]
 
-    try:
-        plot_random_preprocessed_lightcurves(settings, SNIDs)
-    except FileNotFoundError as e:
-        message = "Lightcurves from the preprocessed are not generated. "
-        print(message + str(e))
+    plot_random_preprocessed_lightcurves(settings, SNIDs)
 
     plot_lightcurves_from_hdf5(settings, SNID_idxs)

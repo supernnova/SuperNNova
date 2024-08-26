@@ -66,6 +66,13 @@ Welcome to SuperNNova's documentation!
 .. toctree::
    :glob:
    :maxdepth: 1
+   :caption: Implemenatation of SWAG
+
+   Implementation of SWAG <swag_implementation>
+
+.. toctree::
+   :glob:
+   :maxdepth: 1
    :caption: Notes for Developers
 
    Notes for Developers <notes_for_developers>
