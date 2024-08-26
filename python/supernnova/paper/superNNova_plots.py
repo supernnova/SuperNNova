@@ -280,8 +280,16 @@ def plot_calibration(settings, prediction_files=None):
 
     for i, f in enumerate(metric_files):
         df = pd.read_pickle(f)
+
         mean_bins, TPF = df["calibration_mean_bins"][0], df["calibration_TPF"][0]
         model_name = df["model_name"][0]
+
+        # add swag information to the label
+        swag = ""
+        if f.endswith("_swag.pickle"):
+            swag = "_swag"
+        if f.endswith("_swa.pickle"):
+            swag = "_swa"
 
         calibration_dispersion = TPF - mean_bins
         ax1.plot(
@@ -289,7 +297,7 @@ def plot_calibration(settings, prediction_files=None):
             TPF,
             "s-",
             color=ALL_COLORS[i],
-            label=get_model_visualization_name(df["model_name"][0]),
+            label=get_model_visualization_name(df["model_name"][0]) + swag,
             marker=MARKER_LIST[i],
         )
         ax11.scatter(
