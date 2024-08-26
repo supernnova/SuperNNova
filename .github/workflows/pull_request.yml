@@ -65,7 +65,7 @@ jobs:
       # Configure project
       - name: Set project version
         shell: bash -l {0}
-        run: poetry version $(git describe --tags --abbrev=0)
+        run: poetry version $(git describe --tags --match "v[0-9]*" --abbrev=0)
 
       # Install the project (we need some of the tools installed here for liniting etc)
       - name: Install the project
