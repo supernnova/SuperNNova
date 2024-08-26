@@ -628,11 +628,9 @@ def get_settings_from_dump(settings, model_or_pred_or_metrics_file):
     cli_file = model_dir / "cli_args.json"
     with open(cli_file, "r") as f:
         cli_args = json.load(f)
+
         # Unset general arguments
         for arg in [
-            "data",
-            "train_rnn",
-            "validate_rnn",
             "explore_lightcurves",
             "dryrun",
             "metrics",
@@ -660,6 +658,11 @@ def get_settings_from_dump(settings, model_or_pred_or_metrics_file):
 
     # model files
     cli_args["plot_file"] = settings.plot_file
+
+    # swag options
+    cli_args["swag_samples"] = settings.swag_samples
+    cli_args["swag_scale"] = settings.swag_scale
+    cli_args["swag_no_lr_cov"] = settings.swag_no_lr_cov
 
     # Backward compatibility
     keys_not_in_model_settings = [

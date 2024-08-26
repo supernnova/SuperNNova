@@ -94,6 +94,10 @@ This will generate all the files for standard RNN model training described above
 
 - SWAG prediction aggregated: ``PRED_vanilla_*_scale_0.5_cov_swag_aggregated.pickle``
 
+- SWA metrics: ``METRICS_vanilla_*__swa.pickle``
+
+- SWAG metrics: ``METRICS_vanilla_*_swag.pickle``
+
 SWAG Configuration Options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 - Starting Epoch: SWAG typically begins towards the end of training, with a default start at Epoch ``83``. You can adjust this with the ``--swag_start_epoch`` flag.

@@ -240,6 +240,9 @@ def get_predictions(settings, model_file=None):
     Args:
         settings (ExperimentSettings): custom class to hold hyperparameters
         model_file (str): Path to saved model weights. Default: ``None``
+
+    Returns:
+        out_files (list): a list of prediction files
     """
 
     settings.random_length = False

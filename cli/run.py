@@ -96,10 +96,13 @@ def train_rnn_action(settings):
         train_rnn.train(settings)
 
     # Obtain predictions
-    prediction_file = validate_rnn.get_predictions(settings)
+    prediction_file_list = validate_rnn.get_predictions(settings)
 
     # Compute metrics
-    metrics.get_metrics_singlemodel(settings, model_type="rnn")
+    for prediction_file in prediction_file_list:
+        metrics.get_metrics_singlemodel(
+            settings, prediction_file=prediction_file, model_type="rnn"
+        )
 
     # Plot some lightcurves
     early_prediction.make_early_prediction(settings)
@@ -107,7 +110,7 @@ def train_rnn_action(settings):
     lu.print_blue("Finished rnn training, validating, testing and plotting lcs")
 
     if settings.calibration:
-        sp.plot_calibration(settings, prediction_files=prediction_file)
+        sp.plot_calibration(settings, prediction_files=prediction_file_list)
 
 
 def validate_rnn_action(settings):
@@ -116,10 +119,13 @@ def validate_rnn_action(settings):
     from supernnova.paper import superNNova_plots as sp
 
     if settings.model_files is None:
-        prediction_file = validate_rnn.get_predictions(settings)
+        prediction_file_list = validate_rnn.get_predictions(settings)
         # Compute metrics
-        metrics.get_metrics_singlemodel(settings, model_type="rnn")
-        pf = prediction_file
+        for prediction_file in prediction_file_list:
+            metrics.get_metrics_singlemodel(
+                settings, prediction_file=prediction_file, model_type="rnn"
+            )
+        pf = prediction_file_list
     else:
         prediction_files = []
         for model_file in settings.model_files:
@@ -128,16 +134,17 @@ def validate_rnn_action(settings):
             if settings.num_inference_samples != model_settings.num_inference_samples:
                 model_settings.num_inference_samples = settings.num_inference_samples
             # Get predictions
-            prediction_file = validate_rnn.get_predictions(
+            prediction_file_list = validate_rnn.get_predictions(
                 model_settings, model_file=model_file
             )
-            prediction_files.append(prediction_file)
+            prediction_files.extend(prediction_file_list)
             # Compute metrics
-            metrics.get_metrics_singlemodel(
-                model_settings,
-                prediction_file=prediction_file,
-                model_type="rnn",
-            )
+            for prediction_file in prediction_file_list:
+                metrics.get_metrics_singlemodel(
+                    model_settings,
+                    prediction_file=prediction_file,
+                    model_type="rnn",
+                )
         pf = prediction_files
 
     if settings.plot_lcs:
