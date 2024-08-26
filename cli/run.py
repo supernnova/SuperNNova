@@ -89,15 +89,6 @@ def train_rnn_action(settings):
             message = "(swag_start_epoch +2) must be smaller than nb_epoch"
             raise ValueError(message)
 
-    if (
-        settings.swag_start_epoch
-        or settings.swag_samples
-        or settings.swag_scale
-        or settings.swag_no_lr_cov
-    ) and not settings.swag:
-        message = "add --swag flag to enable SWAG"
-        raise ValueError(message)
-
     # Train
     if settings.cyclic:
         train_rnn.train_cyclic(settings)

@@ -27,8 +27,33 @@ def test_rnn_train(make_data, option):
         "*/*.pt",
         "*/PRED*",
         "*/METRICS*",
+        "*/train_and_val_AUC*",
+        "*/train_and_val_Acc*",
+        "*/train_and_val_epoch*",
         "*/train_and_val_loss*",
         "*/training_log.json",
+        "*/cli_args.json",
+    ]
+    for fi in files:
+        assert len([e for e in (Path(model_dir)).glob(fi)]) >= 1
+
+    # clean up model folder
+    shutil.rmtree(model_dir)
+
+
+def test_rnn_train_swag(make_data):
+    cmd = "snn train_rnn --dump_dir tests/dump --swag"
+
+    call_cmd(cmd)
+
+    model_dir = dir_path + "models/"
+    files = [
+        "*/*_swag.pt",
+        "*/PRED*_swag.pickle",
+        "*/PRED*_swag_aggregated.pickle",
+        "*/PRED*_swa.pickle",
+        "*/METRICS*_swag.pickle",
+        "*/METRICS*_swa.pickle",
     ]
     for fi in files:
         assert len([e for e in (Path(model_dir)).glob(fi)]) == 1
