@@ -480,13 +480,16 @@ def train_swag(settings):
 
         if epoch >= settings.swag_start_epoch:
             if swag_start == 1:
-                lu.print_green("Starting SWA process")
+                lu.print_green(
+                    "Starting SWAG process: calculating SWA and SWAG-diagonal"
+                )
                 swag_start = 0
 
             swag_rnn.update_parameters(rnn)
 
             # start SWAG samplling when K > 1, i.e. swag_rnn.n_averaged > 2
             if epoch >= settings.swag_start_epoch + 2:
+                lu.print_green("Starting SWAG sampling")
                 d_losses_train_swag = tu.get_evaluation_metrics(
                     settings,
                     list_data_train,
