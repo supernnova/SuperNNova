@@ -1,0 +1,84 @@
+
+name: Pull Request
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+
+  # Useful for workflow debugging
+  # printJob:    
+  #   name: Print event
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - name: Dump GitHub context
+  #     env:
+  #       GITHUB_CONTEXT: ${{ toJson(github) }}
+  #     run: |
+  #       echo "$GITHUB_CONTEXT"
+
+  run_tests:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # Set-up dependencies
+      - name: Check-out repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Needed for tags to be fetched; see https://github.com/actions/checkout/issues/290
+
+      # Uncomment if you need mpi
+      # - name: Set-up MPI
+      #   uses: mpi4py/setup-mpi@v1
+
+      - name: Set-up Cuda Toolkit
+        run: sudo apt-get install nvidia-cuda-toolkit nvidia-cuda-toolkit-gcc
+
+      - name: Set-up Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+
+      - name: Set-up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'poetry'
+
+      # Configure project
+      - name: Set project version
+        run: poetry version $(git describe --tags --abbrev=0)
+
+      # Install the project (we need some of the tools installed here for liniting etc)
+      - name: Install the project
+        run: poetry install --no-interaction --extras "docs dev"
+
+      # Enforce code formating standards
+      - name: Enforce linting
+        run: poetry run ruff .
+
+      - name: Enforce formating
+        run: poetry run black .
+
+      # Make sure the Poetry project is properly maintained
+      - name: Enforce maintainance of Poetry project
+        run: |
+          poetry check
+          poetry lock --check
+
+      # Run tests
+      - name: Generate build
+        run: poetry build
+
+      - name: Code tests
+        run: poetry run pytest
+
+      - name: Documentation build test
+        run: |
+          cd docs
+          poetry run make html
+

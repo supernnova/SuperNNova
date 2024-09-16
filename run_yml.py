@@ -1,4 +1,3 @@
-import sys
 import yaml
 import json
 import shlex
@@ -15,7 +14,8 @@ if __name__ == "__main__":
     parser.add_argument("yml", type=Path, help="Yaml configuration file")
 
     parser.add_argument(
-        "--mode", choices=["data", "train_rnn", "validate_rnn", "plot_lcs"],
+        "--mode",
+        choices=["data", "train_rnn", "validate_rnn", "plot_lcs"],
     )
     args = parser.parse_args()
 
@@ -27,7 +27,7 @@ if __name__ == "__main__":
         if isinstance(v, list):
             cmd += f"--{k} {' '.join(v)} "
         elif isinstance(v, bool):
-            if v == True and k not in ["bidirectional", "random_length"]:
+            if v is True and k not in ["bidirectional", "random_length"]:
                 cmd += f"--{k} "
         elif isinstance(v, dict):
             cmd += f"--{k} '{json.dumps(v)}' "

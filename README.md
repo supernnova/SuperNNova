@@ -2,7 +2,7 @@
 [![arXiv](https://img.shields.io/badge/arxiv-astro--ph%2F1901.06384-red)](https://arxiv.org/abs/1901.06384) 
 [![Data DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3265189.svg)](https://doi.org/10.5281/zenodo.3265189)
 
-![Logo](docs/SuperNNova.png)
+![Logo](docs/assets/SuperNNova.png)
 
 [![Build Status](https://travis-ci.org/supernnova/SuperNNova.svg?branch=master)](https://travis-ci.org/supernnova/SuperNNova)
 
@@ -34,6 +34,7 @@ MNRAS, Volume 491, Issue 3, January 2020, Pages 4277–4293.](https://academic.o
 ## Table of contents
 1. [Repository overview](#overview)
 2. [Getting Started](#start)
+    0. [Use Poetry in new releases]
     1. [With Conda](#conda)
     2. [With Docker](#docker)
 3. [Usage](#usage)
