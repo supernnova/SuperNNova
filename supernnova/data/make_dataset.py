@@ -657,7 +657,7 @@ def process_single_csv(file_path, settings):
     # Save for future use
     basename = os.path.basename(file_path)
     df.to_pickle(
-        f"{settings.preprocessed_dir}/{basename.replace('.FITS', '.pickle').replace('.gz','')}"
+        f"{settings.preprocessed_dir}/{basename.replace('.csv', '.pickle').replace('.gz','')}"
     )
 
     # getting SNIDs for SNe with Host_spec
