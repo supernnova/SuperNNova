@@ -40,6 +40,7 @@ A local development copy of the code base can be obtained and configured as foll
 Although not strictly necessary, it is recommended that you configure the branch permissions of any forked repositories as detailed in the *GitHub* configuration section below.
 :::
 
+(dev-python-env)=
 # Python environments for development
 
 Python development should always be managed using a Python environment. Both Conda and Poetry ([see here for an introduction](https://python-poetry.org)) are used to manage this project. It simplifies & helps with managing the following:
