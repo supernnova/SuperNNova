@@ -45,7 +45,7 @@ if you create environment from "conda_gpu_env.yml".
     which poetry # should print <conda env>/bin/poetry
     poetry install
 
-For developers, please refer to :ref:`dev-python-env`.
+For developers (including testing local documentation), please refer to :ref:`dev-python-env`.
 
 
 .. _DockerConfigurations:
