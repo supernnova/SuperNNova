@@ -74,7 +74,7 @@ Below is a sample plot:
 
 .. image:: preds_variational.png
 
-
+Beware: only MC Dropout (variational) and Bayes by Backprop (bayesian) models have this feature.
 
 Predictions from multiple models
 -------------------------------------------
