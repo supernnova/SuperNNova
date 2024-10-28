@@ -193,6 +193,9 @@ def plot_prediction_distribution(settings):
     file_name = f"{settings.processed_dir}/database.h5"
     with h5py.File(file_name, "r") as hf:
         features = hf["features"][settings.idx_features]
+        # Convert byte strings to Unicode strings if necessary
+        if isinstance(features[0], bytes):
+            features = [feature.decode("utf-8") for feature in features]
 
     # Load RNN model
     dict_rnn = {}

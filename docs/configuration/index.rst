@@ -18,7 +18,6 @@ Data parameters
 ======================  ============  ==================================================================
 Argument                  Type                Help
 ======================  ============  ==================================================================
---data                    bool        if True, launch data creation
 --dump_dir                str         path where data and models are dumped
 --norm                    str         Feature normalization used in training/validation: None, perfilter, global, cosmo, cosmo_quantile
 --redshift                str         Host redshift used in training/validation: zpho, zspe or None
@@ -35,7 +34,6 @@ Training parameters
 Argument                  Type                Help
 ======================  ============  ==================================================================
 --train_rnn               bool         Train RNN model
---train_rf                bool         Train RandomForest model
 --monitor_interval        int          Validate every monitor_interval epochs--metrics
 ======================  ============  ==================================================================
 
@@ -46,13 +44,10 @@ Validation Parameters
 ======================  ============  =====================================================
 Argument                  Type                Help
 ======================  ============  =====================================================
---validate_rnn            bool         Validate RNN model
---validate_rf             bool         Validate RandomForest model
 --speed                   bool         Run RNN speed classification benchmark
 --calibration             bool         Evaluate model calibration
 --performance             bool         Get performance metrics + plots
 --metrics                 bool         Compute performance metrics
---science_plots           bool         Plots of scientific interest
 --model_files             bool         Path to model files
 --prediction_files        bool         Path to prediction files
 --metric_files            bool         Path to metric files
@@ -106,19 +101,3 @@ Argument                  Type                Help
 --num_inference_samples   int           Number of samples to use for Bayesian inference
 --mean_field_inference    bool          Use mean field inference for bayesian models
 ========================  ============  ==================================================================
-
-
-Random Forest parameters
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-======================  ============  ==================================================================
-Argument                  Type                Help
-======================  ============  ==================================================================
---bootstrap              bool         Activate bootstrap when building trees
---min_samples_leaf       int          Minimum samples required to be a leaf node
---n_estimators           int          Number of trees
---min_samples_split      int          Min samples to create split
---criterion              str          Tree splitting criterion
---max_features           int          Max features per tree
---max_depth              int          Max tree depth
-======================  ============  ==================================================================
