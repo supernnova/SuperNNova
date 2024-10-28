@@ -61,7 +61,7 @@ Visualization Parameters
 Argument                          Type                Help
 ===============================  ============  ==========================================================
 --explore_lightcurves             bool         Plot a random selection of lightcurves
---plot_lcs                        bool         Plot a random selection of lightcurves  predictions
+--plot_lcs                        bool         Plot a random selection of lightcurves  predictions 
 --plot_prediction_distribution    bool         Plot lcs and the histogram of probability for each class
 ===============================  ============  ==========================================================
 

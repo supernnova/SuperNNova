@@ -46,7 +46,11 @@ To reproduce the Dark Energy Survey analyses use commit `fcf8584b64974ef7a238eac
 
 To reproduce Fink analyses until 2024 use commit `fcf8584b64974ef7a238eac718e01be4ed637a1d` and check [Fink's github](https://github.com/astrolabsoftware/fink-science).
 
-## Build docs <a name="docs"></a>
+### Build docs <a name="docs"></a>
 
     cd docs && make clean && make html && cd ..
     firefox docs/_build/html/index.html
+
+
+### ADACS
+This package has been updated to a recent pytorch through the [ADACS Merit allocation program](https://adacs.org.au/merit-allocation-program) 2023-2024.

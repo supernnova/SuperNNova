@@ -152,13 +152,13 @@ e.g. ``--redshift_label REDSHIFT_FINAL``.
 
 8. Use a different sntype label
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The default sntype label is ``SNTYPE``. If you want to use your own label, you'll need to specify it. 
+The default sntype label is ``SNTYPE``. If you want to use your own label, you'll need to specify it and provide it in the `HEAD` file.
 
 .. code-block:: bash
 
     snn make_data --dump_dir <path/to/save/database/> --raw_dir <path/to/raw/data/>  --sntype_var <your/label>
 
-e.g. ``--redshift_label SIM_SNTYPE``. 
+e.g. ``--sntype_var MYTYPE``. 
 
 9. Mask photometry
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
