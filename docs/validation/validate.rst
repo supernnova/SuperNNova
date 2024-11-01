@@ -2,16 +2,6 @@
 Validation documentation
 ====================================
 
-Validation RandomForest
-~~~~~~~~~~~~~~~~~~~~~~~
-
-.. currentmodule:: supernnova.validation.validate_randomforest.py
-
-.. automodule:: supernnova.validation.validate_randomforest
-    :members:
-    :show-inheritance:
-
-
 Validation RNN
 ~~~~~~~~~~~~~~~~
 
