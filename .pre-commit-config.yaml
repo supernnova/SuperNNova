@@ -12,6 +12,7 @@ repos:
     hooks:
       - id: check-merge-conflict
       - id: check-yaml
+        exclude: archive/|tmp/
       - id: check-added-large-files
       - id: no-commit-to-branch
         args: ['--branch', 'main'] # Commits to main only allowed VIA PR for this project

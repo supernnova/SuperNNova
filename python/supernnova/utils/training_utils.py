@@ -1,6 +1,7 @@
 import torch.nn as nn
 import torch
 from supernnova.utils import logging_utils as lu
+from supernnova.utils.swag_utils import SwagModel
 from supernnova.training import bayesian_rnn
 from supernnova.training import bayesian_rnn_2
 from supernnova.training import variational_rnn
@@ -497,17 +498,15 @@ def train_step(
     # Backward pass
     loss.backward()
     optimizer.step()
-
     return loss
 
 
-def eval_step(rnn, packed_tensor, batch_size):
+def eval_step(rnn, packed_tensor):
     """Eval step: Forward pass only
 
     Args:
-        rnn (torch.nn Model): pytorch model to train
+        rnn (torch.nn Model): pytorch model to evaluate
         packed_tensor (torch PackedSequence): input tensor in packed form
-        batch_size (int): batch size
 
     Returns:
         output (torch Tensor): output of rnn
@@ -518,6 +517,38 @@ def eval_step(rnn, packed_tensor, batch_size):
 
     # Forward pass
     output = rnn(packed_tensor)
+    return output
+
+
+def eval_step_swag(model: SwagModel, scale: float, cov: bool, packed_tensor):
+    """Draw a sample of SwagModel and evaluate: Forward pass only
+
+    Args:
+        model (SwagModel): SwagModel
+        scale (float): The scale parameter for covariance
+        cov (bool): If True, enable calculating low-rank covariance
+        packed_tensor (torch PackedSequence): Input tensor in packed form
+
+    Returns:
+        output (torch Tensor): Output of a sample model
+    """
+    # draw a sample of SwagModel
+    sample_model = model.sample(scale, cov)
+
+    # Set NN to eval mode
+    sample_model.eval()
+
+    # Forward pass
+    output = sample_model(packed_tensor)
+
+    # for debug only
+    if torch.isnan(sample_model(packed_tensor)).any():
+        print("sample_model output contains NAN value")
+        breakpoint()
+
+    if torch.isnan(output).any():
+        print("sum of sample model output contain NAN value")
+        breakpoint()
 
     return output
 
@@ -551,7 +582,9 @@ def plot_loss(d_train, d_val, epoch, settings):
         plt.clf()
 
 
-def get_evaluation_metrics(settings, list_data, model, sample_size=None):
+def get_evaluation_metrics(
+    settings, list_data, model, sample_size=None, swag_sampling=False
+):
     """Compute evaluation metrics on a list of data points
 
     Args:
@@ -559,6 +592,7 @@ def get_evaluation_metrics(settings, list_data, model, sample_size=None):
         list_data (list): contains data to evaluate
         model (torch.nn Model): pytorch model
         sample_size (int): subset of the data to use for validation. Default: ``None``
+        swag_sampling (bool): if True, enable to draw swag samplings. Default: ``False``
 
     Returns:
         d_losses (dict) maps metrics to their computed value
@@ -586,14 +620,30 @@ def get_evaluation_metrics(settings, list_data, model, sample_size=None):
             list_data, batch_idxs, settings
         )
         settings.random_length = random_length
-        output = eval_step(model, packed_tensor, X_tensor.size(1))
+
+        if swag_sampling:
+            scale = settings.swag_scale
+            cov = True
+            if settings.swag_no_lr_cov:
+                cov = False
+            output = eval_step_swag(model, scale, cov, packed_tensor)
+        else:
+            output = eval_step(model, packed_tensor)
+
+        # for debug only
+        if torch.isnan(output).any():
+            print("output contains NAN value")
+            breakpoint()
 
         if "bayesian" in settings.pytorch_model_name:
             list_kl.append(model.kl.detach().cpu().item())
 
         # Apply softmax
         pred_proba = nn.functional.softmax(output, dim=1)
-
+        # for debug only
+        if torch.isnan(pred_proba).any():
+            print("pred_proba contains NAN vlaue")
+            breakpoint()
         # Convert to numpy array
         pred_proba = pred_proba.data.cpu().numpy()
         target_numpy = target_tensor.data.cpu().numpy()
@@ -606,7 +656,10 @@ def get_evaluation_metrics(settings, list_data, model, sample_size=None):
         list_target.append(target_numpy)
     targets = np.concatenate(list_target, axis=0)
     preds = np.concatenate(list_pred, axis=0)
-
+    # for debug only
+    if np.isnan(preds).any():
+        print("preds contains NAN value")
+        breakpoint()
     # Check outputs size
     assert len(targets.shape) == 1
     assert len(preds.shape) == 2
