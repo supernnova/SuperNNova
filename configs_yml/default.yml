@@ -9,20 +9,17 @@ list_filters: ["g", "i", "r", "z"]
 sntypes: {"101": "Ia","120": "IIP","121": "IIn","122": "IIL1","123": "IIL2","132": "Ib","133": "Ic"}
 
 # data options
-# --mode data
 data_testing: False 
-phot_reject: PHOTFLAG 
+# phot_reject: PHOTFLAG 
 phot_reject_list: 8 16 32 64 128 256 512 
 redshift_label: REDSHIFT_FINAL 
 
 # RNN model options
-# --mode train_rnn
 model: vanilla #choices: [vanilla, variational, bayesian]
 redshift: zspe #choices: [none, zspe,zpho]
 cyclic: False #choices: [True,False]
 batch_size: 2
-nb_epoch: 2
+nb_epoch: 5
 
 # visualization options
-# --mode plot_lcs
-plot_file: ./tmp.csv 
+plot_lcs: True
