@@ -2,7 +2,7 @@
 .. _Start:
 
 Quickstart guide (GitHub)
-========================
+============================
 
 Welcome to SuperNNova!
 
@@ -26,7 +26,32 @@ Setup your environment. 3 options
 Please beware that SuperNNova only runs properly in Unix systems (Linux, MacOS). 
 	a) Create a docker image: :ref:`DockerConfigurations` .
 	b) Create a conda virtual env :ref:`CondaConfigurations` .
-	c) Install packages manually. Inspect ``conda_env.txt`` for the list of packages we use.
+	c) Install packages manually. Inspect ``env/conda_env.yml`` (or ``env/conda_gpu_env.yml`` when using cuda) and ``pyproject.toml`` for the list of packages we use.
+
+Verify installation 
+-----------------------------------
+This package provides its own bash command ``snn``. Once the installation is completed successfully, you should be able to run the following line in the terminal:
+
+.. code-block:: bash
+
+    snn --help
+
+.. code-block:: none
+
+    Usage: snn <command> <options> <arguments>
+
+    Available commands:
+
+        make_data        create dataset for ML training
+        train_rnn        train RNN model
+        validate_rnn     validate RNN model
+        show             vitualize different types of plot
+        performance      get method performance and paper plots
+
+    Type snn <command> --help for usage help on a specific command.
+    For example, snn make_data --help will list all data creation options.    
+
+where ``make_data``, ``train_rnn``, ``validate_rnn``, ``show`` and ``performance`` are the sub-commands. 
 
 Usage
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -36,19 +61,21 @@ For quick tests, a database that contains a limited number of light-curves is pr
 Using command line 
 -----------------------
 Build the database
-.. code::
 
+.. code-block:: bash
+
+    snn make_data --dump_dir tests/dump --raw_dir tests/raw
 
 an additional argument ``--fits_dir tests/fits`` can provide a SALT2 fits file for random forest training and interpretation.
 
 
 Train an RNN
 
-.. code::
+.. code-block:: bash
 
-    python run.py --train_rnn --dump_dir tests/dump
+    snn train_rnn --dump_dir tests/dump
 
-With this command you are training and validating our Baseline RNN with the test database. The trained model will be saved in a newly created model folder inside ``tests/dump/models``.
+With this command you are training and validating our Baseline RNN with the test database and generating test lightcurves as well. The trained model will be saved in a newly created model folder inside ``tests/dump/models``.
 
 The model folder has been named as follows: ``vanilla_S_0_CLF_2_R_None_photometry_DF_1.0_N_global_lstm_32x2_0.05_128_True_mean`` (See below for the naming conventions). This folder's contents are:
 
@@ -62,32 +89,52 @@ The model folder has been named as follows: ``vanilla_S_0_CLF_2_R_None_photometr
 
 Remember that our data is split in training, validation and test sets.
 
-
-Plot light-curves and their predictions
-
-.. code::
-
-    python run.py --dump_dir tests/dump --plot_lcs
-
-You can now inspect the test light-curves and their predictions in ``tests/dump/lightcurves``
+The test light-curves and their predictions can be inspected in ``tests/dump/lightcurves``
 
 **You have trained, validated and tested your model.**
 
+.. _UseYaml:
 
 Using Yaml
 -----------------------
-Build the database
-.. code::
+You can also save arguments of options in an YAML file, and load it:
 
-    python run_yml.py configs_yml/default.yml --mode data
+.. code-block:: bash
+
+    snn <command> --config_file <yaml file>
+
+Example YAML files can be found in the folder ``configs_yml``, where ``classify.yml`` is an example of classification using existing model.
+
+**Notice**: you can include options for different sub-commands in the same YAML file. 
+
+Build the database
+
+.. code-block:: bash
+
+    snn make_data --config_file configs_yml/default.yml
 
 Train an RNN
 
-.. code::
+.. code-block:: bash
 
-    python run_yml.py configs_yml/default.yml --mode train_rnn
+    snn train_rnn --config_file configs_yml/default.yml 
 
-Available modes: ``data``,``train_rnn``, ``validate_rnn``, ``plot_lcs``. Currently RF classification is not suppported with the yaml configurations. An example of classification using existing model is in ``configs_yml/classify.yml``.
+
+You can also update option specified in the YAML file by using command-line option:
+
+.. code-block:: bash
+
+    snn make_data --config_file configs_yml/simple.yml --dump_dir tests/dump2
+    # or
+    snn make_data --dump_dir tests/dump2 --config_file configs_yml/simple.yml
+
+The data will be dumpped to ``tests/dump2`` instead of ``tests/dump`` specified in ``config_yml/simple.yml``.
+
+**Notice**: adding command-line options will update the arguments at runtime, not change the YAML file itself. 
+
+
+
+
 
 
 Reproduce SuperNNova paper

@@ -70,6 +70,10 @@ def plot_random_preprocessed_lightcurves(settings, SNIDs):
     list_files = [
         f for f in glob.glob(os.path.join(settings.preprocessed_dir, "*_PHOT.pickle"))
     ]
+    if len(list_files) == 0:
+        raise FileNotFoundError(
+            "No files found in the preprocessed directory. Use option --debug together with --data when generating database."
+        )
 
     df = pd.concat(list(map(pd.read_pickle, list_files))).set_index("SNID")
 
@@ -181,4 +185,5 @@ def visualize(settings):
     SNIDs = [i for i in np.array([k for k in SNIDs]).astype(str)]
 
     plot_random_preprocessed_lightcurves(settings, SNIDs)
+
     plot_lightcurves_from_hdf5(settings, SNID_idxs)
