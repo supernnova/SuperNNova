@@ -9,7 +9,7 @@ Welcome to SuperNNova's documentation!
    :caption: Getting started
 
    installation/system.rst
-   installation/python.rst
+   installation/env.rst
    installation/five_minute_guide.rst
    installation/five_minute_guide_module.rst
    installation/onthefly.rst

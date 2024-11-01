@@ -23,7 +23,7 @@ Setup your environment. 3 options
 
 	a) Create a conda virtual env :ref:`CondaConfigurations` (preferred).
 	b) Create a docker image: :ref:`DockerConfigurations` .
-	c) Install packages manually. Inspect ``conda_env.txt`` for the list of packages we use.
+	c) Install packages manually. Inspect ``env/conda_env.yml`` (or ``env/conda_gpu_env.yml`` when using cuda) and ``pyproject.toml`` for the list of packages we use.
 
 Usage
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -33,55 +33,57 @@ For quick tests, a database that contains a limited number of light-curves is pr
 Build the database
 -----------------------
 
-In the parent folder, where ``run.py`` is located you can launch python or ipython with the following:
+In the parent folder, you can launch python or ipython with the following:
 
-.. code::
+.. code-block:: python
 
 	import supernnova.conf as conf
 	from supernnova.data import make_dataset
 
 	# get config args
-	args =  conf.get_args()
+	command_arg = "make_data"
+	args = conf.get_args(command_arg)
 
 	# create database
-	args.data = True			# conf: making new dataset
 	args.dump_dir = "tests/dump"		# conf: where the dataset will be saved
 	args.raw_dir = "tests/raw"		# conf: where raw photometry files are saved 
 	args.fits_dir = "tests/fits"		# conf: where salt2fits are saved 
-	settings = conf.get_settings(args)	# conf: set settings
+	settings = conf.get_settings(command_arg, args)	# conf: set settings
 	make_dataset.make_dataset(settings)	# make dataset
 
 
 Train an RNN
 ---------------------------------------
 
-.. code::
+.. code-block:: python
 
 	import supernnova.conf as conf
 	from supernnova.training import train_rnn
 
 	# get config args
-	args =  conf.get_args()
+	command_arg = "train_rnn"
+	args = conf.get_args(command_arg)
 
-	args.train_rnn = True			# conf: train rnn
+	# train rnn
 	args.dump_dir = "tests/dump"		# conf: where the dataset is saved
 	args.nb_epoch = 2			# conf: training epochs
-	settings = conf.get_settings(args)	# conf: set settings
+	settings = conf.get_settings(command_arg, args)	# conf: set settings
 	train_rnn.train(settings)		# train rnn
 
 Validate an RNN
 ---------------------------------------
 
-.. code::
+.. code-block:: python
 
 	import supernnova.conf as conf
 	from supernnova.validation import validate_rnn
 
 	# get config args
-	args =  conf.get_args()
+	command_arg = "validate_rnn"
+	args = conf.get_args(command_arg)
 
-	args.validate_rnn = False			# conf: validate rnn
+	# validate rnn
 	args.dump_dir = "tests/dump"			# conf: where the dataset is saved
-	settings = conf.get_settings(args)		# conf: set settings
+	settings = conf.get_settings(command_arg, args)		# conf: set settings
 	validate_rnn.get_predictions(settings)		# classify test set
 

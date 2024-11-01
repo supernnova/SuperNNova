@@ -28,12 +28,15 @@ def launch_docker():
 
     cmd += " --gpus all " if "gpu" in args.image else ""
 
+    # Make sure that the 'SuperNNova' path used here matches what gets added to
+    # the entry_point script by the Dockerfile
     cmd += f" -v {snn_dir}:/u/home/SuperNNova" f" -v {args.dump_dir}:/u/home/snndump"
 
     if args.raw_dir:
         cmd += f" -v {args.raw_dir}:/u/home/raw"
 
     cmd += (
+        f" -e HOST_USERNAME={os.getlogin()} "
         f" -e HOST_USER_ID={os.getuid()} "
         f" -e HOST_USER_GID={os.getgid()} "
         f" rnn-{args.image}:latest"
