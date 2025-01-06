@@ -392,6 +392,10 @@ def load_HDF5_SNinfo(settings):
             dict_SNinfo[key] = hf[key][:]
     df_SNinfo = pd.DataFrame(dict_SNinfo)
 
+    df_SNinfo["SNID"] = df_SNinfo["SNID"].apply(
+        lambda x: x.decode("utf-8") if isinstance(x, bytes) else x
+    )
+
     return df_SNinfo
 
 

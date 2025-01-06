@@ -156,8 +156,10 @@ def fill_data_list(
 
         X_all = arr_data[i].reshape(-1, n_features)
         target = int(arr_target[i])
-        lc = str(arr_SNID[i])
-
+        try:
+            lc = str(arr_SNID[i].decode("utf-8"))
+        except Exception:
+            lc = str(arr_SNID[i])
         # Keep an unnormalized copy of the data (for test and display)
         X_ori = X_all.copy()[:, settings.idx_features]
 
@@ -244,8 +246,11 @@ def load_HDF5(settings, test=False):
             idxs_train = idxs_train[: int(settings.data_fraction * len(idxs_train))]
 
         n_features = hf["data"].attrs["n_features"]
-
-        training_features = " ".join(hf["features"][:][settings.idx_features])
+        try:
+            training_features = " ".join(hf["features"][:][settings.idx_features])
+        except Exception:
+            # in case of bytes
+            training_features = " ".join([x.decode("utf-8") for x in hf["features"][:]])
         lu.print_green("Features used", training_features)
 
         arr_data = hf["data"][:]
