@@ -9,7 +9,7 @@ packages = [
     { include = "supernnova", from = "python" },
     { include = "cli"}
 ]
-homepage = "https://github.com/ADACS-Australia/amoller_2023a"
+homepage = "https://github.com/supernnova/SuperNNova"
 documentation = "https://supernnova.readthedocs.io/en/latest/"
 
 [tool.poetry.dependencies]
@@ -24,7 +24,6 @@ pytest-cov = { version = "^4.1.0", optional = true }
 pytest-mock = { version = "^3.11.1", optional = true }
 black = { version = ">=22.10,<25.0", optional = true }
 ruff = { version = "^0.0.243", optional = true}
-sphinx-click = { version = "^4.4.0", optional = true }
 mypy = { version = "^1.1.1", optional = true }
 sphinx-copybutton = { version = "^0.5.1", optional = true }
 line-profiler = { version = "^4.1.2", optional = true }
@@ -48,7 +47,6 @@ docs = [
    "Sphinx",
    "sphinx-rtd-theme",
    "myst-parser",
-   "sphinx-click",
    "sphinx-copybutton",
 ]
 dev = ["pre-commit",

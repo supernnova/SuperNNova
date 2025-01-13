@@ -38,7 +38,7 @@ MNRAS, Volume 491, Issue 3, January 2020, Pages 4277–4293.](https://academic.o
 
 To reproduce [Möller & de Boissière, 2019 MNRAS](https://academic.oup.com/mnras/article-abstract/491/3/4277/5651173) switch to `paper` branch and build documentation.
 
-To reproduce the Dark Energy Survey analyses use commit `fcf8584b64974ef7a238eac718e01be4ed637a1d`:
+To reproduce the Dark Energy Survey analyses use commit `fcf8584b64974ef7a238eac718e01be4ed637a1d`. For more recent analyses of DES branch `SNANA_DES5yr` (should be PIPPIN backward compatible).
 - [Möller et al. 2022 MNRAS](https://ui.adsabs.harvard.edu/abs/2022MNRAS.514.5159M/abstract)
 - [Möller et al. 2024 MNRAS](https://ui.adsabs.harvard.edu/abs/2024MNRAS.533.2073M/abstract)
 - [Vincenzi et al. 2023 MNRAS](https://ui.adsabs.harvard.edu/abs/2023MNRAS.518.1106V/abstract)
@@ -53,4 +53,4 @@ To reproduce Fink analyses until 2024 use commit `fcf8584b64974ef7a238eac718e01b
 
 
 ### ADACS
-This package has been updated to a recent pytorch through the [ADACS Merit allocation program](https://adacs.org.au/merit-allocation-program) 2023-2024.
+This package has been updated to a recent pytorch and updated CI/CD through the [ADACS Merit allocation program](https://adacs.org.au/merit-allocation-program) 2023-2024.
