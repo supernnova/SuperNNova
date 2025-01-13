@@ -17,7 +17,7 @@ build:
       # Install dependencies with 'docs' dependency group.
       #   Installing everything is overkill, but I keep running 
       #   into this problem if I don't: https://github.com/python-poetry/poetry/issues/4493
-      - poetry install --all-extras 
+      - VIRTUAL_ENV=$READTHEDOCS_VIRTUALENV_PATH poetry install --all-extras --with docs
       # Generate the API documentation
       - cd docs ; make html
 sphinx:
