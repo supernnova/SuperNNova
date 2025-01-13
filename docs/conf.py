@@ -36,7 +36,6 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.viewcode",
     "sphinx.ext.todo",
-    "sphinx_click",
     "sphinx.ext.doctest",
     "sphinx.ext.mathjax",
     "sphinx.ext.autosectionlabel",
@@ -100,6 +99,7 @@ html_static_path = ["assets"]
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
+
 
 # Handler for excluding modules, classes, etc from documentation
 # Presently, this just passes through the default behavior
