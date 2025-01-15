@@ -7,7 +7,7 @@ build:
 
 python:
   install:
-    - requirements: requirements.txt  # If you have a requirements.txt file for dependencies
+    - requirements: env/conda_env_cpu_linux64.txt  # If you have a requirements.txt file for dependencies
     - extra_requirements:
         - tests
         - docs
