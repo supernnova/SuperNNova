@@ -7,12 +7,10 @@ build:
 
 python:
   install:
-    - method: pip
-      path: .
-    - requirements: requirements.txt  # Adjust the path if your requirements are elsewhere
+    - requirements: requirements.txt  # If you have a requirements.txt file for dependencies
     - extra_requirements:
         - tests
         - docs
 
 sphinx:
-  configuration: docs/conf.py  # Specify the path to your Sphinx configuration file
+  configuration: docs/conf.py  # Replace with the path to your Sphinx conf.py
