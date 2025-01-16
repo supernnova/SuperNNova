@@ -3,8 +3,6 @@ version: 2
 # Build environment configuration
 build:
   os: "ubuntu-22.04"  # Use a valid build image like 'ubuntu-22.04'
-  tools:
-    python: "3.6"  # Use Python 3.6 for building docs
 
 # Python installation configuration
 python:
