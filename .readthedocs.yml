@@ -1,18 +1,28 @@
-# .readthedocs.yml
 version: 2
+
+# Build environment configuration
 build:
-  os: "ubuntu-22.04"
+  image: ubuntu-22.04  # Use a valid build image like 'ubuntu-22.04'
   tools:
-    python: "3.6"
-  # Uncomment this and any needed lines below if your project has dependencies needed for install
-  # apt_packages:
-  #   - mpich
-  jobs:
-    post_create_environment:
-      # Install poetry
-      - pip install docs/requirements.txt
-    post_install:
-      # Generate the API documentation
-      - cd docs ; make html
+    python: "3.6"  # Use Python 3.6 for building docs
+
+# Python installation configuration
+python:
+  version: 3.6  # Set Python version to 3.6
+  install:
+    - method: pip
+      requirements: docs/requirements.txt  # Path to your requirements.txt file
+
+# Jobs section for custom steps
+jobs:
+  post_create_environment:
+    # Install dependencies after the environment is created
+    - pip install -r docs/requirements.txt  # Install the docs dependencies
+
+  post_install:
+    # Run the build command after installation
+    - cd docs && make html  # Build the documentation using Sphinx
+
+# Sphinx configuration
 sphinx:
-  configuration: docs/conf.py
+  configuration: docs/conf.py  # Path to your Sphinx configuration file
