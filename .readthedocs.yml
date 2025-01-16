@@ -3,20 +3,13 @@ version: 2
 # Build environment configuration
 build:
   os: "ubuntu-22.04"  # Use a valid build image like 'ubuntu-22.04'
+  tools:
+    python: "3.6"
   commands:
     # Commands to run during the build
     - pip install -r docs/requirements.txt  # Install dependencies from the requirements file
     - cd docs && make html  # Build the documentation using Sphinx
 
-
-# Python installation configuration
-python:
-  version: "3.6"  # Set Python version to 3.6
-  install:
-    - method: pip
-      requirements: docs/requirements.txt  # Path to your requirements.txt file
-
-# Jobs section for custom steps
 jobs:
   post_create_environment:
     # Install dependencies after the environment is created
