@@ -6,9 +6,9 @@
 
 [![Build Status](https://travis-ci.org/supernnova/SuperNNova.svg?branch=master)](https://travis-ci.org/supernnova/SuperNNova)
 
-```bash
-A new realease of SuperNNova is in the main branch. For DES-5yr analysis please use the branch SNANA_DES5yr (and any other analysis using the syntax: python run.py)
-```
+    A new realease of SuperNNova is in the main branch. 
+    For DES-5yr analysis please use the branch SNANA_DES5yr 
+    (and any other analysis using the syntax: python run.py)
 
 ### What is SuperNNova (SNN)
 
