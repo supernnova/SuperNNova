@@ -1,14 +1,24 @@
-version: 2
+name: Build and Deploy Documentation
 
-build:
-  os: ubuntu-22.04
-  tools:
-    python: "3.9"
+jobs:
+  build-docs:
+    runs-on: ubuntu-latest
 
-python:
-  install:
-  - method: pip
-    path: .
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-sphinx:
-  configuration: docs/conf.py  # Replace with the path to your Sphinx conf.py
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.6.8"  # Match your Read the Docs Python version
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt  # Or point to your `docs/requirements.txt`
+
+    - name: Build documentation
+      run: |
+        cd docs
+        sphinx-build -b html . _build/html
