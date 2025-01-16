@@ -1,15 +1,14 @@
 version: 2
 
-# Build environment configuration
 build:
-  os: "ubuntu-22.04"  # Use a valid build image like 'ubuntu-22.04'
+  os: ubuntu-22.04
   tools:
-    python: "3.6"
-  commands:
-    # Commands to run during the build
-    - pip install -r docs/requirements.txt  # Install dependencies from the requirements file
-    - cd docs && make html  # Build the documentation using Sphinx
+    python: "3.11"
 
-# Sphinx configuration
+python:
+  install:
+    - requirements: docs/requirements.txt
+
 sphinx:
-  configuration: docs/conf.py  # Path to your Sphinx configuration file
+  configuration: docs/conf.py
+  builder: html  # Optional - 'html' is actually the default
