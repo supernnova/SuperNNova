@@ -1,24 +1,17 @@
-name: Build and Deploy Documentation
+version: 2
 
-jobs:
-  build-docs:
-    runs-on: ubuntu-latest
+build:
+  image: ubuntu-22.04  # Valid build image
 
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+python:
+  version: 3.6  # Match your project's Python version
+  install:
+    - method: pip
+      requirements: requirements.txt  # Or docs/requirements.txt if used
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.6.8"  # Match your Read the Docs Python version
+sphinx:
+  configuration: docs/conf.py  # Adjust the path to your conf.py
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt  # Or point to your `docs/requirements.txt`
-
-    - name: Build documentation
-      run: |
-        cd docs
-        sphinx-build -b html . _build/html
+# Optional: Conda configuration if needed
+conda:
+  file: docs/conda_env_cpu_linux64.yml  # If using Conda, specify your environment file
