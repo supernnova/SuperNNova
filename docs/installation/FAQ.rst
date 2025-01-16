@@ -11,17 +11,17 @@ SuperNNova is a framework for lightcurve classification which uses supervised le
 
 - **Do you have a paper describing SuperNNova? How can I cite you?**
 
-The paper has been acccepted by `MNRAS`_. A copy of the paper can be found here `ArXiv`_. 
+The paper has been published by `MNRAS`_. A copy of the paper can be found here `ArXiv`_. 
 
 - **How can I install it?**
 
-You can either ``clone`` our `GitHub`_ or use ``pip`` for modular installation. Beware, the supported version of GitHub repository is this `GitHub`_!!!! (previous version was hosted in a different webpage).
+You can either ``clone`` our `GitHub`_ or use ``pip`` for modular installation (not supported in this version, see `main` branch). Beware, the supported version of GitHub repository is this `GitHub`_!!!! (previous version was hosted in a different webpage).
 
 - **What data do I need?**
 
 You only need lightcurves (photometric time-series) to use SuperNNova. Additional information can be added as well. E.g. we used supernova host-galaxy redshifts in the paper.
 
-- **Is the data used in the paper publicly available?**
+- **Is the data used in the paper 2020 publicly available?**
 
 Yes it is! `SuperNNovaSimulations`_
 We want to foster reproducibility so you can copy the data and reproduce all our experiments with ``run_paper.py`` in the ``paper`` branch. Beware, it will take while!
@@ -36,11 +36,11 @@ First, it is open source, so you can modify it for your science goal or just see
 
 - **Can I use SuperNNova for my classification problem?**
 
-Please do! But beware: you need to have a large amount of lightcurves (simulated or data) per type of event you are trying to classify, otherwise performance is pretty poor.
+Please do! But beware: you need to have a large amount of lightcurves (simulated or data) per type of event you are trying to classify, otherwise performance is pretty poor. We recommend using the `main` branch which is properly mantained.
 
 - **How can I use SuperNNova for my classification problem?**
 
-It may require a little bit of code modification depending on your data. You can load data from SNANA formats (``.FITS`` and ``FITRES``, the latter is an ascii file) or ``.csv`` files (like the one from the Kaggle challenge, PlastiCC). Observations are grouped per night, so if you are looking for fast transients, you may need to create your own data pipeline or modify SuperNNova time grouping. Contact us if you have questions anais.moller@clermont.in2p3.fr and please report any issues!
+It may require a little bit of code modification depending on your data. You can load data from SNANA formats (``.FITS`` and ``FITRES``, the latter is an ascii file) or ``.csv`` files (like the one from the Kaggle challenge, PlastiCC). Observations are grouped per night, so if you are looking for fast transients, you may need to create your own data pipeline or modify SuperNNova time grouping. Contact us if you have questions amoller@swin.edu.au and please report any issues!
 
 
 Technical questions

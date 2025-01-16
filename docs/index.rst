@@ -8,10 +8,11 @@ Welcome to SuperNNova's documentation!
    :maxdepth: 1
    :caption: Getting started
 
+   !!! Beware, this is a frozen branch for reproducibility. It is not actively mantained. For the latest version, please visit the main branch.
+
    installation/system.rst
    installation/python.rst
    installation/five_minute_guide.rst
-   installation/five_minute_guide_module.rst
    installation/onthefly.rst
    installation/FAQ.rst
 
@@ -59,7 +60,7 @@ Welcome to SuperNNova's documentation!
 .. toctree::
    :glob:
    :maxdepth: 1
-   :caption: Paper reproduction
+   :caption: Paper reproduction (Möller & de Boissière 2020)
 
    paper/index.rst
    paper/paper.rst

@@ -7,8 +7,8 @@ Quickstart guide (GitHub)
 Welcome to SuperNNova!
 
 This is a quick start guide so you can start testing our framework. 
-If you want to install SuperNNova as a module, please take a look at :ref:`Start_module`.
 
+!!! If you want to install SuperNNova as a module, you ened to use the main branch.
 
 Installation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
