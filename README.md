@@ -22,7 +22,7 @@ Please include the full citation if you use this material in your research: [A M
 MNRAS, Volume 491, Issue 3, January 2020, Pages 4277–4293.](https://academic.oup.com/mnras/article-abstract/491/3/4277/5651173)
 
 ### Read the documentation
-[https://supernnova.readthedocs.io](https://supernnova.readthedocs.io/en/latest/)
+[https://supernnova.readthedocs.io](https://supernnova.readthedocs.io/latest/)
 
 
 ### Installation
@@ -30,7 +30,7 @@ Clone this repository (preferred)
 ```bash
 git clone https://github.com/supernnova/supernnova.git
 ```
-and configure environment using this [documentation](https://supernnova.readthedocs.io/en/latest/installation/python.html)
+and configure environment using this [documentation](https://supernnova.readthedocs.io/latest/installation/five_minute_guide.html)
 
 
 ### Read the papers
