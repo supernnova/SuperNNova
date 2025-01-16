@@ -17,14 +17,14 @@ sys.path.insert(0, os.path.abspath("../python"))
 # -- Project information -----------------------------------------------------
 
 project = "supernnova"
-copyright = "2023, Anais Moller and Thibault de Boissiere"
+copyright = "2025, Anais Moller and Thibault de Boissiere"
 author = "Anais Moller and Thibault de Boissiere"
 
 # The short X.Y version
-version = "0.0.0-dev"
+version = "v3.0.19"
 
 # The full version, including alpha/beta/rc tags
-release = "0.0.0-dev"
+release = "v3.0.19"
 
 
 # -- General configuration ---------------------------------------------------
