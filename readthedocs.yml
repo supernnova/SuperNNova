@@ -13,5 +13,5 @@ sphinx:
   configuration: docs/conf.py  # Adjust the path to your conf.py
 
 # Optional: Conda configuration if needed
-conda:
-  file: docs/conda_env_cpu_linux64.yml  # If using Conda, specify your environment file
+# conda:
+#   file: docs/conda_env_cpu_linux64.yml  # If using Conda, specify your environment file
