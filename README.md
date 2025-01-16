@@ -6,15 +6,17 @@
 
 [![Build Status](https://travis-ci.org/supernnova/SuperNNova.svg?branch=master)](https://travis-ci.org/supernnova/SuperNNova)
 
+```bash
+A new realease of SuperNNova is in the main branch. For DES-5yr analysis please use the branch SNANA_DES5yr (and any other analysis using the syntax: python run.py)
+```
 
 ### What is SuperNNova (SNN)
 
-SuperNNova is an open-source photoemtric time-series classification framework.
+SuperNNova is an open-source photometric time-series classification framework.
 
 The framework includes different RNN architectures (LSTM, GRU, Bayesian RNNs) and can be trained with simulations in `.csv` and `SNANA FITS` format. SNN is part of the [PIPPIN](https://github.com/dessn/Pippin) end-to-end cosmology pipeline.
 
 You can train your own model for time-series classification (binary or multi-class) using photometry and additional features.
-
 
 Please include the full citation if you use this material in your research: [A Möller and T de Boissière,
 MNRAS, Volume 491, Issue 3, January 2020, Pages 4277–4293.](https://academic.oup.com/mnras/article-abstract/491/3/4277/5651173)
