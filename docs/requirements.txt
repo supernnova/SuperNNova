@@ -1,0 +1,4 @@
+# requirements for docs build only
+sphinx
+sphinx-rtd-theme
+myst-parser  # For Markdown support
