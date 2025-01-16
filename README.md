@@ -8,8 +8,11 @@
 
 
 ### Read the documentation
-For the main branch:
-[https://supernnova.readthedocs.io](https://supernnova.readthedocs.io/en/latest/)
+
+This is NOT the current, mantained branch. This branch has been used for the Dark Enery Survey 5-year analysis.
+
+Documentation for this branch:
+[https://supernnova.readthedocs.io/snana_des5yr](https://supernnova.readthedocs.io/snana_des5yr/en/latest/)
 
 The paper branch differs slightly from the master. Take a look to "changelog_paper_to_new_branch" or [Build the docs for this branch](#docs).
 
@@ -32,15 +35,16 @@ MNRAS, Volume 491, Issue 3, January 2020, Pages 4277–4293.](https://academic.o
 
 
 ## Table of contents
-1. [Repository overview](#overview)
-2. [Getting Started](#start)
-    1. [With Conda](#conda)
-    2. [With Docker](#docker)
-3. [Usage](#usage)
-3. [Reproduce paper](#paper)
-4. [Pipeline Description](#pipeline)
-5. [Running tests](#test)
-6. [Build the docs](#docs)
+- [Table of contents](#table-of-contents)
+- [Repository overview ](#repository-overview-)
+- [Getting started ](#getting-started-)
+  - [With Conda ](#with-conda-)
+  - [With Docker ](#with-docker-)
+- [Usage ](#usage-)
+- [Reproduce paper results ](#reproduce-paper-results-)
+- [General pipeline description ](#general-pipeline-description-)
+- [Running tests with py.test ](#running-tests-with-pytest-)
+- [Build docs ](#build-docs-)
 
 ## Repository overview <a name="overview"></a>
 
@@ -98,23 +102,6 @@ When cloning this repository:
 
     # Train a RandomForest
     python run.py --train_rf --dump_dir tests/dump
-
-When using pip, a full example is [https://supernnova.readthedocs.io](https://supernnova.readthedocs.io/en/latest/)
-
-    # Python
-    import supernnova.conf as conf
-    from supernnova.data import make_dataset
-
-    # get config args
-    args =  conf.get_args()
-
-    # create database
-    args.data = True            # conf: making new dataset
-    args.dump_dir = "tests/dump"        # conf: where the dataset will be saved
-    args.raw_dir = "tests/raw"      # conf: where raw photometry files are saved 
-    args.fits_dir = "tests/fits"        # conf: where salt2fits are saved 
-    settings = conf.get_settings(args)  # conf: set settings
-    make_dataset.make_dataset(settings) # make dataset
 
 ## Reproduce paper results <a name="paper"></a>
 Please change to branch ``paper``:
