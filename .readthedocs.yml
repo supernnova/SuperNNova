@@ -8,7 +8,7 @@ build:
 
 # Python installation configuration
 python:
-  version: 3.6  # Set Python version to 3.6
+  version: "3.6"  # Set Python version to 3.6
   install:
     - method: pip
       requirements: docs/requirements.txt  # Path to your requirements.txt file
