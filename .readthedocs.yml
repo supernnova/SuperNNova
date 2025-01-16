@@ -3,6 +3,11 @@ version: 2
 # Build environment configuration
 build:
   os: "ubuntu-22.04"  # Use a valid build image like 'ubuntu-22.04'
+  commands:
+    # Commands to run during the build
+    - pip install -r docs/requirements.txt  # Install dependencies from the requirements file
+    - cd docs && make html  # Build the documentation using Sphinx
+
 
 # Python installation configuration
 python:
