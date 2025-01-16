@@ -10,15 +10,6 @@ build:
     - pip install -r docs/requirements.txt  # Install dependencies from the requirements file
     - cd docs && make html  # Build the documentation using Sphinx
 
-jobs:
-  post_create_environment:
-    # Install dependencies after the environment is created
-    - pip install -r docs/requirements.txt  # Install the docs dependencies
-
-  post_install:
-    # Run the build command after installation
-    - cd docs && make html  # Build the documentation using Sphinx
-
 # Sphinx configuration
 sphinx:
   configuration: docs/conf.py  # Path to your Sphinx configuration file
