@@ -119,7 +119,11 @@ class ExperimentSettings:
             self.all_features = hf["features"][:].astype(str)
 
             self.non_redshift_features = [
-                f for f in self.all_features if "HOSTGAL" not in f
+                f
+                for f in self.all_features
+                if "FLUX" in f
+                or f in self.list_filters_combination
+                or "delta_time" in f
             ]
 
             # Optionally add redshift
@@ -141,6 +145,7 @@ class ExperimentSettings:
                     for k in self.additional_train_var
                     if k not in self.training_features
                 ]
+            print(self.training_features)
 
     def _save_to_json(self, save_to_dir):
         d_tmp = {}
