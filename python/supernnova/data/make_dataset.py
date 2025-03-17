@@ -136,6 +136,8 @@ def build_traintestval_splits(settings):
         sys.exit(1)
     # Merge left on df_photo
     df = df_photo.merge(df_salt[["SNID", "is_salt"]], on=["SNID"], how="left")
+    # Drop duplicates in case of multiple entries for the same SNID
+    df = df.drop_duplicates(subset="SNID")
     # Some curves are in photo and not in salt, these curves have is_salt = NaN
     # We replace the NaN with 0
     df["is_salt"] = df["is_salt"].fillna(0).astype(int)
@@ -146,7 +148,6 @@ def build_traintestval_splits(settings):
     # Save a dataframe to record train/test/val split for
     # binary, ternary and all-classes classification
     for dataset in ["saltfit", "photometry"]:
-        # for nb_classes in list(set([2, len(settings.sntypes.keys())])):
         for nb_classes in list(
             set([2, len(set([k for k in dict(settings.sntypes).values()]))])
         ):
@@ -164,14 +165,12 @@ def build_traintestval_splits(settings):
                 g[settings.sntype_var].apply(lambda x: list(np.unique(x))).to_dict()
             )
             print(f"target {settings.sntype_var}")
-            # settings.data_types_training = [
-            #     f"{k} {settings.sntypes[v[0]]} {[int(dt) for dt in dic_targets[k]]}"
-            #     for k, v in dic_targets.items()
-            # ]
             settings.data_types_training = [
-                f"{k} {settings.sntypes[v[0]]} {[int(dt) for dt in dic_targets[k]]}"
-                if v[0] in settings.sntypes.keys()
-                else f"{k} nonIa {[int(dt) for dt in dic_targets[k]]}"
+                (
+                    f"{k} {settings.sntypes[v[0]]} {[int(dt) for dt in dic_targets[k]]}"
+                    if v[0] in settings.sntypes.keys()
+                    else f"{k} other {[int(dt) for dt in dic_targets[k]]}"
+                )
                 for k, v in dic_targets.items()
             ]
             print(settings.data_types_training)
@@ -251,7 +250,6 @@ def build_traintestval_splits(settings):
             idxs_train = np.where(df.SNID.isin(SNID_train))[0]
             idxs_val = np.where(df.SNID.isin(SNID_val))[0]
             idxs_test = np.where(df.SNID.isin(SNID_test))[0]
-
             # Create a new column that will state to which data split
             # a given SNID will be assigned
             # train: 0, val: 1, test:2 others: -1
@@ -291,7 +289,6 @@ def build_traintestval_splits(settings):
                     class_fraction = f"{100 *(n_samples/total_samples):.2g}%"
                     class_fraction_str = logging_utils.str_to_yellowstr(class_fraction)
                     str_ += f"Class {class_str}: {class_fraction_str} samples "
-
                 list_stat.append(
                     [
                         dataset,
@@ -462,9 +459,11 @@ def process_single_FITS(file_path, settings):
         mask = df["MJD"] != -777.00
         df["window_delta_time"] = df["MJD"] - df[settings.photo_window_var]
         df.loc[mask, "window_time_cut"] = df["window_delta_time"].apply(
-            lambda x: True
-            if (x > 0 and x < settings.photo_window_max)
-            else (True if (x <= 0 and x > settings.photo_window_min) else False)
+            lambda x: (
+                True
+                if (x > 0 and x < settings.photo_window_max)
+                else (True if (x <= 0 and x > settings.photo_window_min) else False)
+            )
         )
         df = df[df["window_time_cut"] is True]
     # quality
@@ -473,10 +472,14 @@ def process_single_FITS(file_path, settings):
         tmp = len(df.SNID.unique())
         tmp2 = len(df)
         df["phot_reject"] = df[settings.phot_reject].apply(
-            lambda x: False
-            if len(set(settings.phot_reject_list).intersection(set(powers_of_two(x))))
-            > 0
-            else True
+            lambda x: (
+                False
+                if len(
+                    set(settings.phot_reject_list).intersection(set(powers_of_two(x)))
+                )
+                > 0
+                else True
+            )
         )
         df = df[df["phot_reject"] is True]
 
@@ -604,9 +607,11 @@ def process_single_csv(file_path, settings):
         mask = df["MJD"] != -777.00
         df["window_delta_time"] = df["MJD"] - df[settings.photo_window_var]
         df.loc[mask, "window_time_cut"] = df["window_delta_time"].apply(
-            lambda x: True
-            if (x > 0 and x < settings.photo_window_max)
-            else (True if (x <= 0 and x > settings.photo_window_min) else False)
+            lambda x: (
+                True
+                if (x > 0 and x < settings.photo_window_max)
+                else (True if (x <= 0 and x > settings.photo_window_min) else False)
+            )
         )
         df = df[df["window_time_cut"] is True]
     # quality
@@ -615,10 +620,14 @@ def process_single_csv(file_path, settings):
         tmp = len(df.SNID.unique())
         tmp2 = len(df)
         df["phot_reject"] = df[settings.phot_reject].apply(
-            lambda x: False
-            if len(set(settings.phot_reject_list).intersection(set(powers_of_two(x))))
-            > 0
-            else True
+            lambda x: (
+                False
+                if len(
+                    set(settings.phot_reject_list).intersection(set(powers_of_two(x)))
+                )
+                > 0
+                else True
+            )
         )
         df = df[df["phot_reject"] is True]
 
