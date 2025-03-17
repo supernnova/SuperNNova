@@ -243,6 +243,15 @@ def load_HDF5(settings, test=False):
         training_features_data = hf["features"][:].astype(str)
         training_features = settings.training_features
 
+        # DES5YR backward compatibility
+        # not very robust
+        if not set(training_features) <= set(training_features_data) and any(
+            "DES-" in k for k in training_features_data
+        ):
+            training_features_data = [
+                k.replace("DES-", "") for k in training_features_data
+            ]
+
         # check if all model features are in db
         assert set(training_features) <= set(training_features_data)
         lu.print_green("Features used", " ".join(training_features))
