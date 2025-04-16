@@ -253,6 +253,33 @@ def load_HDF5(settings, test=False):
             training_features = " ".join([x.decode("utf-8") for x in hf["features"][:]])
         lu.print_green("Features used", training_features)
 
+        # check that we have the same encoding in data and model
+        db_onehot = [
+            feat
+            for feat in training_features.split()
+            if not any(skip in feat for skip in ["FLUXCAL", "HOSTGAL", "delta"])
+        ]
+        missing = []
+        misarranged = []
+
+        for db_k in db_onehot:
+            if db_k in settings.list_filters_combination:
+                continue
+            elif any(
+                sorted(db_k) == sorted(alt) for alt in settings.list_filters_combination
+            ):
+                misarranged.append(db_k)
+            else:
+                missing.append(db_k)
+        if misarranged:
+            lu.print_red(
+                f"Check Database was created with same order than Model \n model --list_filters={settings.list_filters}"
+            )
+            lu.print_red(f"DB has misarranged {misarranged}")
+            raise ValueError(
+                f"One hot encoding in: \n Database {db_onehot} \n Model {settings.list_filters_combination}"
+            )
+
         arr_data = hf["data"][:]
         if test:
             # ridiculous failsafe in case we have different classes in dataset/model
