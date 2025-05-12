@@ -223,6 +223,8 @@ class ExperimentSettings:
             i
             for (i, f) in enumerate(self.all_features)
             if f in self.training_features_to_normalize
+            or f.replace("DES-", "")
+            in self.training_features_to_normalize  # Horrible fix for new SNANA format
         ]
 
         self.d_feat_to_idx = {f: i for i, f in enumerate(self.all_features)}
