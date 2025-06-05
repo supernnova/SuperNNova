@@ -8,6 +8,7 @@ from pathlib import Path
 import matplotlib.pylab as plt
 from matplotlib import gridspec
 from matplotlib.lines import Line2D
+from matplotlib.ticker import FixedLocator
 from astropy.cosmology import FlatLambdaCDM
 from sklearn.metrics import confusion_matrix
 
@@ -425,6 +426,7 @@ def multiplot_violin_paper(df, fname, settings):
     g.set_ylim(20, 28)
     g.spines["right"].set_visible(False)
     g.spines["top"].set_visible(False)
+    g.xaxis.set_major_locator(FixedLocator([0, 1]))
     g.set_xticklabels(["Ia", "nonIa"], fontsize=14)
 
     g = sns.violinplot(
@@ -445,6 +447,7 @@ def multiplot_violin_paper(df, fname, settings):
     g.spines["right"].set_visible(False)
     g.spines["top"].set_visible(False)
     g.spines["left"].set_visible(False)
+    g.xaxis.set_major_locator(FixedLocator([0, 1]))
     g.set_xticklabels(["Ia", "nonIa"], fontsize=14)
     plt.setp(axes[1].get_yticklabels(), visible=False)
 
@@ -467,6 +470,7 @@ def multiplot_violin_paper(df, fname, settings):
     g.spines["right"].set_visible(False)
     g.spines["top"].set_visible(False)
     g.spines["left"].set_visible(False)
+    g.xaxis.set_major_locator(FixedLocator([0, 1]))
     g.set_xticklabels(["Ia", "nonIa"], fontsize=14)
     plt.setp(axes[2].get_yticklabels(), visible=False)
 
@@ -488,6 +492,7 @@ def multiplot_violin_paper(df, fname, settings):
     g.spines["right"].set_visible(False)
     g.spines["top"].set_visible(False)
     g.spines["left"].set_visible(False)
+    g.xaxis.set_major_locator(FixedLocator([0, 1]))
     g.set_xticklabels(["Ia", "nonIa"], fontsize=14)
     plt.setp(axes[3].get_yticklabels(), visible=False)
 
@@ -504,7 +509,11 @@ def multiplot_violin_paper(df, fname, settings):
     g.set_ylabel("simulated redshift", fontsize=14)
     g.set_xlabel("")
     g.set_ylim(0, 1.0)
-    g.set_xticklabels([a for a in settings.sntypes.values()], fontsize=14)
+    # Extract labels in consistent order (e.g., sorted by key)
+    tick_vals = list(sorted(settings.sntypes.keys()))
+    tick_labels = [settings.sntypes[k] for k in tick_vals]
+    g.set_xticks(tick_vals)
+    g.set_xticklabels(tick_labels, fontsize=14)
     g.xaxis.set_tick_params(labelsize=14)
     g.yaxis.set_tick_params(labelsize=14)
     g.legend_.remove()

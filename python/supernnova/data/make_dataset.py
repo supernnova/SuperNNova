@@ -345,6 +345,12 @@ def process_single_FITS(file_path, settings):
         if settings.phot_reject
         else df[keep_col].copy()
     )
+    # filters have a trailing white space which we remove and convert to string
+    df.FLT = df.FLT.apply(
+        lambda x: (
+            x.decode("utf-8").rstrip() if isinstance(x, bytes) else str(x).rstrip()
+        )
+    )
     # Load the companion HEAD file
     header = Table.read(file_path.replace("PHOT", "HEAD"), format="fits")
     df_header = header.to_pandas()
@@ -418,7 +424,6 @@ def process_single_FITS(file_path, settings):
                 raise Exception
         else:
             if settings.photo_window_files[0] == "HEAD":
-
                 # if using a variable from header file
                 if settings.photo_window_var in df_header.keys():
                     pass
@@ -426,9 +431,15 @@ def process_single_FITS(file_path, settings):
                     logging_utils.print_red(
                         "Provide a valid peak key in header or a photo_window_file"
                     )
+                    logging_utils.print_red(
+                        f"Currently {settings.photo_window_var} {settings.photo_window_files}"
+                    )
             else:
                 logging_utils.print_red(
                     "Provide a valid peak key in header or a photo_window_file"
+                )
+                logging_utils.print_red(
+                    f"Currently {settings.photo_window_var} {settings.photo_window_files}"
                 )
     #############################################
     # Compute SNID for df and join with df_header
@@ -465,7 +476,7 @@ def process_single_FITS(file_path, settings):
                 else (True if (x <= 0 and x > settings.photo_window_min) else False)
             )
         )
-        df = df[df["window_time_cut"] is True]
+        df = df[df["window_time_cut"]]
     # quality
     if settings.phot_reject:
         # only valid for powers of two combinations
@@ -481,7 +492,7 @@ def process_single_FITS(file_path, settings):
                 else True
             )
         )
-        df = df[df["phot_reject"] is True]
+        df = df[df["phot_reject"]]
 
         if settings.debug:
             logging_utils.print_blue("Phot reject", file_path)
@@ -492,10 +503,15 @@ def process_single_FITS(file_path, settings):
     # Miscellaneous data processing
     #############################################
     df = df[keep_col + keep_col_header].copy()
-    # filters have a trailing white space which we remove
-    df.FLT = df.FLT.apply(lambda x: x.rstrip()).values.astype(str)
+
     # keep only filters we are going to use for classification
     df = df[df["FLT"].isin(settings.list_filters)]
+    if len(df) < 1:
+        logging_utils.print_red(
+            "No light curve left after filtering by filters, check your settings"
+        )
+        raise ValueError
+
     # Drop the delimiter lines
     df = df[df.MJD != -777.000]
     # Reset the index (it is no longer continuous after dropping lines)
@@ -504,7 +520,6 @@ def process_single_FITS(file_path, settings):
     df = data_utils.compute_delta_time(df)
     # Remove rows post large delta time in the same light curve(delta_time > 150)
     # df = data_utils.remove_data_post_large_delta_time(df)
-
     #############################################
     # Add class and dataset information
     #############################################
@@ -537,6 +552,7 @@ def process_single_FITS(file_path, settings):
     # getting SNIDs for SNe with Host_spec
     host_spe = df[df["HOSTGAL_SPECZ"] > 0]["SNID"].unique().tolist()
 
+    print(len(df), "rows in preprocessed file", file_path)
     return host_spe
 
 
@@ -955,7 +971,6 @@ def make_dataset(settings):
     Args:
         settings (ExperimentSettings): controls experiment hyperparameters
     """
-
     # Clean up data folders
     if settings.overwrite is True:
         for folder in [settings.preprocessed_dir, settings.processed_dir]:

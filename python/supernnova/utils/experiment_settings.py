@@ -80,10 +80,10 @@ class ExperimentSettings:
             # f"{self.raw_dir}",
             # f"{self.fits_dir}",
             f"{self.dump_dir}/explore",
-            f"{self.dump_dir}/stats",
+            # f"{self.dump_dir}/stats",
             f"{self.dump_dir}/figures",
             f"{self.dump_dir}/lightcurves",
-            f"{self.dump_dir}/latex",
+            # f"{self.dump_dir}/latex",
             f"{self.dump_dir}/processed",
             f"{self.dump_dir}/preprocessed",
             f"{self.dump_dir}/models",
@@ -145,7 +145,6 @@ class ExperimentSettings:
                     for k in self.additional_train_var
                     if k not in self.training_features
                 ]
-            print(self.training_features)
 
     def _save_to_json(self, save_to_dir):
         d_tmp = {}

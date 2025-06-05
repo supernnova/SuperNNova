@@ -1,3 +1,4 @@
+import os
 import sys
 import json
 import yaml
@@ -119,6 +120,7 @@ helps = {
     "performance": PERFORMANCE_OPTIONS,
 }
 
+
 # customize help, so it only print out relevant to the provide command
 def generate_command_help(parser, command_arg):
     """Generate a help message for specific command options."""
@@ -167,6 +169,13 @@ class CustomHelpAction(argparse.Action):
 
 def absolute_path(path):
     return str(Path(path).resolve())
+
+
+def absolute_path_or_HEAD(value):
+    if value == "HEAD":
+        return value
+    else:
+        return os.path.abspath(value)
 
 
 def get_args(command_arg):
@@ -342,8 +351,8 @@ def get_args(command_arg):
     parser.add_argument(
         "--photo_window_files",
         nargs="+",
-        type=absolute_path,
-        help="Path to fits with PEAKMJD estimation",  # test it
+        type=absolute_path_or_HEAD,
+        help="Path(s) to fits files with PEAKMJD estimation or 'HEAD'",
     )
 
     parser.add_argument(
@@ -615,10 +624,8 @@ def get_settings(command_arg, args=None):
         args = get_args(command_arg)
 
     # Initialize a settings instance
-
     settings = experiment_settings.ExperimentSettings(args, action=command_arg)
     assert args.rho_scale_lower >= args.rho_scale_upper
-
     return settings
 
 
