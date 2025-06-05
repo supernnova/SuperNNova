@@ -254,6 +254,15 @@ def load_HDF5(settings, test=False):
 
         # check if all model features are in db
         assert set(training_features) <= set(training_features_data)
+        # check if all db features are in configuration
+        if not set(settings.training_features_to_normalize) <= set(training_features):
+            lu.print_red("Some features in the model are not in the configuration")
+            lu.print_red("Database does not contain all training features")
+            print("Database features:", training_features_data)
+            print("Training features:", settings.training_features_to_normalize)
+            lu.print_red(">>> Hint: check your provided --list_filters")
+            raise ValueError
+
         lu.print_green("Features used", " ".join(training_features))
 
         try:
