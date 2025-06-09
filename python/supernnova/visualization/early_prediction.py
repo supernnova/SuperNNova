@@ -95,7 +95,7 @@ def plot_predictions(
 ):
 
     plt.figure(figsize=(15, 10))
-    gs = gridspec.GridSpec(2, 1)
+    gs = gridspec.GridSpec(1 + len(d_pred.keys()), 1)
     # Plot the lightcurve
     ax = plt.subplot(gs[0])
     for n, flt in enumerate(d_plot.keys()):
@@ -133,21 +133,27 @@ def plot_predictions(
         ):
             ax.plot([peak_MJD, peak_MJD], ylim, "k--", label="Peak MJD")
 
-    # Plot the classifications
-    ax = plt.subplot(gs[1])
-    ax.set_ylim(0, 1)
+    d_keys = {
+        "vanilla photometry": "LSTM",
+        "variational photometry": "MC Dropout",
+        "swag photometry": "SWAG",
+    }
 
-    for idx, key in enumerate(d_pred.keys()):
+    # Plot the classifications
+    for idx, key in enumerate(["vanilla photometry", "variational photometry", "swag photometry"]):
+        
+        ax = plt.subplot(gs[idx + 1])
+        ax.set_ylim(0, 1)
 
         for class_prob in range(settings.nb_classes):
-            color = ALL_COLORS[class_prob + idx * settings.nb_classes]
+            color = ALL_COLORS[class_prob]
             linestyle = LINE_STYLE[class_prob]
             label = du.sntype_decoded(class_prob, settings)
             if class_prob != 0 and settings.nb_classes < 3:
                 label = "non-Ia"
 
             if len(d_pred) > 1:
-                label += f" {key}"
+                label += f" {d_keys[key]}"
 
             ax.plot(
                 arr_time,
@@ -171,17 +177,17 @@ def plot_predictions(
                 alpha=0.2,
             )
 
-    ax.set_xlabel("Time (MJD)")
-    ax.set_ylabel("classification probability")
-    # Add PEAKMJD
-    if (
-        OOD is None
-        and not settings.data_testing
-        and arr_time.min() < peak_MJD
-        and peak_MJD < arr_time.max()
-    ):
-        ax.plot([peak_MJD, peak_MJD], [0, 1], "k--", label="Peak MJD")
-    ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.0)
+        ax.set_xlabel("Time (MJD)")
+        ax.set_ylabel("classification probability")
+        # Add PEAKMJD
+        if (
+            OOD is None
+            and not settings.data_testing
+            and arr_time.min() < peak_MJD
+            and peak_MJD < arr_time.max()
+        ):
+            ax.plot([peak_MJD, peak_MJD], [0, 1], "k--", label="Peak MJD")
+        ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.0)
 
     prefix = f"OOD_{OOD}_" if OOD is not None else ""
 
