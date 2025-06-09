@@ -395,6 +395,7 @@ def train_swag(settings):
     # Prepare for GPU if required
     if settings.use_cuda:
         rnn.cuda()
+        swag_rnn.cuda()
         criterion.cuda()
 
     # Keep track of losses for plotting
