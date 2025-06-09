@@ -530,6 +530,9 @@ def train_swag_finetune(settings):
     rnn = tu.get_model(settings, len(settings.training_features))
     
     # Load pretrained model
+    lu.print_green(
+        f"Loading pretrained SWAG model from {settings.swag_pretrained_path}"
+    )
     rnn.load_state_dict(torch.load(settings.swag_pretrained_path, map_location="cpu"))
     
     criterion = nn.CrossEntropyLoss()
@@ -633,6 +636,7 @@ def train_swag_finetune(settings):
                     f"{settings.rnn_dir}/{settings.pytorch_model_name}.pt",
                 )
 
+        lu.print_green("Updating SWAG estimators")
         swag_rnn.update_parameters(rnn)
 
         if epoch >= 2:
