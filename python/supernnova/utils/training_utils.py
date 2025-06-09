@@ -336,8 +336,14 @@ def get_model(settings, input_size):
         rnn = bayesian_rnn.BayesianRNN
     elif settings.model == "bayesian_2":
         rnn = bayesian_rnn_2.BayesianRNN
+    elif settings.model == "swag":
+        rnn = vanilla_rnn.VanillaRNN
 
     rnn = rnn(input_size, settings)
+    
+    if settings.model == "swag":
+        # Wrap the model in SwagModel if swag is True
+        rnn = SwagModel( rnn)
 
     if not settings.no_dump:
         print(rnn)

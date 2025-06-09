@@ -34,3 +34,4 @@ plots_paper/*
 script.sh
 mnist.npz
 sandbox/data
+snndump

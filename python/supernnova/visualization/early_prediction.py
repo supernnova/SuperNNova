@@ -49,6 +49,17 @@ def get_predictions(settings, dict_rnn, X, target, OOD=None):
                 out = torch.cat(list_out, dim=0)
                 # Apply softmax to obtain a proba
                 pred_proba = nn.functional.softmax(out, dim=-1).data.cpu().numpy()
+            elif "swag" in model_type:
+
+                list_out = []
+                # Loop over num samples to obtain predictions
+                for i in range(settings.num_inference_samples):
+                    sample_model = rnn.sample()
+                    list_out.append(sample_model(X_slice.expand(new_size)))
+                out = torch.cat(list_out, dim=0)
+                # Apply softmax to obtain a proba
+                pred_proba = nn.functional.softmax(out, dim=-1).data.cpu().numpy()
+
             else:
                 out = rnn(X_slice.expand(new_size))
                 # Apply softmax to obtain a proba
@@ -235,9 +246,24 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
             settings.model = "vanilla"
         if "bayesian" in model_file:
             settings.model = "bayesian"
+        if "swag" in model_file:
+            settings.model = "swag"
         rnn = tu.get_model(settings, len(settings.training_features))
         rnn_state = torch.load(model_file, map_location=lambda storage, loc: storage)
-        rnn.load_state_dict(rnn_state)
+        if isinstance(rnn_state, torch.nn.Module):
+            # TODO(anaismoller) fix this
+            rnn_state = rnn_state.state_dict()
+            module_state = {k: v for (k, v) in rnn_state.items() if "module." in k}
+            non_module_state = {
+                k: v for k, v in rnn_state.items() if "module." not in k
+            }
+            rnn.load_state_dict(module_state, strict=False)
+            for key in list(non_module_state.keys()):
+                val = non_module_state[key]
+                obj = getattr(rnn, key)
+                obj.data = val
+        else:
+            rnn.load_state_dict(rnn_state, strict=False)
         rnn.to(settings.device)
         rnn.eval()
         name = (
