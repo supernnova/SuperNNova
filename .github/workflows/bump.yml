@@ -1,15 +1,24 @@
 
-name: Bump version in git
+name: Bump version and publish
 
 on:
   push:
     branches:
     - main
 
+permissions:
+  contents: write
+
+# These are needed because secrets can not be used in 'if' expressions
+env:
+  PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+  RTD_WEBHOOK_URL: ${{ secrets.RTD_WEBHOOK_URL }}
+  RTD_WEBHOOK_TOKEN: ${{ secrets.RTD_WEBHOOK_TOKEN }}
+
 jobs:
 
   # Useful for workflow debugging
-  # printJob:    
+  # printJob:
   #   name: Print event
   #   runs-on: ubuntu-latest
   #   steps:
@@ -46,3 +55,51 @@ jobs:
         if: "!contains(github.event.head_commit.message, '[version:major]') && !contains(github.event.head_commit.message, '[version:minor]')"
         run: .github/workflows/bump.sh patch
 
+  publish:
+    needs: bump_version
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Check-out repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set-up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Set-up Poetry
+        run: pip install "poetry>=2.0,<3.0"
+
+      - name: Set project version from tag
+        run: |
+          git fetch --tags
+          poetry version $(git describe --tags --match "v[0-9]*" --abbrev=0)
+
+      - name: Create GitHub release
+        run: |
+          version=$(git describe --tags --match "v[0-9]*" --abbrev=0)
+          gh release create "$version" --title "$version" --generate-notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Configure and publish to PyPI
+      - name: Configure Poetry for PyPI
+        if: env.PYPI_TOKEN
+        run: |
+          poetry config http-basic.pypi "__token__" ${{ secrets.PYPI_TOKEN }}
+
+      - name: Publish to PyPI
+        if: env.PYPI_TOKEN
+        run: poetry publish --build
+
+      # Trigger docs rebuild
+      - name: Trigger RTDs build
+        if: "env.RTD_WEBHOOK_URL && env.RTD_WEBHOOK_TOKEN"
+        run: |
+          curl -X POST                                     \
+               -d "token=${{ secrets.RTD_WEBHOOK_TOKEN }}" \
+               ${{ secrets.RTD_WEBHOOK_URL }}

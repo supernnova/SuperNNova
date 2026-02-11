@@ -4,7 +4,7 @@
 Quickstart guide (pip)
 ========================
 
-Welcome to SuperNNova! This is a quick start guide so you can start testing our framework. This guide assumes you have installed it with pip, if you want to use the GitHub cloning please refer to :ref:`Start`. Pip uses the master branch (not the frozen paper one and may be behind some updates).
+Welcome to SuperNNova! This is a quick start guide so you can start testing our framework. This guide assumes you have installed it with pip, if you want to use the GitHub cloning please refer to :ref:`Start`.
 
 Installation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

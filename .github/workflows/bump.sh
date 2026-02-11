@@ -39,7 +39,7 @@ if [ -z "$oldv" ]; then
 fi
 
 newv=$(docker run --rm -v "$PWD":/app treeder/bump --input "$oldv" "$bump_cmd")
-echo "New versiob: "$newv
+echo "New version: "$newv
 
 git tag -a "v$newv" -m "version $newv"
 git push --follow-tags
