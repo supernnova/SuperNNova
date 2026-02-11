@@ -16,11 +16,16 @@ workflows can be found within the `./.github/workflows/` directory and include:
 
 2. **bump.yml**
 
-    This workflow leverages the colocated `bump.sh` bash script to automatically increment the project version whenever code is pushed to the `main` branch.  It is controlled by adding the text `[version:minor]` or `[version:major]` to one of the commit messages of a pull request.
+    This workflow runs whenever code is pushed to the `main` branch.  It leverages the colocated `bump.sh` bash script to automatically increment the project version, and then publishes the new release.  Specifically, it:
 
-3. **publish.yml**
+    - Bumps the version (controlled by adding `[version:minor]` or `[version:major]` to a commit message; defaults to patch),
+    - Creates a GitHub release with auto-generated notes,
+    - Publishes the new version to the *Python Package Index* (*PyPI*), and
+    - Triggers a documentation rebuild on *Read the Docs*.
 
-    This workflow is run whenever a new release is generated through *GitHub* (see below for details on how to do this).  Documentation is updated on *Read the Docs* and a new version of the code is published on the *Python Package Index* (*PyPI*).
+3. **publish.yml** *(deprecated — manual fallback only)*
+
+    This workflow can be triggered manually via `workflow_dispatch` from the GitHub Actions UI if you need to re-publish a release.  Regular publishing is handled automatically by `bump.yml`.
 
 # Setting-up the Code
 
@@ -43,7 +48,7 @@ Although not strictly necessary, it is recommended that you configure the branch
 (dev-python-env)=
 # Python environments for development
 
-Python development should always be managed using a Python environment. Both Conda and Poetry ([see here for an introduction](https://python-poetry.org)) are used to manage this project. It simplifies & helps with managing the following:
+Python development should always be managed using a Python environment. Both Conda and Poetry 2.x ([see here for an introduction](https://python-poetry.org)) are used to manage this project. The conda environment files install Poetry 2.x automatically. It simplifies & helps with managing the following:
 
 1. **Creation and activation of a Python environment for the project**
 
@@ -161,27 +166,15 @@ The git hooks are defined in the `.pre-commit-config.yaml` file.  Specific revis
 
 ## Releases
 
-Releases are generated through the *GitHub* UI.  A *GitHub Workflow* has been configured to do the following when a new release is produced:
+Releases are generated **automatically** whenever code is pushed to the `main` branch (typically by merging a PR).  The `bump.yml` workflow handles the full release pipeline:
 
-1. Run the tests for the project,
-2. Ensure that the project builds,
-3. Rebuild the documentation on *Read the Docs*, and
-4. Publish a new version of the code on [*PyPI*](https://pypi.org/).
+1. Bumps the version (patch by default; use `[version:minor]` or `[version:major]` in a commit message to control this),
+2. Creates a git tag and pushes it,
+3. Creates a GitHub release with auto-generated notes,
+4. Builds and publishes the package to [*PyPI*](https://pypi.org/), and
+5. Triggers a documentation rebuild on *Read the Docs*.
 
-::: {note}
-If a release is flagged as a "pre-release" through the *GitHub* interface, then documentation will not be built and the project will be published on *test.PyPI.org* instead.
-:::
-
-### Generating a new release
-
-To generate a new release, do the following:
-
-1. Navigate to the project's *GitHub* page,
-2. Click on `Releases` in the sidebar,
-3. Click on `Create a new release` (if this is the first release you have generated) or `Draft release` if this is a subsequent release,
-4. Click on `Choose a tag` and select the most recent version listed,
-5. Write some text describing the nature of the release to prospective users, and
-6. Click `Publish Release`.
+No manual steps are needed.  If a release needs to be re-published manually, use the deprecated `publish.yml` workflow via the GitHub Actions UI (`workflow_dispatch`).
 
 ## Documentation
 
@@ -220,12 +213,8 @@ Develpers and project owners/maintainers will require accounts with one or all o
         - **RTD_WEBHOOK_URL**
     
     - To make code releases available on the **Python Package Index** (see below), then the following secret needs to be set (see below for where to find this value):
-    
-        - **PYPI_TOKEN**,
-    
-    - To test code releases with the **Test Python Package Index** (see below), then the following secret needs to be set (see below for where to find this value):
-    
-        - **TEST_PYPI_TOKEN**,
+
+        - **PYPI_TOKEN**
 
 2. [__Read the Docs__](https://readthedocs.org)
 
@@ -255,8 +244,6 @@ Develpers and project owners/maintainers will require accounts with one or all o
 
     This service is used to publish project releases.  An account is needed if you are the owner of the project, but not generally needed if you are simply a contributing developer.  An API token will need to be created and added to your *GitHub* project as **PYPI_TOKEN** (as detailed above).  This can be generated from the *PyPI* UI by navigating to `Account Settings->Add API Token`.
 
-    To test releases, a parallel account on *test.PyPI* is needed and a similar token to **PYPI_TOKEN** - named **TEST_PYPI_TOKEN** needs to be set, in the same way as above.  To create a test release, flag it as a "pre-release" through the *GitHub* interface when you generate a release, and it will be published on *test.PyPI.org* rather than *PyPI.org*.
-
     ::: {note}
-    Although `poetry` can be used to directly publish this project to *PyPI*, users should not do this.  The proper way to publish the project is through the *GitHub* interface, which leverages the *GitHub Workflows* of this project to ensure the enforcement of project standards before a new version can be created.
+    Although `poetry` can be used to directly publish this project to *PyPI*, developers should not do this manually.  Publishing happens automatically when code is merged to the `main` branch, via the `bump.yml` workflow.
     :::

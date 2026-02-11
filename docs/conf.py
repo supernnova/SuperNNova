@@ -11,20 +11,22 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 import os
 import sys
+import importlib.metadata
 
 sys.path.insert(0, os.path.abspath("../python"))
 
 # -- Project information -----------------------------------------------------
 
 project = "supernnova"
-copyright = "2025, Anais Moller and Thibault de Boissiere"
+copyright = "2026, Anais Moller and Thibault de Boissiere"
 author = "Anais Moller and Thibault de Boissiere"
 
-# The short X.Y version
-version = "v3.0.19"
-
-# The full version, including alpha/beta/rc tags
-release = "v3.0.19"
+# Read version dynamically from the installed package
+try:
+    release = importlib.metadata.version("supernnova")
+except importlib.metadata.PackageNotFoundError:
+    release = "dev"
+version = release
 
 
 # -- General configuration ---------------------------------------------------
