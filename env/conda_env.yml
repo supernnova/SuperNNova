@@ -9,4 +9,4 @@ dependencies:
 
   - pip
   - pip:
-      - poetry>1.6.1
+      - poetry>=2.0,<3.0

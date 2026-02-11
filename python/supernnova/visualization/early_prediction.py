@@ -136,12 +136,13 @@ def plot_predictions(
     d_keys = {
         "vanilla photometry": "LSTM",
         "variational photometry": "MC Dropout",
+        "bayesian photometry": "BNN",
         "swag photometry": "SWAG",
     }
 
     # Plot the classifications
-    for idx, key in enumerate(["vanilla photometry", "variational photometry", "swag photometry"]):
-        
+    for idx, key in enumerate(d_pred.keys()):
+
         ax = plt.subplot(gs[idx + 1])
         ax.set_ylim(0, 1)
 
@@ -153,7 +154,7 @@ def plot_predictions(
                 label = "non-Ia"
 
             if len(d_pred) > 1:
-                label += f" {d_keys[key]}"
+                label += f" {d_keys.get(key, key)}"
 
             ax.plot(
                 arr_time,
@@ -194,7 +195,7 @@ def plot_predictions(
     if len(settings.model_files) > 1:
         fig_path = f"{settings.figures_dir}/{prefix}multi_model_early_prediction"
         fig_name = f"{prefix}multi_model_{SNID}.png"
-    elif len([settings.model_files]) == 1:
+    elif len(settings.model_files) == 1:
         parent_dir = Path(settings.model_files[0]).parent.name
         fig_path = f"{settings.lightcurves_dir}/{parent_dir}/{prefix}early_prediction"
         fig_name = f"{parent_dir}_{prefix}class_pred_with_lc_{SNID}.png"

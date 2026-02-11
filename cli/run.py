@@ -17,7 +17,7 @@ Available commands:
     make_data        create dataset for ML training
     train_rnn        train RNN model
     validate_rnn     validate RNN model
-    show             vitualize different types of plot
+    show             visualize different types of plot (requirement make_data)
     performance      get method performance and paper plots
 
 Type snn <command> --help for usage help on a specific command.
