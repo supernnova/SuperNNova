@@ -55,7 +55,7 @@ Technical questions
 
 - **What algorithms are available for classification?**
 
-Currently we have a Baseline RNN and two Bayesian RNNs. The Bayesian RNNs are based on the work of `Fortunato et al 2017`_ and `Gal et Ghahramani 2015`_ and allow us to estimate prediction uncertainty. These algorithms require only raw lightcurve data. We have also a Random Forest classifier that relies lightcurve features. You can obtain these with fitters: an exponential that rises and falls or a type Ia supernova `SALT2`_ fits.
+Currently we have a Baseline RNN and two Bayesian RNNs. The Bayesian RNNs are based on the work of `Fortunato et al 2017`_ and `Gal et Ghahramani 2015`_ and allow us to estimate prediction uncertainty. These algorithms require only raw lightcurve data.
 
 - **Why is training slow ?**
 
@@ -64,7 +64,7 @@ Alternatively, you may select a smaller data fraction ``--data_fraction 0.1`` to
 
 - **Where do I find the model naming scheme?**
 
-You can find it in ``SuperNNova/utils/ExperimentSettings.py`` under ``model_name``. A start guide can be found in our :ref:`Start`.
+You can find it in ``python/supernnova/utils/experiment_settings.py`` under ``model_name``. A start guide can be found in our :ref:`Start`.
 
 - **How do I change the directory where the data can be found?**
 
@@ -72,7 +72,7 @@ You can give add to your terminal command ``--dump_dir foldername``. This folder
 
 - **If I trained several models, is there a way to see a summary of the statistics?**
 
-Yes, you need to call ``python run.py --performance``. It will be created in ``{dump_dir}/stats`` as ``summary_stats.csv``. It will compute various metrics which can be averaged over multiple random seeds. By default, this command will also generate all statistics (latex tables as well printout stats) and plots featured in our SuperNNova paper. To deactivate this, just comment in ``run.py`` the two lines below ``# Stats and plots in paper``.
+Yes, you need to call ``snn performance``. It will be created in ``{dump_dir}/stats`` as ``summary_stats.csv``. It will compute various metrics which can be averaged over multiple random seeds.
 
 
 Common issues
@@ -93,7 +93,6 @@ Check that you provided the appropriate ``raw_dir`` and that the files are eithe
 .. _SuperNNovaSimulations: https://zenodo.org/record/3265189#.XRo2mS2B1TY
 .. _Fortunato et al 2017: https://arxiv.org/abs/1704.02798
 .. _Gal et Ghahramani 2015: https://arxiv.org/abs/1506.02142
-.. _SALT2: https://arxiv.org/pdf/astro-ph/0701828.pdf
 .. _SNANA: https://arxiv.org/abs/0908.4280
 .. _GitHub: https://github.com/supernnova/SuperNNova
 .. _5-year photometric sample: https://ui.adsabs.harvard.edu/abs/2022MNRAS.514.5159M/abstract

@@ -42,7 +42,6 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.autosectionlabel",
     "myst_parser",
-    "sphinx.ext.todo",
     "sphinx_copybutton",
     "sphinx.ext.napoleon",
 ]

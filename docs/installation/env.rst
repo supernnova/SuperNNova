@@ -38,7 +38,7 @@ or
 
 if you create environment from "conda_gpu_env.yml".
 
-3. A python project management tool ``poetry`` is installed via the above steps. Verify it and install python dependencies for this project:
+3. A python project management tool ``poetry`` (2.x) is installed via the above steps. Verify it and install python dependencies for this project:
 
 .. code-block:: bash
 
@@ -55,24 +55,34 @@ Mise
 You can also use mise, a tool to manage multiple python environments.
 
 - Make sure mise is activated in your shell
+
 .. code-block:: bash
+
     eval "$(mise activate bash)"   # or zsh
 
 - Install Python 3.11 + uv
+
 .. code-block:: bash
+
     mise install
 
 - Install SuperNNova + dev deps
+
 .. code-block:: bash
+
     mise run install
 
 - Install PyTorch (pick one depending if you want cuda support or not)
+
 .. code-block:: bash
+
     mise run install-torch          # CPU
     mise run install-torch-cuda     # CUDA 12.1
 
 - Run tests
+
 .. code-block:: bash
+
     mise run test
 
 

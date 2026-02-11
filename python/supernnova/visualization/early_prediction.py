@@ -316,7 +316,7 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
             SNtype_str = settings.sntypes[
                 str(SNinfo_df[SNinfo_df["SNID"] == SNID][settings.sntype_var].values[0])
             ]
-        except Exception:
+        except (IndexError, KeyError):
             redshift = 0.0
             peak_MJD = 0.0
             SNtype_str = "Not found"
@@ -374,8 +374,8 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
                             arr_time,
                             d_pred,
                         )
-            except Exception:
-                lu.print_red(f"SNID {SNID} only has {len(X)} measurement, not plotting")
+            except (IndexError, ValueError) as e:
+                lu.print_red(f"SNID {SNID} only has {len(X)} measurement, not plotting ({e})")
 
     lu.print_green("Finished plotting lightcurves and predictions ")
 

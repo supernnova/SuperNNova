@@ -179,4 +179,4 @@ Naming conventions
 
 - **mean**: output option. ``mean`` is mean pooling.
 
-The naming convention is defined in ``SuperNNova/conf.py``.
+The naming convention is defined in ``python/supernnova/conf.py``.

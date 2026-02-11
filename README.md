@@ -4,10 +4,10 @@
 
 ![Logo](docs/assets/SuperNNova.png)
 
-[![Build Status](https://travis-ci.org/supernnova/SuperNNova.svg?branch=master)](https://travis-ci.org/supernnova/SuperNNova)
+[![Pull Request](https://github.com/supernnova/SuperNNova/actions/workflows/pull_request.yml/badge.svg)](https://github.com/supernnova/SuperNNova/actions/workflows/pull_request.yml)
 
-    A new realease of SuperNNova is in the main branch. 
-    For DES-5yr analysis please use the branch SNANA_DES5yr 
+    A new release of SuperNNova is in the main branch.
+    For DES-5yr analysis please use the branch SNANA_DES5yr
     (and any other analysis using the syntax: python run.py)
 
 ### What is SuperNNova (SNN)
@@ -26,7 +26,12 @@ MNRAS, Volume 491, Issue 3, January 2020, Pages 4277–4293.](https://academic.o
 
 
 ### Installation
-Clone this repository (preferred)
+Install via pip
+```bash
+pip install supernnova
+```
+
+Or clone this repository for development
 ```bash
 git clone https://github.com/supernnova/supernnova.git
 ```
