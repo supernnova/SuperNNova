@@ -181,9 +181,9 @@ if __name__ == "__main__":
                 outname = (
                     f"{args.filename}/Predictions_{Path(args.model_file).name}.csv"
                 )
-            except Exception:
-                print("Provide a csv file or folder with csv")
-                raise ValueError
+            except (FileNotFoundError, ValueError, pd.errors.EmptyDataError) as e:
+                print(f"Provide a csv file or folder with csv ({e})")
+                raise ValueError(f"Invalid input: {e}") from e
 
     # Obtain predictions for full light-curve
     # Format: batch, nb_inference_samples, nb_classes
@@ -227,9 +227,10 @@ if __name__ == "__main__":
                 2,
             ),
         )
-    except Exception:
-        # silent error
-        a = 0
+    except (KeyError, ValueError):
+        # Accuracy computation is optional; skip if target column is missing
+        # or type mapping fails (e.g. on-the-fly data without SNTYPE)
+        pass
 
     end = time.time()
     end_cpu = time.process_time()

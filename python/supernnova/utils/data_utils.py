@@ -350,7 +350,7 @@ def remove_data_post_large_delta_time(df):
             same_lc = new_ID == ID
     df = df.drop(list_to_remove)
     # Reset index to account for dropped rows
-    df.reset_index(inplace=True, drop=True)
+    df = df.reset_index(drop=True)
 
     return df
 
@@ -496,7 +496,7 @@ def save_to_HDF5(settings, df):
             else:
                 dtype = np.dtype("float32")
             hf.create_dataset(feat, data=df[feat].values[start_idxs], dtype=dtype)
-            df.drop(columns=feat, inplace=True)
+            df = df.drop(columns=feat)
 
         logging_utils.print_green("Saving class")
         for c_ in list_classes:
@@ -507,7 +507,7 @@ def save_to_HDF5(settings, df):
                     data=df[field_name].values[start_idxs],
                     dtype=np.dtype("int8"),
                 )
-                df.drop(columns=field_name, inplace=True)
+                df = df.drop(columns=field_name)
 
         df["time"] = df[["delta_time"]].groupby(df.index).cumsum()
         df = df.reset_index()
@@ -554,7 +554,7 @@ def save_to_HDF5(settings, df):
                     dtype=np.dtype("uint8"),
                 )
 
-            df.drop(columns=f"has_{flt}", inplace=True)
+            df = df.drop(columns=f"has_{flt}")
 
         # FInally save PEAKMJDNORM
         hf.create_dataset(
@@ -567,10 +567,7 @@ def save_to_HDF5(settings, df):
             for k in ["time", "SNID", "PEAKMJDNORM", settings.photo_window_var]
             if k in df.keys()
         ]
-        df.drop(
-            columns=list(set(cols_to_drop)),
-            inplace=True,
-        )
+        df = df.drop(columns=list(set(cols_to_drop)))
 
         ########################
         # Normalize per feature

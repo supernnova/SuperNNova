@@ -3,6 +3,7 @@
 #   pre-commit framework, please see: https://pre-commit.com
 #
 # To get started with them is this project yourself, simply run: pre-commit
+# To update hook versions to latest: pre-commit autoupdate
 
 repos:
 
@@ -32,14 +33,14 @@ repos:
       - id: black
 
   # Lint code
-  - repo: https://github.com/charliermarsh/ruff-pre-commit
+  - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.0.243
     hooks:
       - id: ruff
 
-  # Make sure the Poetry project is properly maintained
+  # Make sure the Poetry project is properly maintained (Poetry 2.x)
   - repo: https://github.com/python-poetry/poetry
-    rev: 1.3.2
+    rev: 2.0.1
     hooks:
       - id: poetry-check
       - id: poetry-lock

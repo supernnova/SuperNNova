@@ -515,7 +515,7 @@ def process_single_FITS(file_path, settings):
     # Drop the delimiter lines
     df = df[df.MJD != -777.000]
     # Reset the index (it is no longer continuous after dropping lines)
-    df.reset_index(inplace=True, drop=True)
+    df = df.reset_index(drop=True)
     # Add delta time
     df = data_utils.compute_delta_time(df)
     # Remove rows post large delta time in the same light curve(delta_time > 150)
@@ -663,7 +663,7 @@ def process_single_csv(file_path, settings):
     # Drop the delimiter lines
     df = df[df.MJD != -777.000]
     # Reset the index (it is no longer continuous after dropping lines)
-    df.reset_index(inplace=True, drop=True)
+    df = df.reset_index(drop=True)
     # Add delta time
     df = data_utils.compute_delta_time(df)
     # Remove rows post large delta time in the same light curve(delta_time > 150)
@@ -833,11 +833,11 @@ def pivot_dataframe_single_from_df(df, settings):
     # The correct PEAKMJDNORM is the first one hence the use of first after groupby
     df_PEAKMJDNORM = df[["SNID", "PEAKMJDNORM"]].groupby("SNID").first().reset_index()
     # Remove PEAKMJDNORM
-    df = df.drop(labels="PEAKMJDNORM", axis=1)
+    df = df.drop(columns="PEAKMJDNORM")
     # Add PEAKMJDNORM back to df with a merge on SNID
     df = df.merge(df_PEAKMJDNORM, how="left", on="SNID")
     # drop columns that won"t be used onwards
-    df = df.drop(labels=["MJD", "delta_time"], axis=1)
+    df = df.drop(columns=["MJD", "delta_time"])
     class_columns = []
     # for c_ in list(set([2, len(settings.sntypes.keys())])):
     distinct_classes = len(set([k for k in dict(settings.sntypes).values()]))
@@ -874,9 +874,9 @@ def pivot_dataframe_single_from_df(df, settings):
     df.columns = ["_".join(col).strip() for col in df.columns.values]
     # Reset index to get grouped_MJD and target as columns
     cols_to_reset_list = [c for c in df.index.names if c != "SNID"]
-    df.reset_index(cols_to_reset_list, inplace=True)
+    df = df.reset_index(cols_to_reset_list)
     # Rename grouped_MJD to MJD
-    df.rename(columns={"grouped_MJD": "MJD"}, inplace=True)
+    df = df.rename(columns={"grouped_MJD": "MJD"})
 
     # New column to indicate which channel (r,g,z,i) is present
     # The column will read ``rg`` if r,g are present; ``rgz`` if r,g and z are present, etc.
@@ -891,7 +891,7 @@ def pivot_dataframe_single_from_df(df, settings):
     for flt in list_filters[1:]:
         df["FLT"] += df[flt]
     # Drop some irrelevant columns
-    df = df.drop(labels=list_filters, axis=1)
+    df = df.drop(columns=list_filters)
     # Finally replace NaN with 0
     df = df.fillna(0)
     # Add delta_time back. We removed all delta time columns above as they get
@@ -919,7 +919,7 @@ def pivot_dataframe_single_from_df(df, settings):
         df_salt = df_salt.set_index("SNID")
     df = df.join(df_salt[["mB", "c", "x1"]], how="left")
 
-    df.drop(columns="MJD", inplace=True)
+    df = df.drop(columns="MJD")
 
     return df
 
