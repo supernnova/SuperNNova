@@ -28,7 +28,6 @@ mypy = { version = "^1.1.1", optional = true }
 sphinx-copybutton = { version = "^0.5.1", optional = true }
 line-profiler = { version = "^4.1.2", optional = true }
 memory-profiler = { version = "^0.61.0", optional = true }
-poetry = "^1.6.1"
 # torch = "2.0.0" # See here: https://github.com/pytorch/pytorch/issues/104259
 # torchvision = "0.15.1"
 h5py = "^3.10.0"
@@ -64,6 +63,7 @@ snn = "cli.run:main"
 
 [tool.pytest.ini_options]
 addopts = "--cov"
+testpaths = ["tests"]
 pythonpath = "./python" # relative to root directory
 # Uncomment and edit the following line to add custom markers to your tests
 # These can be run with the following (for example):
@@ -121,5 +121,5 @@ ignore = [
 convention = "numpy"
 
 [build-system]
-requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning"]
+requires = ["poetry-core>=2.0.0", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
 build-backend = "poetry_dynamic_versioning.backend"

@@ -49,6 +49,17 @@ def get_predictions(settings, dict_rnn, X, target, OOD=None):
                 out = torch.cat(list_out, dim=0)
                 # Apply softmax to obtain a proba
                 pred_proba = nn.functional.softmax(out, dim=-1).data.cpu().numpy()
+            elif "swag" in model_type:
+
+                list_out = []
+                # Loop over num samples to obtain predictions
+                for i in range(settings.num_inference_samples):
+                    sample_model = rnn.sample()
+                    list_out.append(sample_model(X_slice.expand(new_size)))
+                out = torch.cat(list_out, dim=0)
+                # Apply softmax to obtain a proba
+                pred_proba = nn.functional.softmax(out, dim=-1).data.cpu().numpy()
+
             else:
                 out = rnn(X_slice.expand(new_size))
                 # Apply softmax to obtain a proba
@@ -84,7 +95,7 @@ def plot_predictions(
 ):
 
     plt.figure(figsize=(15, 10))
-    gs = gridspec.GridSpec(2, 1)
+    gs = gridspec.GridSpec(1 + len(d_pred.keys()), 1)
     # Plot the lightcurve
     ax = plt.subplot(gs[0])
     for n, flt in enumerate(d_plot.keys()):
@@ -122,21 +133,28 @@ def plot_predictions(
         ):
             ax.plot([peak_MJD, peak_MJD], ylim, "k--", label="Peak MJD")
 
-    # Plot the classifications
-    ax = plt.subplot(gs[1])
-    ax.set_ylim(0, 1)
+    d_keys = {
+        "vanilla photometry": "LSTM",
+        "variational photometry": "MC Dropout",
+        "bayesian photometry": "BNN",
+        "swag photometry": "SWAG",
+    }
 
+    # Plot the classifications
     for idx, key in enumerate(d_pred.keys()):
 
+        ax = plt.subplot(gs[idx + 1])
+        ax.set_ylim(0, 1)
+
         for class_prob in range(settings.nb_classes):
-            color = ALL_COLORS[class_prob + idx * settings.nb_classes]
+            color = ALL_COLORS[class_prob]
             linestyle = LINE_STYLE[class_prob]
             label = du.sntype_decoded(class_prob, settings)
             if class_prob != 0 and settings.nb_classes < 3:
                 label = "non-Ia"
 
             if len(d_pred) > 1:
-                label += f" {key}"
+                label += f" {d_keys.get(key, key)}"
 
             ax.plot(
                 arr_time,
@@ -160,24 +178,24 @@ def plot_predictions(
                 alpha=0.2,
             )
 
-    ax.set_xlabel("Time (MJD)")
-    ax.set_ylabel("classification probability")
-    # Add PEAKMJD
-    if (
-        OOD is None
-        and not settings.data_testing
-        and arr_time.min() < peak_MJD
-        and peak_MJD < arr_time.max()
-    ):
-        ax.plot([peak_MJD, peak_MJD], [0, 1], "k--", label="Peak MJD")
-    ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.0)
+        ax.set_xlabel("Time (MJD)")
+        ax.set_ylabel("classification probability")
+        # Add PEAKMJD
+        if (
+            OOD is None
+            and not settings.data_testing
+            and arr_time.min() < peak_MJD
+            and peak_MJD < arr_time.max()
+        ):
+            ax.plot([peak_MJD, peak_MJD], [0, 1], "k--", label="Peak MJD")
+        ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.0)
 
     prefix = f"OOD_{OOD}_" if OOD is not None else ""
 
     if len(settings.model_files) > 1:
         fig_path = f"{settings.figures_dir}/{prefix}multi_model_early_prediction"
         fig_name = f"{prefix}multi_model_{SNID}.png"
-    elif len([settings.model_files]) == 1:
+    elif len(settings.model_files) == 1:
         parent_dir = Path(settings.model_files[0]).parent.name
         fig_path = f"{settings.lightcurves_dir}/{parent_dir}/{prefix}early_prediction"
         fig_name = f"{parent_dir}_{prefix}class_pred_with_lc_{SNID}.png"
@@ -235,9 +253,28 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
             settings.model = "vanilla"
         if "bayesian" in model_file:
             settings.model = "bayesian"
+        if "swag" in model_file:
+            settings.model = "swag"
         rnn = tu.get_model(settings, len(settings.training_features))
-        rnn_state = torch.load(model_file, map_location=lambda storage, loc: storage)
-        rnn.load_state_dict(rnn_state)
+        rnn_state = torch.load(
+            model_file,
+            map_location=lambda storage, loc: storage,
+            weights_only=False,
+        )
+        if isinstance(rnn_state, torch.nn.Module):
+            # TODO(anaismoller) fix this
+            rnn_state = rnn_state.state_dict()
+            module_state = {k: v for (k, v) in rnn_state.items() if "module." in k}
+            non_module_state = {
+                k: v for k, v in rnn_state.items() if "module." not in k
+            }
+            rnn.load_state_dict(module_state, strict=False)
+            for key in list(non_module_state.keys()):
+                val = non_module_state[key]
+                obj = getattr(rnn, key)
+                obj.data = val
+        else:
+            rnn.load_state_dict(rnn_state, strict=False)
         rnn.to(settings.device)
         rnn.eval()
         name = (

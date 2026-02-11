@@ -42,7 +42,7 @@ def test_rnn_train(make_data, option):
 
 
 def test_rnn_train_swag(make_data):
-    cmd = "snn train_rnn --dump_dir tests/dump --swag"
+    cmd = "snn train_rnn --dump_dir tests/dump --swag --nb_epoch=10 --swag_start_epoch=5"
 
     call_cmd(cmd)
 

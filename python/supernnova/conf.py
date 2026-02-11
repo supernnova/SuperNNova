@@ -77,6 +77,7 @@ TRAIN_RNN_OPTIONS = COMMON_OPTIONS + [
     "--calibration",
     "--plot_file",
     "--swag",
+    "--swag_pretrained_path",
     "--swag_start_epoch",
     "--swag_samples",
     "--swag_scale",
@@ -91,6 +92,7 @@ VALIDATE_RNN_OPTIONS = COMMON_OPTIONS + [
     "--plot_prediction_distribution",
     "--speed",
     "--swag",
+    "--swag_finetune",
     "--swag_samples",
     "--swag_scale",
     "--swag_no_lr_cov",
@@ -561,6 +563,11 @@ def get_args(command_arg):
         "--swag",
         action="store_true",
         help="enable SWAG",
+    )
+    parser.add_argument(
+        "--swag_pretrained_path",
+        type=str,
+        help="Run SWAG on a pretrained model",
     )
     parser.add_argument(
         "--swag_start_epoch",

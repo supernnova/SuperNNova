@@ -86,7 +86,7 @@ jobs:
         shell: bash -l {0}
         run: |
           poetry check
-          poetry lock --check
+          poetry check --lock
 
       # Run tests
       - name: Generate build

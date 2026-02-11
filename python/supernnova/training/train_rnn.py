@@ -250,6 +250,8 @@ def train(settings):
     """
     if settings.swag:
         train_swag(settings)
+    elif settings.swag_pretrained_path:
+        train_swag_finetune(settings)
     else:
         train_(settings)
 
@@ -395,6 +397,7 @@ def train_swag(settings):
     # Prepare for GPU if required
     if settings.use_cuda:
         rnn.cuda()
+        swag_rnn.cuda()
         criterion.cuda()
 
     # Keep track of losses for plotting
@@ -502,6 +505,156 @@ def train_swag(settings):
                     swag_rnn,
                     f"{settings.rnn_dir}/{settings.pytorch_model_name}_swag.pt",
                 )
+
+    lu.print_green("Finished training")
+
+    training_time = time() - training_start_time
+
+    tu.save_training_results(settings, d_monitor_val, training_time)
+
+
+def train_swag_finetune(settings):
+    """Train RNN models with SWAG
+
+    Args:
+        settings (ExperimentSettings): controls experiment hyperparameters
+    """
+
+    # save training data config
+    save_normalizations(settings)
+
+    # Data
+    list_data_train, list_data_val = tu.load_HDF5(settings, test=False)
+
+    # Model specification
+    rnn = tu.get_model(settings, len(settings.training_features))
+    
+    # Load pretrained model
+    lu.print_green(
+        f"Loading pretrained SWAG model from {settings.swag_pretrained_path}"
+    )
+    rnn.load_state_dict(
+        torch.load(settings.swag_pretrained_path, map_location="cpu", weights_only=False)
+    )
+    
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.SGD(
+        rnn.parameters(),
+        lr=settings.learning_rate,
+        momentum=0.9, # TODO do not hardcode
+        weight_decay=1e-4, # TODO do not hardcode
+    )
+
+    settings.swag_start_epoch = 0 # TODO do not hardcode
+    settings.nb_epoch = 30 # TODO do not hardcode
+
+    # Initiate SWAG model
+    swag_rnn = SwagModel(rnn)
+
+    # Prepare for GPU if required
+    if settings.use_cuda:
+        rnn.cuda()
+        swag_rnn.cuda()
+        criterion.cuda()
+
+    # Keep track of losses for plotting
+    loss_str = ""
+    d_monitor_train = {"loss": [], "AUC": [], "Acc": [], "epoch": []}
+    d_monitor_val = {"loss": [], "AUC": [], "Acc": [], "epoch": []}
+
+    if "bayesian" in settings.pytorch_model_name:
+        d_monitor_train["KL"] = []
+        d_monitor_val["KL"] = []
+
+    lu.print_green("Starting training")
+
+    best_loss = float("inf")
+
+    training_start_time = time()
+
+    for epoch in tqdm(range(settings.nb_epoch), desc="Training", ncols=100):
+
+        desc = f"Epoch: {epoch} -- {loss_str}"
+
+        num_elem = len(list_data_train)
+        num_batches = num_elem // min(num_elem // 2, settings.batch_size)
+        list_batches = np.array_split(np.arange(num_elem), num_batches)
+        np.random.shuffle(list_batches)
+        for batch_idxs in tqdm(
+            list_batches,
+            desc=desc,
+            ncols=100,
+            bar_format="{desc} |{bar}| {n_fmt}/{total_fmt} {rate_fmt}{postfix}",
+        ):
+
+            # Sample a batch in packed sequence form
+            packed, _, target_tensor, idxs_rev_sort = tu.get_data_batch(
+                list_data_train, batch_idxs, settings
+            )
+            # Exception for multiclass
+            if settings.nb_classes <= int(target_tensor.max()):
+                print("")
+                lu.print_red(
+                    "All sntypes where not defined during database creation (multiclass fails)"
+                )
+                raise ValueError
+            # Train step : forward backward pass
+            tu.train_step(
+                settings,
+                rnn,
+                packed,
+                target_tensor,
+                criterion,
+                optimizer,
+                target_tensor.size(0),
+                len(list_batches),
+            )
+
+        if (epoch + 1) % settings.monitor_interval == 0:
+
+            # Get metrics (subsample training set to same size as validation set for speed)
+            d_losses_train = tu.get_evaluation_metrics(
+                settings, list_data_train, rnn, sample_size=len(list_data_val)
+            )
+            d_losses_val = tu.get_evaluation_metrics(
+                settings, list_data_val, rnn, sample_size=None
+            )
+
+            # Add current loss avg to list of losses
+            for key in d_losses_train.keys():
+                d_monitor_train[key].append(d_losses_train[key])
+                d_monitor_val[key].append(d_losses_val[key])
+            d_monitor_train["epoch"].append(epoch + 1)
+            d_monitor_val["epoch"].append(epoch + 1)
+
+            # Prepare loss_str to update progress bar
+            loss_str = tu.get_loss_string(d_losses_train, d_losses_val)
+
+            tu.plot_loss(d_monitor_train, d_monitor_val, epoch, settings)
+            if d_monitor_val["loss"][-1] < best_loss:
+                best_loss = d_monitor_val["loss"][-1]
+                torch.save(
+                    rnn.state_dict(),
+                    f"{settings.rnn_dir}/{settings.pytorch_model_name}.pt",
+                )
+
+        lu.print_green("Updating SWAG estimators")
+        swag_rnn.update_parameters(rnn)
+
+        if epoch >= 2:
+            lu.print_green("Starting SWAG sampling")
+            d_losses_train_swag = tu.get_evaluation_metrics(
+                settings,
+                list_data_train,
+                swag_rnn,
+                sample_size=len(list_data_val),
+                swag_sampling=True,
+            )
+            print("swag metrics:", d_losses_train_swag)
+            torch.save(
+                swag_rnn,
+                f"{settings.rnn_dir}/{settings.pytorch_model_name}_swag.pt",
+            )
 
     lu.print_green("Finished training")
 
