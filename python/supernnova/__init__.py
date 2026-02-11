@@ -1,2 +1,4 @@
+import importlib.metadata
+
 name = "supernnova"
-__version__ = "1.3"
+__version__ = importlib.metadata.version("supernnova")
