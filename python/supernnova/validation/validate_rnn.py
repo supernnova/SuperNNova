@@ -397,7 +397,11 @@ def get_predictions(settings, model_file=None):
         lu.print_green("Processing prediction using RNN model")
         # Load RNN model
         rnn = tu.get_model(settings, len(settings.training_features))
-        rnn_state = torch.load(model_file, map_location=lambda storage, loc: storage)
+        rnn_state = torch.load(
+            model_file,
+            map_location=lambda storage, loc: storage,
+            weights_only=False,
+        )
         rnn.load_state_dict(rnn_state)
         rnn.to(settings.device)
         rnn.eval()
@@ -449,7 +453,7 @@ def get_predictions(settings, model_file=None):
             cov_str = "cov"
 
         # Load SWAG model
-        swag_rnn = torch.load(swag_model_file)
+        swag_rnn = torch.load(swag_model_file, weights_only=False)
         swag_rnn.to(settings.device)
 
         # Specify output file names

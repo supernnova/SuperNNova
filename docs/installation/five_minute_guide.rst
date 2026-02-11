@@ -26,7 +26,8 @@ Setup your environment. 3 options
 Please beware that SuperNNova only runs properly in Unix systems (Linux, MacOS). 
 	a) Create a docker image: :ref:`DockerConfigurations` .
 	b) Create a conda virtual env :ref:`CondaConfigurations` .
-	c) Install packages manually. Inspect ``env/conda_env.yml`` (or ``env/conda_gpu_env.yml`` when using cuda) and ``pyproject.toml`` for the list of packages we use.
+    c) Use misenvironment :ref:`MiseConfigurations` .
+	d) Install packages manually. Inspect ``env/conda_env.yml`` (or ``env/conda_gpu_env.yml`` when using cuda) and ``pyproject.toml`` for the list of packages we use.
 
 Verify installation 
 -----------------------------------

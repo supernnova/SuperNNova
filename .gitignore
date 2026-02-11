@@ -35,3 +35,5 @@ script.sh
 mnist.npz
 sandbox/data
 snndump
+.venv
+.mise.local.toml

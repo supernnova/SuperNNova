@@ -46,14 +46,14 @@ def get_plot_lcs(settings):
     from supernnova.visualization import early_prediction
 
     if settings.model_files is None:
-        early_prediction.make_early_prediction(settings, nb_lcs=100, do_gifs=False)
+        early_prediction.make_early_prediction(settings, nb_lcs=2, do_gifs=False)
 
     elif settings.model_files:
         for model_file in settings.model_files:
             model_settings = conf.get_settings_from_dump(settings, model_file)
-        early_prediction.make_early_prediction(
-            model_settings, nb_lcs=100, do_gifs=False
-        )
+            early_prediction.make_early_prediction(
+                model_settings, nb_lcs=2, do_gifs=False
+            )
 
 
 def make_data_action(settings):

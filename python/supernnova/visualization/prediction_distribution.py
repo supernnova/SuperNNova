@@ -228,7 +228,11 @@ def plot_prediction_distribution(settings):
         if "bayesian" in model_file:
             settings.model = "bayesian"
         rnn = tu.get_model(settings, len(settings.training_features))
-        rnn_state = torch.load(model_file, map_location=lambda storage, loc: storage)
+        rnn_state = torch.load(
+            model_file,
+            map_location=lambda storage, loc: storage,
+            weights_only=False,
+        )
         rnn.load_state_dict(rnn_state)
         rnn.to(settings.device)
         rnn.eval()

@@ -533,7 +533,9 @@ def train_swag_finetune(settings):
     lu.print_green(
         f"Loading pretrained SWAG model from {settings.swag_pretrained_path}"
     )
-    rnn.load_state_dict(torch.load(settings.swag_pretrained_path, map_location="cpu"))
+    rnn.load_state_dict(
+        torch.load(settings.swag_pretrained_path, map_location="cpu", weights_only=False)
+    )
     
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(

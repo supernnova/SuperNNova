@@ -188,7 +188,11 @@ def classify_lcs(df, model_file, device):
 
     # load model
     rnn = tu.get_model(settings, len(settings.training_features))
-    rnn_state = torch.load(model_file, map_location=lambda storage, loc: storage)
+    rnn_state = torch.load(
+        model_file,
+        map_location=lambda storage, loc: storage,
+        weights_only=False,
+    )
     try:
         rnn.load_state_dict(rnn_state)
     except Exception:

@@ -64,6 +64,7 @@ snn = "cli.run:main"
 
 [tool.pytest.ini_options]
 addopts = "--cov"
+testpaths = ["tests"]
 pythonpath = "./python" # relative to root directory
 # Uncomment and edit the following line to add custom markers to your tests
 # These can be run with the following (for example):

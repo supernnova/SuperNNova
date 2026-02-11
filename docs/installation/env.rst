@@ -47,6 +47,34 @@ if you create environment from "conda_gpu_env.yml".
 
 For developers (including testing local documentation), please refer to :ref:`dev-python-env`.
 
+.. _MiseConfigurations:
+
+Mise
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can also use mise, a tool to manage multiple python environments.
+
+- Make sure mise is activated in your shell
+.. code-block:: bash
+    eval "$(mise activate bash)"   # or zsh
+
+- Install Python 3.11 + uv
+.. code-block:: bash
+    mise install
+
+- Install SuperNNova + dev deps
+.. code-block:: bash
+    mise run install
+
+- Install PyTorch (pick one depending if you want cuda support or not)
+.. code-block:: bash
+    mise run install-torch          # CPU
+    mise run install-torch-cuda     # CUDA 12.1
+
+- Run tests
+.. code-block:: bash
+    mise run test
+
 
 .. _DockerConfigurations:
 

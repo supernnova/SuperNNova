@@ -255,7 +255,11 @@ def make_early_prediction(settings, nb_lcs=1, do_gifs=False):
         if "swag" in model_file:
             settings.model = "swag"
         rnn = tu.get_model(settings, len(settings.training_features))
-        rnn_state = torch.load(model_file, map_location=lambda storage, loc: storage)
+        rnn_state = torch.load(
+            model_file,
+            map_location=lambda storage, loc: storage,
+            weights_only=False,
+        )
         if isinstance(rnn_state, torch.nn.Module):
             # TODO(anaismoller) fix this
             rnn_state = rnn_state.state_dict()
