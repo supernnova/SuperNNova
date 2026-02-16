@@ -627,6 +627,7 @@ def plot_HDres_histos_vs_z(
     threshold_var="class0",
     threshold_list=[0.5, 0.7, 0.9],
     threshold_sign=">",
+    settings=None,
 ):
     """Plot Hubble diagram residuals and histograms
     selects class sample and performas HD
@@ -693,7 +694,7 @@ def plot_HDres_histos_vs_z(
     def HRwhisto(
         df, sel_dic, ax_left, ax_right, threshold_sign, ylabel="TP", visible=False
     ):
-        target_class = getattr(settings, "target_sntype", "Ia")
+        target_class = getattr(settings, "target_sntype", "Ia") if settings else "Ia"
         if ylabel == "TP":
             sntyp = target_class
         else:
@@ -1135,6 +1136,7 @@ def hubble_residuals(df, model_name, fits, settings):
         threshold_var="class0",
         threshold_list=[0.5, 0.7, 0.9],
         threshold_sign=">",
+        settings=settings,
     )
 
     # residuals with uncertainty thresholds
@@ -1153,6 +1155,7 @@ def hubble_residuals(df, model_name, fits, settings):
             threshold_var="sigma_all",
             threshold_list=[0.05, 0.1, 0.2],
             threshold_sign="<",
+            settings=settings,
         )
 
 
