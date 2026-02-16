@@ -25,6 +25,9 @@ Argument                  Type                Help
 --no_overwrite            bool        If True, overwrite preprocessed dir when creating database
 --data_fraction           float       Fraction of data to use
 --override_source_data    str         Change the source data (use saltfit or photometry)
+--sntypes                 dict        SN type mapping (e.g. '{"101":"Ia","120":"IIP"}'). Types in data not listed here are auto-assigned to a ``contaminant`` class.
+--sntype_var              str         Column name for event types (default: SNTYPE)
+--nb_classes              int         Number of classification targets (default: 2)
 ======================  ============  ==================================================================
 
 Training parameters

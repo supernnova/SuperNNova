@@ -196,7 +196,44 @@ We first compute the data splits:
 - The splits are different for the salt/photometry datasets
 - The splits are different depending on the classification target
 - We downsample the dataset so that for a given classification task, all classes have the same cardinality
-- The supernova/light-curve types supported can be changed using ``--sntypes``. Default contains 7 classes. If a class is not given as input in ``--sntypes``, it will be assigned to the last available tag. If a 'Ia' exists in  provided ``--sntypes``, this will be taken as tag 0 in data splits, else the first class will be used.
+- The supernova/light-curve types supported can be changed using ``--sntypes``. Default contains 7 classes. If a type present in the data is not given as input in ``--sntypes``, it will be automatically assigned to a ``contaminant`` class (see below). If ``Ia`` exists in provided ``--sntypes``, this will be taken as tag 0 in data splits, else the first class will be used.
+
+Handling missing types (contaminant auto-detection)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When building a database, the data may contain supernova types that are not listed in the ``--sntypes`` dictionary. Rather than failing or requiring you to manually enumerate every type in the data, SuperNNova automatically detects these missing types and assigns them to a ``contaminant`` class.
+
+**How it works:**
+
+- Before any class mapping, all unique type values in the data are compared against the keys in ``--sntypes``.
+- Any type present in the data but missing from ``--sntypes`` is added to the dictionary with the value ``contaminant``.
+- A yellow warning is printed listing the types that were auto-assigned.
+
+**Effect on classification targets:**
+
+- **Binary classification** (``nb_classes=2``): contaminants are treated as non-Ia (class 1), just like any other core-collapse type. No data is lost.
+- **Multiclass classification** (``nb_classes>2``): contaminants are grouped into a single additional class. For example, if you specify 2 types (``Ib/c`` and ``Ia``), the multiclass target will have 3 classes: ``Ib/c`` (0), ``Ia`` (1), and ``contaminant`` (2).
+
+**Example:**
+
+Suppose your data contains types ``111, 112, 113, 115, 212`` but you only care about two:
+
+.. code-block:: bash
+
+    snn make_data --dump_dir <dump> --raw_dir <raw> --sntypes '{"112":"Ib/c", "113":"Ia"}'
+
+SuperNNova will print:
+
+.. code-block:: none
+
+    [Missing sntypes] ['111', '115', '212'] assigned to 'contaminant' class
+
+The resulting database will contain:
+
+- ``target_2classes``: ``Ia`` (113) as class 0, everything else as class 1
+- ``target_3classes``: ``Ib/c`` (112) as class 0, ``Ia`` (113) as class 1, ``contaminant`` (111, 115, 212) as class 2
+
+This means you no longer need to manually list every type in the data when using ``--sntypes``. Only the types you want to distinguish need to be specified.
 
 Preprocessing
 ~~~~~~~~~~~~~~
