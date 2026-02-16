@@ -99,10 +99,21 @@ def tag_type(df, settings, type_column="TYPE"):
             )
             raise Exception
 
+    # Auto-detect types in data not present in sntypes and assign as contaminant
+    df[type_column] = df[type_column].astype(str)
+    all_types_in_data = df[type_column].unique()
+    missing_types = [t for t in all_types_in_data if t not in settings.sntypes]
+    if len(missing_types) > 0:
+        logging_utils.print_yellow(
+            "Missing sntypes",
+            f"{missing_types} assigned to 'contaminant' class",
+        )
+        for mtyp in missing_types:
+            settings.sntypes[mtyp] = "contaminant"
+
     # 2 classes: Ia vs non Ia
     list_types = list(set([x for x in settings.sntypes.values()]))
     if "Ia" in list_types:
-        df[type_column] = df[type_column].astype(str)
         # get keys of Ias, the rest tag them as CC
         keys_ia = [key for (key, value) in settings.sntypes.items() if value == "Ia"]
         df["target_2classes"] = df[type_column].apply(
@@ -123,20 +134,6 @@ def tag_type(df, settings, type_column="TYPE"):
     map_keys_to_classes = {}
     for k, v in settings.sntypes.items():
         map_keys_to_classes[k] = classes_to_use[v]
-
-    # check if all types are given in input dictionary
-    tmp = df[~df[type_column].isin(settings.sntypes.keys())]
-    n = 0
-    if len(tmp) > 0:
-        logging_utils.print_red(
-            "Missing sntypes",
-            f"{tmp[type_column].unique()} binary tagged as class 1",
-        )
-        logging_utils.print_red("nb_classes !=2 will NOT work")
-        extra_tag = max(map_keys_to_classes.values()) + 1
-        for mtyp in tmp[type_column].unique():
-            map_keys_to_classes[mtyp] = extra_tag
-    len(unique_classes) + n
 
     df[f"target_{len(unique_classes)}classes"] = df[type_column].apply(
         lambda x: map_keys_to_classes[x]

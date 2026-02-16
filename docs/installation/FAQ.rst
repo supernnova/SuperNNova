@@ -84,6 +84,10 @@ You have probably forgotten to set your ``dump_dir`` correctly. Provide the ``--
 - **ValueError: No objects to concatenate in Database creation**
 Check that you provided the appropriate ``raw_dir`` and that the files are either .FITS tables or .csv with the proper format (see data tab). Another possibility is that you are using a different survey than DES and you need to specify the appropriate ``list_filters``.
 
+- **ValueError during training when using a custom** ``--sntypes`` **with only a subset of types**
+
+Previously, if your data contained types not listed in ``--sntypes``, training would fail with a ``ValueError`` because the missing types were assigned to an out-of-bounds class index. This has been fixed: missing types are now automatically assigned to a ``contaminant`` class. You only need to specify the types you want to distinguish in ``--sntypes``. See :ref:`DataStructure` for details on how contaminant auto-detection works.
+
 - **Your error not here? Please open an issue in GitHub! **
 
 

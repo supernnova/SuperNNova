@@ -960,6 +960,37 @@ def pivot_dataframe_batch(list_files, settings):
     logging_utils.print_green("Finished pivot")
 
 
+def detect_contaminant_types(settings):
+    """Pre-scan raw data files to detect types not in settings.sntypes.
+
+    Any type found in the data but missing from settings.sntypes is
+    automatically added as 'contaminant'. This must run before any
+    column-name computation so that target column names are consistent
+    throughout the pipeline.
+
+    Args:
+        settings (ExperimentSettings): controls experiment hyperparameters
+    """
+    list_files = natsorted(Path(settings.raw_dir).glob("**/*HEAD*"))
+    all_types = set()
+    for fil in list_files:
+        fmt = re.search(r"(FITS|csv)", fil.name).group()
+        if fmt == "csv":
+            df_head = pd.read_csv(fil, usecols=[settings.sntype_var])
+        else:
+            df_head = Table.read(str(fil), format="fits").to_pandas()
+        all_types.update(df_head[settings.sntype_var].astype(str).unique())
+
+    missing_types = [t for t in sorted(all_types) if t not in settings.sntypes]
+    if missing_types:
+        logging_utils.print_yellow(
+            "Missing sntypes",
+            f"{missing_types} assigned to 'contaminant' class",
+        )
+        for mtyp in missing_types:
+            settings.sntypes[mtyp] = "contaminant"
+
+
 @logging_utils.timer("Data processing")
 def make_dataset(settings):
     """Main function for data processing
@@ -971,6 +1002,11 @@ def make_dataset(settings):
     Args:
         settings (ExperimentSettings): controls experiment hyperparameters
     """
+    # Detect types in data not listed in sntypes and assign as contaminant.
+    # This must happen before build_traintestval_splits so that column names
+    # (target_Nclasses, dataset_*_Nclasses) are computed correctly.
+    detect_contaminant_types(settings)
+
     # Clean up data folders
     if settings.overwrite is True:
         for folder in [settings.preprocessed_dir, settings.processed_dir]:
