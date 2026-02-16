@@ -479,7 +479,15 @@ def get_args(command_arg):
             }
         ),
         type=json.loads,
-        help="SN classes in sims (put Ia always first)",
+        help="SN classes in sims",
+    )
+
+    parser.add_argument(
+        "--target_sntype",
+        type=str,
+        default="Ia",
+        help="Class value in --sntypes to use as target 0 (class of interest) "
+        "for binary classification. Default: 'Ia'",
     )
 
     parser.add_argument(
