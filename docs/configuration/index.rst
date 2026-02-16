@@ -26,6 +26,7 @@ Argument                  Type                Help
 --data_fraction           float       Fraction of data to use
 --override_source_data    str         Change the source data (use saltfit or photometry)
 --sntypes                 dict        SN type mapping (e.g. '{"101":"Ia","120":"IIP"}'). Types in data not listed here are auto-assigned to a ``contaminant`` class.
+--target_sntype           str         Class value in --sntypes to use as target 0 for binary classification (default: Ia)
 --sntype_var              str         Column name for event types (default: SNTYPE)
 --nb_classes              int         Number of classification targets (default: 2)
 ======================  ============  ==================================================================

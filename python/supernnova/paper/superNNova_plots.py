@@ -427,7 +427,7 @@ def multiplot_violin_paper(df, fname, settings):
     g.spines["right"].set_visible(False)
     g.spines["top"].set_visible(False)
     g.xaxis.set_major_locator(FixedLocator([0, 1]))
-    g.set_xticklabels(["Ia", "nonIa"], fontsize=14)
+    g.set_xticklabels([getattr(settings, "target_sntype", "Ia"), f"non{getattr(settings, 'target_sntype', 'Ia')}"], fontsize=14)
 
     g = sns.violinplot(
         x="target",
@@ -448,7 +448,7 @@ def multiplot_violin_paper(df, fname, settings):
     g.spines["top"].set_visible(False)
     g.spines["left"].set_visible(False)
     g.xaxis.set_major_locator(FixedLocator([0, 1]))
-    g.set_xticklabels(["Ia", "nonIa"], fontsize=14)
+    g.set_xticklabels([getattr(settings, "target_sntype", "Ia"), f"non{getattr(settings, 'target_sntype', 'Ia')}"], fontsize=14)
     plt.setp(axes[1].get_yticklabels(), visible=False)
 
     g = sns.violinplot(
@@ -471,7 +471,7 @@ def multiplot_violin_paper(df, fname, settings):
     g.spines["top"].set_visible(False)
     g.spines["left"].set_visible(False)
     g.xaxis.set_major_locator(FixedLocator([0, 1]))
-    g.set_xticklabels(["Ia", "nonIa"], fontsize=14)
+    g.set_xticklabels([getattr(settings, "target_sntype", "Ia"), f"non{getattr(settings, 'target_sntype', 'Ia')}"], fontsize=14)
     plt.setp(axes[2].get_yticklabels(), visible=False)
 
     g = sns.violinplot(
@@ -493,7 +493,7 @@ def multiplot_violin_paper(df, fname, settings):
     g.spines["top"].set_visible(False)
     g.spines["left"].set_visible(False)
     g.xaxis.set_major_locator(FixedLocator([0, 1]))
-    g.set_xticklabels(["Ia", "nonIa"], fontsize=14)
+    g.set_xticklabels([getattr(settings, "target_sntype", "Ia"), f"non{getattr(settings, 'target_sntype', 'Ia')}"], fontsize=14)
     plt.setp(axes[3].get_yticklabels(), visible=False)
 
     # redshift
@@ -627,6 +627,7 @@ def plot_HDres_histos_vs_z(
     threshold_var="class0",
     threshold_list=[0.5, 0.7, 0.9],
     threshold_sign=">",
+    settings=None,
 ):
     """Plot Hubble diagram residuals and histograms
     selects class sample and performas HD
@@ -693,8 +694,9 @@ def plot_HDres_histos_vs_z(
     def HRwhisto(
         df, sel_dic, ax_left, ax_right, threshold_sign, ylabel="TP", visible=False
     ):
+        target_class = getattr(settings, "target_sntype", "Ia") if settings else "Ia"
         if ylabel == "TP":
-            sntyp = "Ia"
+            sntyp = target_class
         else:
             sntyp = "CC"
         ax_left.scatter(
@@ -1134,6 +1136,7 @@ def hubble_residuals(df, model_name, fits, settings):
         threshold_var="class0",
         threshold_list=[0.5, 0.7, 0.9],
         threshold_sign=">",
+        settings=settings,
     )
 
     # residuals with uncertainty thresholds
@@ -1152,6 +1155,7 @@ def hubble_residuals(df, model_name, fits, settings):
             threshold_var="sigma_all",
             threshold_list=[0.05, 0.1, 0.2],
             threshold_sign="<",
+            settings=settings,
         )
 
 

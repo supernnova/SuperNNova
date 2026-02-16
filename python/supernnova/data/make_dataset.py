@@ -990,6 +990,19 @@ def detect_contaminant_types(settings):
         for mtyp in missing_types:
             settings.sntypes[mtyp] = "contaminant"
 
+    # Warn about sntypes keys not found in the data but do NOT remove them.
+    # Phantom keys are harmless: groupby only creates groups for values present
+    # in the data, so downsampling and splits work correctly. Keeping them
+    # preserves the class structure (target_Nclasses column name and indices),
+    # which is essential for compatibility when using a model trained on a
+    # dataset that contained all types.
+    phantom_keys = [k for k in list(settings.sntypes.keys()) if k not in all_types]
+    if phantom_keys:
+        logging_utils.print_yellow(
+            "Unused sntypes",
+            f"Keys {phantom_keys} not found in data (kept for class structure consistency)",
+        )
+
 
 @logging_utils.timer("Data processing")
 def make_dataset(settings):

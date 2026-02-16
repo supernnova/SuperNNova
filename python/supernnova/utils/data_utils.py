@@ -49,6 +49,8 @@ def sntype_decoded(target, settings, simplify=False):
         (str) the name of the class
 
     """
+    target_class = getattr(settings, "target_sntype", "Ia")
+
     if settings.nb_classes > 2:
         used = set()
         unique_classes = [
@@ -56,21 +58,25 @@ def sntype_decoded(target, settings, simplify=False):
             for x in settings.sntypes.values()
             if x not in used and (used.add(x) or True)
         ]
+        # Ensure target_sntype is class 0, consistent with tag_type
+        if target_class in unique_classes:
+            unique_classes.remove(target_class)
+            unique_classes.insert(0, target_class)
         SNtype = list(unique_classes)[target]
     else:
         list_types = list(set([x for x in settings.sntypes.values()]))
         if target == 0:
-            if "Ia" in list_types:
-                SNtype = "SN Ia"
+            if target_class in list_types:
+                SNtype = f"SN {target_class}"
             else:
                 SNtype = f"SN {list(settings.sntypes.values())[0]}"
         else:
-            if "Ia" in list_types:
-                SNtype = f"SN {'|'.join(set([k for k in settings.sntypes.values() if 'Ia' not in k]))}"
-            else:
-                SNtype = f"SN {'|'.join(list(settings.sntypes.values())[1:])}"
+            non_target = set(
+                [k for k in settings.sntypes.values() if k != target_class]
+            )
+            SNtype = f"SN {'|'.join(non_target)}"
             if simplify:
-                SNtype = "non SN Ia"
+                SNtype = f"non SN {target_class}"
     return SNtype
 
 
@@ -101,7 +107,7 @@ def tag_type(df, settings, type_column="TYPE"):
 
     # Auto-detect types in data not present in sntypes and assign as contaminant
     df[type_column] = df[type_column].astype(str)
-    all_types_in_data = df[type_column].unique()
+    all_types_in_data = set(df[type_column].unique())
     missing_types = [t for t in all_types_in_data if t not in settings.sntypes]
     if len(missing_types) > 0:
         logging_utils.print_yellow(
@@ -111,25 +117,37 @@ def tag_type(df, settings, type_column="TYPE"):
         for mtyp in missing_types:
             settings.sntypes[mtyp] = "contaminant"
 
-    # 2 classes: Ia vs non Ia
+    # 2 classes: target_sntype vs rest
+    target_class = getattr(settings, "target_sntype", "Ia")
     list_types = list(set([x for x in settings.sntypes.values()]))
-    if "Ia" in list_types:
-        # get keys of Ias, the rest tag them as CC
-        keys_ia = [key for (key, value) in settings.sntypes.items() if value == "Ia"]
+    if target_class in list_types:
+        keys_target = [
+            key for (key, value) in settings.sntypes.items() if value == target_class
+        ]
         df["target_2classes"] = df[type_column].apply(
-            lambda x: 0 if x in keys_ia else 1
+            lambda x: 0 if x in keys_target else 1
         )
     else:
-        arr_temp = df[type_column].values.copy()
-        df["target_2classes"] = (
-            arr_temp != int(list(settings.sntypes.keys())[0])
-        ).astype(np.uint8)
+        # Fallback: first key in sntypes = class 0
+        logging_utils.print_yellow(
+            "target_sntype",
+            f"'{target_class}' not found in sntypes values {list_types}, "
+            f"using first entry as class 0",
+        )
+        first_key = list(settings.sntypes.keys())[0]
+        df["target_2classes"] = df[type_column].apply(
+            lambda x: 0 if x == first_key else 1
+        )
 
-    # All classes
+    # All classes — ensure target_sntype is class 0 for consistency with binary
     used = set()
     unique_classes = [
         x for x in settings.sntypes.values() if x not in used and (used.add(x) or True)
     ]
+    if target_class in unique_classes:
+        unique_classes.remove(target_class)
+        unique_classes.insert(0, target_class)
+
     classes_to_use = dict([(y, x) for x, y in enumerate(unique_classes)])
     map_keys_to_classes = {}
     for k, v in settings.sntypes.items():

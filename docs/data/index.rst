@@ -196,7 +196,8 @@ We first compute the data splits:
 - The splits are different for the salt/photometry datasets
 - The splits are different depending on the classification target
 - We downsample the dataset so that for a given classification task, all classes have the same cardinality
-- The supernova/light-curve types supported can be changed using ``--sntypes``. Default contains 7 classes. If a type present in the data is not given as input in ``--sntypes``, it will be automatically assigned to a ``contaminant`` class (see below). If ``Ia`` exists in provided ``--sntypes``, this will be taken as tag 0 in data splits, else the first class will be used.
+- The supernova/light-curve types supported can be changed using ``--sntypes``. Default contains 7 classes. If a type present in the data is not given as input in ``--sntypes``, it will be automatically assigned to a ``contaminant`` class (see below).
+- The class used as target 0 (class of interest) for binary classification is controlled by ``--target_sntype`` (default: ``Ia``). This class is also placed first (index 0) in multiclass targets, ensuring consistency between binary and multiclass columns. If the specified ``--target_sntype`` value is not found in ``--sntypes``, the first entry in the dictionary is used as a fallback.
 
 Handling missing types (contaminant auto-detection)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -211,8 +212,8 @@ When building a database, the data may contain supernova types that are not list
 
 **Effect on classification targets:**
 
-- **Binary classification** (``nb_classes=2``): contaminants are treated as non-Ia (class 1), just like any other core-collapse type. No data is lost.
-- **Multiclass classification** (``nb_classes>2``): contaminants are grouped into a single additional class. For example, if you specify 2 types (``Ib/c`` and ``Ia``), the multiclass target will have 3 classes: ``Ib/c`` (0), ``Ia`` (1), and ``contaminant`` (2).
+- **Binary classification** (``nb_classes=2``): contaminants are treated as non-target (class 1), just like any other non-target type. No data is lost.
+- **Multiclass classification** (``nb_classes>2``): contaminants are grouped into a single additional class. For example, if you specify 2 types (``Ib/c`` and ``Ia``) with ``--target_sntype Ia``, the multiclass target will have 3 classes: ``Ia`` (0), ``Ib/c`` (1), and ``contaminant`` (2).
 
 **Example:**
 
@@ -231,9 +232,22 @@ SuperNNova will print:
 The resulting database will contain:
 
 - ``target_2classes``: ``Ia`` (113) as class 0, everything else as class 1
-- ``target_3classes``: ``Ib/c`` (112) as class 0, ``Ia`` (113) as class 1, ``contaminant`` (111, 115, 212) as class 2
+- ``target_3classes``: ``Ia`` (113) as class 0, ``Ib/c`` (112) as class 1, ``contaminant`` (111, 115, 212) as class 2
 
 This means you no longer need to manually list every type in the data when using ``--sntypes``. Only the types you want to distinguish need to be specified.
+
+Handling unused types in sntypes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If ``--sntypes`` contains types that are **not** present in the data (e.g. you specify ``"120":"IIP"`` but no type 120 exists in this dataset), those entries are kept in the dictionary and a warning is printed:
+
+.. code-block:: none
+
+    [Unused sntypes] Keys ['120'] not found in data (kept for class structure consistency)
+
+The unused types are **not** removed because preserving the full ``--sntypes`` dictionary ensures that the ``target_Nclasses`` column name and class indices remain stable across datasets. This is important when you train a model on one dataset and classify another that may contain a different subset of types — the class structure must match for the model predictions to be meaningful.
+
+The balanced downsampling used during training is unaffected because ``groupby`` only operates on classes that have data; empty classes are simply absent from the groups.
 
 Preprocessing
 ~~~~~~~~~~~~~~

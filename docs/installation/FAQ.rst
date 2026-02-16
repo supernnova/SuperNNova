@@ -88,6 +88,10 @@ Check that you provided the appropriate ``raw_dir`` and that the files are eithe
 
 Previously, if your data contained types not listed in ``--sntypes``, training would fail with a ``ValueError`` because the missing types were assigned to an out-of-bounds class index. This has been fixed: missing types are now automatically assigned to a ``contaminant`` class. You only need to specify the types you want to distinguish in ``--sntypes``. See :ref:`DataStructure` for details on how contaminant auto-detection works.
 
+- ``--sntypes`` **contains types not in the data**
+
+If ``--sntypes`` includes a type not present in the data (e.g. ``--sntypes '{"112":"Ib/c","113":"Ia","120":"IIP"}'`` but no type 120 in data), a warning is printed but the entry is kept. This is by design: preserving the full class structure ensures that ``target_Nclasses`` column names and class indices are stable across datasets, so a model trained on one dataset can classify another that contains a different subset of types.
+
 - **Your error not here? Please open an issue in GitHub! **
 
 
