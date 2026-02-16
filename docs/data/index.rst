@@ -236,6 +236,19 @@ The resulting database will contain:
 
 This means you no longer need to manually list every type in the data when using ``--sntypes``. Only the types you want to distinguish need to be specified.
 
+Handling unused types in sntypes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If ``--sntypes`` contains types that are **not** present in the data (e.g. you specify ``"120":"IIP"`` but no type 120 exists in this dataset), those entries are kept in the dictionary and a warning is printed:
+
+.. code-block:: none
+
+    [Unused sntypes] Keys ['120'] not found in data (kept for class structure consistency)
+
+The unused types are **not** removed because preserving the full ``--sntypes`` dictionary ensures that the ``target_Nclasses`` column name and class indices remain stable across datasets. This is important when you train a model on one dataset and classify another that may contain a different subset of types — the class structure must match for the model predictions to be meaningful.
+
+The balanced downsampling used during training is unaffected because ``groupby`` only operates on classes that have data; empty classes are simply absent from the groups.
+
 Preprocessing
 ~~~~~~~~~~~~~~
 

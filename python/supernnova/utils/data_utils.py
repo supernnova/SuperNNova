@@ -107,7 +107,7 @@ def tag_type(df, settings, type_column="TYPE"):
 
     # Auto-detect types in data not present in sntypes and assign as contaminant
     df[type_column] = df[type_column].astype(str)
-    all_types_in_data = df[type_column].unique()
+    all_types_in_data = set(df[type_column].unique())
     missing_types = [t for t in all_types_in_data if t not in settings.sntypes]
     if len(missing_types) > 0:
         logging_utils.print_yellow(
