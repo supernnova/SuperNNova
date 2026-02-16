@@ -1169,12 +1169,17 @@ def cnf_matrix(df, model_name, settings):
     """
 
     df_r = pu.reformat_df(df, "all", settings)
-    cnf_matrix = confusion_matrix(df_r["target"], df_r["predicted_target"])
+
+    # Get sorted unique target values (sklearn confusion_matrix sorts labels)
+    unique_targets = sorted(df_r["target"].unique())
+    cnf_matrix = confusion_matrix(
+        df_r["target"], df_r["predicted_target"], labels=unique_targets
+    )
 
     plt.figure()
-    settings.nb_classes = len(df_r["target"].unique())
+    settings.nb_classes = len(unique_targets)
     class_names = [
-        du.sntype_decoded(i, settings, simplify=True) for i in df_r["target"].unique()
+        du.sntype_decoded(i, settings, simplify=True) for i in unique_targets
     ]
     plot_confusion_matrix(
         settings, cnf_matrix, classes=class_names, normalize=True, nameout=model_name

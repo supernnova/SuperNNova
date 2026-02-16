@@ -51,32 +51,37 @@ def sntype_decoded(target, settings, simplify=False):
     """
     target_class = getattr(settings, "target_sntype", "Ia")
 
+    # Build ordered unique class list consistent with tag_type:
+    # target_sntype first, then remaining classes in insertion order
+    used = set()
+    unique_classes = [
+        x
+        for x in settings.sntypes.values()
+        if x not in used and (used.add(x) or True)
+    ]
+    if target_class in unique_classes:
+        unique_classes.remove(target_class)
+        unique_classes.insert(0, target_class)
+
     if settings.nb_classes > 2:
-        used = set()
-        unique_classes = [
-            x
-            for x in settings.sntypes.values()
-            if x not in used and (used.add(x) or True)
-        ]
-        # Ensure target_sntype is class 0, consistent with tag_type
-        if target_class in unique_classes:
-            unique_classes.remove(target_class)
-            unique_classes.insert(0, target_class)
-        SNtype = list(unique_classes)[target]
+        if target < len(unique_classes):
+            SNtype = unique_classes[target]
+        else:
+            SNtype = f"class_{target}"
     else:
-        list_types = list(set([x for x in settings.sntypes.values()]))
         if target == 0:
-            if target_class in list_types:
+            if target_class in unique_classes:
                 SNtype = f"SN {target_class}"
             else:
-                SNtype = f"SN {list(settings.sntypes.values())[0]}"
+                SNtype = f"SN {unique_classes[0]}"
         else:
-            non_target = set(
-                [k for k in settings.sntypes.values() if k != target_class]
-            )
+            non_target = [k for k in unique_classes if k != target_class]
             SNtype = f"SN {'|'.join(non_target)}"
             if simplify:
-                SNtype = f"non SN {target_class}"
+                if target_class in unique_classes:
+                    SNtype = f"non SN {target_class}"
+                else:
+                    SNtype = f"non SN {unique_classes[0]}"
     return SNtype
 
 
