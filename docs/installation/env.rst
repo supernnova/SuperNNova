@@ -91,7 +91,9 @@ You can also use mise, a tool to manage multiple python environments.
 Docker
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can also use docker:
+You can also use docker.  The Docker image uses `uv`_ to install Python 3.11 and
+all dependencies (instead of conda), so there are no Anaconda Terms-of-Service
+prompts during the build.
 
 - Install docker: `Docker`_.
 
@@ -118,3 +120,4 @@ Enter docker environment by calling:
 This will launch an interactive session in the docker container, with zsh support.
 
 .. _Docker: https://docs.docker.com/install/linux/docker-ce/ubuntu/
+.. _uv: https://docs.astral.sh/uv/

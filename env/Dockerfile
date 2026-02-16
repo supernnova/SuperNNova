@@ -11,21 +11,19 @@ FROM ubuntu:22.04 as cpu
 # Default to Zsh for CPU builds
 ARG USER_SHELL="/usr/bin/zsh"
 
-# Use the CPU version of the Conda environment file
-ENV CONDA_ENV_FILE="conda_env.yml"
-ENV CONDA_ENV_NAME="supernnova"
+# PyTorch index for CPU-only wheels
+ENV TORCH_INDEX_URL="https://download.pytorch.org/whl/cpu"
 
 ################################################
 # Base image for 'gpu9' builds, using CUDA v9.0
 ################################################
 FROM nvcr.io/nvidia/cuda:9.0-devel-ubuntu16.04 as gpu9
 
-# Default to Bash for CPU builds
+# Default to Bash for GPU builds
 ARG USER_SHELL="/bin/bash"
 
-# Use the GPU version of the Conda environment file
-ENV CONDA_ENV_FILE="conda_gpu_env.yml"
-ENV CONDA_ENV_NAME="supernnova-cuda"
+# PyTorch index for CUDA 11.8 wheels
+ENV TORCH_INDEX_URL="https://download.pytorch.org/whl/cu118"
 
 ###########################################################
 # Base image for 'gpu' builds, using a recent CUDA version
@@ -35,12 +33,11 @@ ENV CONDA_ENV_NAME="supernnova-cuda"
 ###########################################################
 FROM nvcr.io/nvidia/cuda:12.3.1-devel-ubuntu22.04 as gpu
 
-# Default to Bash for CPU builds
+# Default to Bash for GPU builds
 ARG USER_SHELL="/bin/bash"
 
-# Use the GPU version of the Conda environment file
-ENV CONDA_ENV_FILE="conda_gpu_env.yml"
-ENV CONDA_ENV_NAME="supernnova-cuda"
+# PyTorch index for CUDA 12.1 wheels
+ENV TORCH_INDEX_URL="https://download.pytorch.org/whl/cu121"
 
 #####################################################
 # Everything that follows is the same for all builds
@@ -100,6 +97,15 @@ RUN echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen && \
     locale-gen --purge --lang en_US && \
     locale-gen
 
+#####################################################################################
+# Install uv (fast Python package manager)
+#------------------------------------------------------------------------------------
+# uv replaces conda for managing the Python installation, virtual environment,
+# and package installs.  It is much faster than conda/pip and avoids the
+# Anaconda Terms-of-Service issue that blocks non-interactive Docker builds.
+#####################################################################################
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
 ###########################################################################
 # Add a user which will be mapped to the runtime user who builds the image
 #--------------------------------------------------------------------------
@@ -117,64 +123,48 @@ RUN mkdir -p ${HOME} && \
     chown -R ${USER_ID}:${USER_GID} ${HOME}
 
 #############################################################
-# Switch to the user that we just created.  In what follows, 
+# Switch to the user that we just created.  In what follows,
 # we set-up their runtime environment.
 #############################################################
 USER ${USERNAME}
 WORKDIR ${HOME}
 
 #####################################################################################
-# Instal Anaconda
-#------------------------------------------------------------------------------------
-# n.b.: we don't add ${CONDA_HOME}/lib and ${CONDA_HOME}/bin to 
-# their respective paths here to avoid the following error:
-# https://stackoverflow.com/questions/72103046/libtinfo-so-6-no-version-information-available-message-using-conda-environment
-# If you do feel the need to do this, you may need to do the 
-# following to deal with this:
-# RUN ${CONDA} install -n ${CONDA_ENV_NAME} -c conda-forge --force-reinstall ncurses
+# Install Python 3.11 via uv and create a virtual environment
 #####################################################################################
-ENV CONDA_HOME=${HOME}/.miniconda3
-ENV CONDA=${CONDA_HOME}/bin/conda
-RUN curl -o ${HOME}/miniconda.sh -O  https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
-    chmod a+x ${HOME}/miniconda.sh
-RUN ${HOME}/miniconda.sh -b -p ${CONDA_HOME} && \
-    rm ${HOME}/miniconda.sh
+ENV VIRTUAL_ENV=${HOME}/.venv
+ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
+RUN uv python install 3.11
+RUN uv venv ${VIRTUAL_ENV} --python 3.11
 
-############################################################
-# Create Conda environment
-#-----------------------------------------------------------
-# The use of a Conda env here simplifies the support of old OS
-# & CUDA versions while using a modern Python version.  In the
-# future, we may be able to drop support for old platforms;
-# install Python with `apt-get`; and drop this conda env
-############################################################
-COPY env/${CONDA_ENV_FILE} ${HOME}/conda_env.yml
-RUN ${CONDA} config --set auto_activate_base false
-RUN ${CONDA} config --set changeps1 False
-RUN ${CONDA} env create -f conda_env.yml 
-RUN ${CONDA} clean -ya  
-RUN rm conda_env.yml 
+#####################################################################################
+# Install PyTorch
+#------------------------------------------------------------------------------------
+# The TORCH_INDEX_URL is set per build target (cpu / gpu / gpu9) in the
+# stage definitions above.
+#####################################################################################
+RUN uv pip install torch torchvision --index-url ${TORCH_INDEX_URL}
 
 #################
 # Install Poetry
 #################
-RUN ${CONDA} run -n ${CONDA_ENV_NAME} pip install poetry
+RUN uv pip install "poetry>=2.0,<3.0"
+RUN poetry config virtualenvs.create false
 
 ################################################################
-# Copy and install Poetry dependencies (but not the actual 
-# application, which will get installed by the entry_point 
+# Copy and install Poetry dependencies (but not the actual
+# application, which will get installed by the entry_point
 # script when we start the container)
 ################################################################
 COPY pyproject.toml poetry.lock .
-RUN ${CONDA} run -n ${CONDA_ENV_NAME} poetry install --no-root --all-extras && \
+RUN poetry install --no-root --all-extras && \
     rm pyproject.toml poetry.lock
 
-##################################################
-# Ensure Conda is set-up and its env is activated
-##################################################
-RUN ${CONDA} init --all
-RUN echo conda activate supernnova >> .bashrc
-RUN echo conda activate supernnova >> .zshrc
+###############################################
+# Activate the virtual environment in shells
+###############################################
+RUN echo "source ${VIRTUAL_ENV}/bin/activate" >> .bashrc
+RUN echo "source ${VIRTUAL_ENV}/bin/activate" >> .zshrc
 
 ##############
 # Set up bash
@@ -201,7 +191,8 @@ USER root
 COPY env/entry_script.sh /
 RUN chmod a+rx /entry_script.sh
 # Make sure that the 'SuperNNova' path used here matches what gets used
-# in the 'launch_docker.py' script
-RUN echo "cd SuperNNova && ${CONDA} run -n ${CONDA_ENV_NAME} poetry install --all-extras --only-root" >> /entry_script.sh
+# in the 'launch_docker.py' script.
+# The venv is already on PATH, so poetry runs directly.
+RUN echo "cd SuperNNova && poetry install --all-extras --only-root" >> /entry_script.sh
 RUN echo su -m $USERNAME >> /entry_script.sh
 ENTRYPOINT ["sh", "-c", "/entry_script.sh"]
