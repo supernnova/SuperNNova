@@ -1,8 +1,6 @@
 """Tests for tag_type: contaminant auto-detection and target_sntype."""
 
-import numpy as np
 import pandas as pd
-import pytest
 from collections import OrderedDict
 from supernnova.utils import data_utils, experiment_settings
 

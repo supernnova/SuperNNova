@@ -8,11 +8,7 @@ Tests the priority order:
 import os
 import json
 import shutil
-import tempfile
-from pathlib import Path
 from collections import OrderedDict
-
-import pytest
 
 from supernnova.data.make_dataset import parse_sntypes_from_readme, resolve_sntypes
 from supernnova import conf
