@@ -71,18 +71,18 @@ FILTERS: griz
         assert sntypes is None
 
     def test_parse_readme_with_comments_and_empty_lines(self, tmp_path):
-        """Test parsing handles comments and empty lines correctly."""
+        """Test parsing handles comments correctly (empty lines end the block)."""
         readme = tmp_path / "test.README"
         readme.write_text(
             """
 GENTYPE_TO_NAME:   # GENTYPE-integer    (non)Ia   transient-Name
   # This is a comment line
   1:   Ia       SALT3.MODEL    SNIaMODEL00
-
   20:  nonIa    SNIIP          NONIaMODEL01
   # Another comment
-
   32:  nonIa    SNIb           NONIaMODEL02
+
+# End of block (empty line above terminates it)
 """
         )
 
