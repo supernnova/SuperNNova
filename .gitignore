@@ -1,39 +1,71 @@
-best_params.json
-.DS_Store
-supernnova/**/*.pyc
-supernnova/data/Backup/*
-supernnova/**/*.ipynb
-supernnova/**/.ipynb_checkpoints
-science_modules/**/*.pyc
-rfsn/**/*.pyc
-charnokmoss/**/*.pyc
-# *.csv
-*.h5
-.cache
-/data
-figures/
-figures/science_figures/
-models/
-supernnova/validation/.DS_Store
-tests/.ipynb_checkpoints/
-plots_paper/*
+# Python artifacts
 *.pyc
-.coverage*
-.pytest_cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter notebooks
+*.ipynb
 .ipynb_checkpoints/
-/tests/dump/processed
-/tests/dump/preprocessed
-/tests/dump/predictions
-/tests/dump/speed
-/tests/dump/latex
-/tests/dump/stats
-/tests/dump/figures
-/tests/dump/lightcurves
-/docs/_build
+tests/.ipynb_checkpoints/
+supernnova/**/.ipynb_checkpoints
+
+# Testing
+.pytest_cache/
 .coverage
-script.sh
-mnist.npz
-sandbox/data
-snndump
-.venv
+.coverage.*
+htmlcov/
+Anais*
+
+# IDEs and editors
+.DS_Store
+.vscode/
+.idea/
+.claude/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment and configuration
+.mise.toml
 .mise.local.toml
+
+# Data files and databases
+*.h5
+*.csv
+!tests/**/*.csv
+Predictions_*.csv
+manual_lc.csv
+
+# Models and outputs
+snndump
+
+# Test outputs and temporary data
+/tests/dump/
+tests/dump_*
+tests/mini*
+tests/raw_my_*
+test_RubinEarly/
+
+# Figures and plots
+figures/
+plots_paper/
+
+# Documentation build
+/docs/_build
+
+# Sandbox and experiments
+sandbox/data
+old_snippets/
+
+# Experiment directories
+ADACS/
+mise_uv/
+
+# Cache
+.cache
+
+# Legacy/other
+script.sh
