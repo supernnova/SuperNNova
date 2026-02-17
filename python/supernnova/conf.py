@@ -10,6 +10,19 @@ from distutils.util import strtobool
 from .utils import experiment_settings
 from supernnova.utils import logging_utils as lu
 
+# Hardcoded fallback when --sntypes is not provided and no .README is found
+DEFAULT_SNTYPES = OrderedDict(
+    {
+        "101": "Ia",
+        "120": "IIP",
+        "121": "IIn",
+        "122": "IIL1",
+        "123": "IIL2",
+        "132": "Ib",
+        "133": "Ic",
+    }
+)
+
 # group options to show in print_help for different actions
 COMMON_OPTIONS = [
     "--seed",
@@ -29,6 +42,8 @@ MAKE_DATA_OPTIONS = COMMON_OPTIONS + [
     "--no_overwrite",
     "--raw_dir",
     "--fits_dir",
+    "--sntypes",
+    "--sntype_var",
     "--testing_ids",
     "--photo_window_files",
     "--photo_window_var",
@@ -466,20 +481,12 @@ def get_args(command_arg):
     )
 
     parser.add_argument(
-        "--sntypes",  # test it
-        default=OrderedDict(
-            {
-                "101": "Ia",
-                "120": "IIP",
-                "121": "IIn",
-                "122": "IIL1",
-                "123": "IIL2",
-                "132": "Ib",
-                "133": "Ic",
-            }
-        ),
+        "--sntypes",
+        default=None,
         type=json.loads,
-        help="SN classes in sims",
+        help="SN classes in sims as JSON dict. If not provided, "
+        "auto-extracted from .README file in raw_dir (GENTYPE_TO_NAME block) "
+        f"or falls back to built-in defaults: {json.dumps(DEFAULT_SNTYPES)}",
     )
 
     parser.add_argument(

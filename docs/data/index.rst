@@ -158,7 +158,9 @@ The default sntype label is ``SNTYPE``. If you want to use your own label, you'l
 
     snn make_data --dump_dir <path/to/save/database/> --raw_dir <path/to/raw/data/>  --sntype_var <your/label>
 
-e.g. ``--sntype_var MYTYPE``. 
+e.g. ``--sntype_var MYTYPE``.
+
+**Note:** When using auto-extraction from ``.README`` files, the extracted type mappings will be applied to the column specified by ``--sntype_var``. 
 
 9. Mask photometry
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -196,8 +198,61 @@ We first compute the data splits:
 - The splits are different for the salt/photometry datasets
 - The splits are different depending on the classification target
 - We downsample the dataset so that for a given classification task, all classes have the same cardinality
-- The supernova/light-curve types supported can be changed using ``--sntypes``. Default contains 7 classes. If a type present in the data is not given as input in ``--sntypes``, it will be automatically assigned to a ``contaminant`` class (see below).
+- The supernova/light-curve types supported can be changed using ``--sntypes``. If not provided, types are auto-detected from ``.README`` files in ``raw_dir`` or use built-in defaults (7 classes). If a type present in the data is not given as input in ``--sntypes``, it will be automatically assigned to a ``contaminant`` class (see below).
 - The class used as target 0 (class of interest) for binary classification is controlled by ``--target_sntype`` (default: ``Ia``). This class is also placed first (index 0) in multiclass targets, ensuring consistency between binary and multiclass columns. If the specified ``--target_sntype`` value is not found in ``--sntypes``, the first entry in the dictionary is used as a fallback.
+
+Automatic sntypes resolution
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+SuperNNova automatically determines supernova type mappings using the following priority order:
+
+**1. Manual input (highest priority)**
+
+Explicitly provide type mappings via ``--sntypes`` as a JSON dictionary:
+
+.. code-block:: bash
+
+    snn make_data --dump_dir <path> --raw_dir <path> --sntypes '{"101":"Ia", "120":"IIP", "132":"Ib"}'
+
+This can also be specified in a YAML configuration file:
+
+.. code-block:: yaml
+
+    sntypes:
+      "101": "Ia"
+      "120": "IIP"
+      "132": "Ib"
+
+When ``--sntypes`` is provided, automatic detection is skipped and your specification is used.
+
+**2. Auto-extraction from .README files**
+
+If ``--sntypes`` is not provided, SuperNNova searches for ``*.README`` files in the ``raw_dir`` and extracts type mappings from the ``GENTYPE_TO_NAME`` block. This is the standard format used by SNANA simulations:
+
+.. code-block:: none
+
+    GENTYPE_TO_NAME:  # GENTYPE-integer (non)Ia transient-Name FITS-prefix
+      1:   Ia       SALT3.             SNIaMODEL00
+      20:  nonIa    SNIIP              NONIaMODEL03
+      32:  nonIa    SNIb               NONIaMODEL01
+
+For each GENTYPE number N found, two entries are created following the SNANA photo-ID convention:
+
+- **N** → type name (e.g., ``"1": "Ia"``)
+- **N+100** → type name (e.g., ``"101": "Ia"``)
+
+For Ia types (column 2 == "Ia"), the type name is "Ia". For non-Ia types, the transient name from column 3 is used (e.g., "SNIIP", "SNIb").
+
+**3. Built-in defaults (fallback)**
+
+If no ``--sntypes`` is provided and no ``.README`` is found, SuperNNova uses built-in defaults:
+
+.. code-block:: python
+
+    {"101": "Ia", "120": "IIP", "121": "IIn", "122": "IIL1",
+     "123": "IIL2", "132": "Ib", "133": "Ic"}
+
+A message is printed indicating which method was used to determine the types.
 
 Handling missing types (contaminant auto-detection)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

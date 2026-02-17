@@ -73,13 +73,9 @@ jobs:
         run: poetry install --no-interaction --extras "docs dev"
 
       # Enforce code formating standards
-      - name: Enforce linting
+      - name: Enforce linting and formatting
         shell: bash -l {0}
-        run: poetry run ruff .
-
-      - name: Enforce formating
-        shell: bash -l {0}
-        run: poetry run black .
+        run: poetry run ruff check . && poetry run ruff format --check .
 
       # Make sure the Poetry project is properly maintained
       - name: Enforce maintainance of Poetry project

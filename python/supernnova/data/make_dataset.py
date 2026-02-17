@@ -1,5 +1,6 @@
 import os
 import re
+import json
 import glob
 import shutil
 import numpy as np
@@ -11,6 +12,8 @@ from natsort import natsorted
 from functools import partial
 from astropy.table import Table
 from concurrent.futures import ProcessPoolExecutor
+
+from collections import OrderedDict
 
 from ..utils import data_utils
 from ..utils import logging_utils
@@ -960,6 +963,128 @@ def pivot_dataframe_batch(list_files, settings):
     logging_utils.print_green("Finished pivot")
 
 
+def parse_sntypes_from_readme(raw_dir):
+    """Parse GENTYPE_TO_NAME block from .README files in raw_dir.
+
+    Looks for files matching *.README in raw_dir and extracts supernova
+    type mappings from the GENTYPE_TO_NAME block.  For each GENTYPE number
+    N found, two entries are created: N and N+100 (the photo-ID convention
+    used by SNANA simulations).
+
+    The expected block format is::
+
+        GENTYPE_TO_NAME:  # GENTYPE-integer (non)Ia transient-Name FITS-prefix
+          1:   Ia       SALT3              SNIaMODEL00
+          20:  nonIa    SNIIP              NONIaMODEL03
+
+    Column mapping (after splitting each data line on whitespace):
+
+    * Column 1 – GENTYPE number (the key, e.g. ``1:``)
+    * Column 2 – Ia / nonIa category
+    * Column 3 – transient-Name (e.g. ``SNIIP``)
+
+    For Ia types (column 2 == "Ia") the type name is taken from column 2
+    directly ("Ia").  For non-Ia types the type name is taken from column 3
+    (the transient-Name, e.g. "SNIIP").
+
+    Args:
+        raw_dir (str): Path to the raw data directory.
+
+    Returns:
+        OrderedDict or None: Parsed ``{sntype_number: type_name}`` mapping,
+        or *None* when no README is found or the block is absent / empty.
+    """
+    readme_files = natsorted(Path(raw_dir).glob("*.README"))
+    if not readme_files:
+        return None
+
+    # Use the first README found
+    readme_file = readme_files[0]
+
+    sntypes = OrderedDict()
+    in_gentype_block = False
+
+    with open(readme_file, "r") as f:
+        for line in f:
+            stripped = line.strip()
+
+            # Detect start of GENTYPE_TO_NAME block
+            if stripped.startswith("GENTYPE_TO_NAME:"):
+                in_gentype_block = True
+                continue
+
+            if not in_gentype_block:
+                continue
+
+            # Skip comment lines inside the block
+            if stripped.startswith("#"):
+                continue
+
+            # Empty line or new section key → end of block
+            if not stripped:
+                break
+
+            parts = stripped.split()
+            # Data lines look like "N: (non)Ia transient-Name FITS-prefix"
+            if not (parts and parts[0].endswith(":") and parts[0][:-1].isdigit()):
+                break  # not a data line → end of block
+
+            if len(parts) < 3:
+                continue  # malformed line, skip
+
+            gentype_num = int(parts[0].rstrip(":"))
+
+            # For Ia types the category name *is* the type name;
+            # for non-Ia types use the transient-Name (column 3).
+            if parts[1].lower() == "ia":
+                type_name = parts[1]  # e.g. "Ia"
+            else:
+                type_name = parts[2]  # e.g. "SNIIP", "SNIIn"
+
+            # Add both N and N+100 (photo-ID convention)
+            sntypes[str(gentype_num)] = type_name
+            sntypes[str(gentype_num + 100)] = type_name
+
+    if not sntypes:
+        return None
+
+    return sntypes
+
+
+def resolve_sntypes(settings):
+    """Resolve settings.sntypes when not explicitly provided by the user.
+
+    Priority order:
+
+    1. Explicit ``--sntypes`` on CLI / config → already set, nothing to do.
+    2. ``.README`` file in ``raw_dir`` → parse ``GENTYPE_TO_NAME`` block.
+    3. Built-in ``DEFAULT_SNTYPES`` fallback.
+
+    Args:
+        settings (ExperimentSettings): controls experiment hyperparameters
+    """
+    from .. import conf  # local import to avoid circular dependency
+
+    if settings.sntypes is not None:
+        # User explicitly provided --sntypes, respect it
+        return
+
+    # Try to extract from .README in raw_dir
+    readme_sntypes = parse_sntypes_from_readme(settings.raw_dir)
+    if readme_sntypes is not None:
+        settings.sntypes = readme_sntypes
+        logging_utils.print_green(
+            "Extracted --sntypes from .README:",
+            json.dumps(settings.sntypes),
+        )
+    else:
+        settings.sntypes = conf.DEFAULT_SNTYPES.copy()
+        logging_utils.print_yellow(
+            "No --sntypes provided and no .README found in raw_dir,",
+            "using built-in defaults",
+        )
+
+
 def detect_contaminant_types(settings):
     """Pre-scan raw data files to detect types not in settings.sntypes.
 
@@ -1015,6 +1140,9 @@ def make_dataset(settings):
     Args:
         settings (ExperimentSettings): controls experiment hyperparameters
     """
+    # Resolve sntypes: CLI > .README in raw_dir > built-in defaults.
+    resolve_sntypes(settings)
+
     # Detect types in data not listed in sntypes and assign as contaminant.
     # This must happen before build_traintestval_splits so that column names
     # (target_Nclasses, dataset_*_Nclasses) are computed correctly.
