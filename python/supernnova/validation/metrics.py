@@ -313,6 +313,8 @@ def get_calibration_metrics_singlemodel(df):
     bins = np.arange(0, 11) / 10
     df["calibration_TPF"] = df["target"] != (df["all_class0"] < 0.5)
     df["prob_bin"] = pd.cut(df.all_class0.values, bins=bins, labels=range(10))
+    # observed=False: keep all probability bins in the output even if a bin has no samples,
+    # matching the pre-pandas-2.2 default behaviour and suppressing the FutureWarning.
     df_calib = df[["calibration_TPF", "prob_bin"]].groupby("prob_bin", observed=False).mean()
 
     df_calib.loc[df_calib.index >= 5] = 1 - df_calib.loc[df_calib.index >= 5]

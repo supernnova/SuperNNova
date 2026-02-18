@@ -47,6 +47,7 @@ def get_plot_lcs(settings):
     from supernnova.data import make_dataset
 
     if settings.model_files is None:
+        # Resolve sntypes so early_prediction.make_early_prediction can decode SNTYPE labels.
         make_dataset.resolve_sntypes(settings)
         early_prediction.make_early_prediction(settings, nb_lcs=2, do_gifs=False)
 

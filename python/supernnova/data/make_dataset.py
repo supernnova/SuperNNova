@@ -216,6 +216,8 @@ def build_traintestval_splits(settings):
                 g_test = g_test.apply(lambda x: x).reset_index(drop=True).sample(frac=1)
             else:
                 g = (
+                    # include_groups=False: suppress pandas FutureWarning about applying
+                    # a function that includes the grouping column in the result.
                     g.apply(lambda x: x.sample(g.size().min()), include_groups=False)
                     .reset_index(drop=True)
                     .sample(frac=1)
