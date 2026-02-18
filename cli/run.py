@@ -44,8 +44,10 @@ def get_action():
 
 def get_plot_lcs(settings):
     from supernnova.visualization import early_prediction
+    from supernnova.data import make_dataset
 
     if settings.model_files is None:
+        make_dataset.resolve_sntypes(settings)
         early_prediction.make_early_prediction(settings, nb_lcs=2, do_gifs=False)
 
     elif settings.model_files:

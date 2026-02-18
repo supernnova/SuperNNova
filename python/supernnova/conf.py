@@ -706,6 +706,13 @@ def get_settings_from_dump(settings, model_or_pred_or_metrics_file):
 
     settings = experiment_settings.ExperimentSettings(cli_args)
 
+    # Resolve sntypes: cli_args.json may have stored sntypes as null if the model
+    # was trained without an explicit --sntypes flag. Populate it now from the
+    # .README in raw_dir or from the built-in defaults so downstream code (e.g.
+    # contamination_by_SNTYPE, sntype_decoded) never receives a None value.
+    from supernnova.data import make_dataset  # local import avoids circular dependency
+    make_dataset.resolve_sntypes(settings)
+
     # load normalization from json dump
     settings = get_norm_from_model(model_or_pred_or_metrics_file, settings)
 
