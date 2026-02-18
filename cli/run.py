@@ -233,6 +233,25 @@ def main():
     if len(sys.argv) == 2 and sys.argv[1] == "--help":
         print_usage()
 
+    elif len(sys.argv) == 2 and sys.argv[1] in ("--version", "-V"):
+        import subprocess
+        import importlib.metadata as _meta
+        try:
+            # Primary: git describe gives the live version from tags, including
+            # any commits since the last tag (e.g. v3.0.33-8-g430eb46).
+            version = subprocess.check_output(
+                ["git", "describe", "--tags"],
+                cwd=osp.dirname(osp.abspath(__file__)),
+                stderr=subprocess.DEVNULL,
+            ).decode().strip()
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            # Fallback: installed package metadata (PyPI / tarball / shallow clone).
+            try:
+                version = _meta.version("supernnova")
+            except _meta.PackageNotFoundError:
+                version = "unknown"
+        print(f"supernnova {version}")
+
     else:
         # Workaround for optparse limitation: insert -- before first negative
         # number found.
