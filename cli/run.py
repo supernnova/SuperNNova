@@ -80,6 +80,11 @@ def train_rnn_action(settings):
     from supernnova.validation import validate_rnn, metrics
     from supernnova.visualization import early_prediction
     from supernnova.paper import superNNova_plots as sp
+    from supernnova.data import make_dataset
+
+    # Resolve sntypes: CLI flag > .README in raw_dir > built-in defaults.
+    # This must run before training/metrics so that settings.sntypes is never None.
+    make_dataset.resolve_sntypes(settings)
 
     # Validate command-line arguments
     if settings.swag:
@@ -117,6 +122,10 @@ def validate_rnn_action(settings):
     from supernnova.validation import validate_rnn, metrics
     from supernnova.visualization import prediction_distribution
     from supernnova.paper import superNNova_plots as sp
+    from supernnova.data import make_dataset
+
+    # Resolve sntypes so metrics computation never sees settings.sntypes = None.
+    make_dataset.resolve_sntypes(settings)
 
     if settings.model_files is None:
         prediction_file_list = validate_rnn.get_predictions(settings)
