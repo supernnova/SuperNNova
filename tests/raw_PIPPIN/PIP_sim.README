@@ -1,0 +1,381 @@
+DOCUMENTATION:
+  GENVERSION: PIP_sim
+
+#                   NLC_GEN   NLC_WRITE  NSPEC_WRITE  CPU(minutes)
+  STAT_SUMMARY: 
+  - TOTAL            174670       2187         0        9.5
+
+  INPUT_FILES:
+  - MASTER    PIP_sim.input 
+  - NONIa     sim_iax_dust.input 
+  - NONIa     sim_ia91bg.input 
+  - NONIa     sim_ii_v19_li11revised_nodust.input 
+  - NONIa     sim_ibc_v19_li11revised_nodust.input 
+
+  SUBMIT_DIR:  somepath
+  SNANA_VERSION:  v11_05u-57-g7e2b0ae
+  TIME_STAMP_SUBMIT:  2025-06-24 02:18:57 
+
+  GENTYPE_TO_NAME:   # GENTYPE-integer    (non)Ia   transient-Name     FITS-prefix
+    1:   Ia       SALT3.DOVEKIE         SNIaMODEL00
+    20:  nonIa    SNIIP                 NONIaMODEL03 
+    21:  nonIa    SNIIn                 NONIaMODEL01 
+    22:  nonIa    SNIIL1                NONIaMODEL01
+    23:  nonIa    SNIIIL2               NONIaMODEL01
+    32:  nonIa    SNIb                  NONIaMODEL01
+    33:  nonIa    SNIc                  NONIaMODEL01
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+  INPUT_KEYS_NONIaMODEL00: 
+# Output data
+    FORMAT_MASK:             48  #  += 2,32,16 -> TEXT, FITS, randomCID
+    WRFLAG_MODELPAR:         0  
+    GENTYPE:                 11  # true type
+    SNTYPE:                  1  101  # spec Type, photID type
+# Source model
+    GENMODEL:                something/model_libs_updates/SIMSED.SNIax 
+    UVLAM_EXTRAPFLUX:        500 
+    SIMSED_USE_BINARY:       1 
+    SIMSED_PATH_BINARY:      somemodels/SIMSED_BINARIES 
+    SIMSED_GRIDONLY:         Iax_INDEX 
+# Cosmology inputs
+    OMEGA_MATTER:            0.3150  
+    OMEGA_LAMBDA:            0.6850  
+    w0_LAMBDA:               -1.0000  
+    wa_LAMBDA:               0  
+    LENSING_PROBMAP_FILE:    something/models/lensing/LENSING_PROBMAP_LogNormal+MICECATv1.DAT 
+# Instrumental inputs
+    GENFILTERS:          griz 
+    CALIB_FILE:          something.fits.gz    # aka KCOR_FILE
+    SIMLIB_FILE:             something.SIMLIB 
+    SMEARFLAG_FLUX:      1  # 1->add Poisson noise
+    SMEARFLAG_ZEROPT:    3  # +=1->apply scatter, +=2->add to FLUXERRCAL
+    FLUXERRMODEL_FILE:       something_FLUXERRMODEL_SIM.DAT 
+# HOSTLIB inputs
+    HOSTLIB_WGTMAP_FILE:     something.WGT 
+    HOSTLIB_GENRANGE_NSIGZ:  -3. +3. 
+    HOSTLIB_SCALE_PROPERTY_ERR: 0.0(LOGMASS),0.0(LOGSFR),0.0(LOGsSFR),0.0(COLOR) 
+    HOSTLIB_MSKOPT:          258 
+    HOSTLIB_FILE:            something.HOSTLIB 
+    HOSTLIB_MAXDDLR:      4.00    # DDLR cut for match
+    HOSTLIB_MAXDDLR2:     7.00    # DDLR cut for 2nd match (for confusion)
+# SEARCHEFF/detections
+    SEARCHEFF_PIPELINE_LOGIC_FILE:  something/models/searcheff/SEARCHEFF_PIPELINE_LOGIC.DAT
+    NEWMJD_DIF:              0.4000  # day-sep if > 1 detections required
+    SEARCHEFF_PIPELINE_EFF_FILE:  something/models/searcheff/SEARCHEFF_PIPELINE_DES.DAT
+    SEARCHEFF_SPEC_FILE:     ZERO
+    SEARCHEFF_zHOST_FILE:    something_zHOST_DES-SN5YR.DAT
+    APPLY_SEARCHEFF_OPT:     5  # += 1,2,4 => pipe,spec,zhost
+# Redshift inputs
+    GENRANGE_REDSHIFT:       0.0500  1.3000  
+    GENSIGMA_REDSHIFT:       1.0000e-05  
+    GENSIGMA_VPEC:           300.0000  # true vpec scatter (km/sec)
+    VPEC_ERR:                300.0000  # vpec error after correction (km/sec)
+# Epoch & sky coverage inputs
+    GENRANGE_TREST:          -40.0000  100.0000  
+    SOLID_ANGLE:             8.2000e-03  
+# Galactic extinction
+    OPT_MWEBV:        3   
+    OPT_MWCOLORLAW:   -99   
+    RV_MWCOLORLAW:           3.1 
+# Population and rate-model params
+    GENTAU_AV:               1.7000  
+    GENRANGE_AV:             1.0000e-03  3.0000  
+    GENSIGMA_AV:             0.6000  # sigma of half-Gauss
+    GENRATIO_AV:             4.0000  # Gauss(0)/Expon(0)
+    GENPEAK_RV:              3.1000  
+    GENSIGMA_RV:             0  0  
+    GENRANGE_RV:             3.0000  3.2000  
+    DNDZ:                    MD14 6.0E-6 
+# Misc inputs
+    GENSOURCE:               RANDOM
+    PATH_USER_INPUT:         /somepath/PIPPIN_OUTPUT/D5YR_LYRE_SIM_NOMINAL/1_SIM/DATADESSIM_CC
+    PATH_SNDATA_SIM:         /somepath/SNDATA_ROOT/SIM
+    RANSEED:                 23501  
+    DEBUG_FLAG:              0  
+    CIDOFF:                  0 
+    SIMGEN_DUMP:             37 CID GENTYPE SNTYPE NON1A_INDEX GENZ GALZTRUE LIBID RA DEC MWEBV MU PEAKMJD PEAKMAG_g PEAKMAG_r PEAKMAG_i PEAKMAG_z SNRMAX_g SNRMAX_r SNRMAX_i SNRMAX_z SNRMAX SNRMAX2 SNRMAX3 NOBS TRESTMIN TRESTMAX TGAPMAX CUTMASK SIM_EFFMASK HOSTMAG_g HOSTMAG_r HOSTMAG_i HOSTMAG_z SBFLUX_g SBFLUX_r SBFLUX_i SBFLUX_z 
+# CUTWIN inputs
+    APPLY_CUTWIN_OPT:        1  
+    CUTWIN_NEPOCH:           5 -5. 
+    CUTWIN_SNRMAX:           3 griz 2 -20. 60. 
+    CUTWIN_MWEBV:            0 0.30 
+# 
+  FILTERS:   # mean wavelength (A)
+    g:  4827.7
+    r:  6434.8
+    i:  7828.1
+    z:  9181.2
+# 
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+  INPUT_KEYS_NONIaMODEL01: 
+# Output data
+    FORMAT_MASK:             48  #  += 2,32,16 -> TEXT, FITS, randomCID
+    WRFLAG_MODELPAR:         0  
+    GENTYPE:                 91  # true type
+    SNTYPE:                  1  101  # spec Type, photID type
+# Source model
+    GENMODEL:                something/model_libs_updates/SIMSED.SNIa-91bg 
+    UVLAM_EXTRAPFLUX:        500 
+    SIMSED_USE_BINARY:       1 
+    SIMSED_PATH_BINARY:      somemodels/SIMSED_BINARIES 
+    SIMSED_PARAM:            stretch 
+    GENPEAK_stretch:         0.975 
+    GENSIGMA_stretch:        0.096 0.096 
+    GENRANGE_stretch:        0.65 1.25 
+    SIMSED_PARAM:            color 
+    GENPEAK_color:           0.557 
+    GENSIGMA_color:          0.175 0.175 
+    GENRANGE_color:          0.0 1.0 
+# Cosmology inputs
+    OMEGA_MATTER:            0.3150  
+    OMEGA_LAMBDA:            0.6850  
+    w0_LAMBDA:               -1.0000  
+    wa_LAMBDA:               0  
+    LENSING_PROBMAP_FILE:    something/models/lensing/LENSING_PROBMAP_LogNormal+MICECATv1.DAT 
+# Instrumental inputs
+    GENFILTERS:          griz 
+    CALIB_FILE:          something/kcor/DES/DES-SN5YR/calib_DES-SN5YR_DES.fits.gz    # aka KCOR_FILE
+    SIMLIB_FILE:             something.SIMLIB 
+    SMEARFLAG_FLUX:      1  # 1->add Poisson noise
+    SMEARFLAG_ZEROPT:    3  # +=1->apply scatter, +=2->add to FLUXERRCAL
+    FLUXERRMODEL_FILE:       something_FLUXERRMODEL_SIM.DAT 
+# HOSTLIB inputs
+    HOSTLIB_WGTMAP_FILE:     something/simlib/DES/DES-SN5YR_WGTmaps/DES-SN5YR_DES_TypeIa91bg.WGT 
+    HOSTLIB_GENRANGE_NSIGZ:  -3. +3. 
+    HOSTLIB_SCALE_PROPERTY_ERR: 0.0(LOGMASS),0.0(LOGSFR),0.0(LOGsSFR),0.0(COLOR) 
+    HOSTLIB_MSKOPT:          258 
+    HOSTLIB_FILE:            something.HOSTLIB 
+    HOSTLIB_MAXDDLR:      4.00    # DDLR cut for match
+    HOSTLIB_MAXDDLR2:     7.00    # DDLR cut for 2nd match (for confusion)
+# SEARCHEFF/detections
+    SEARCHEFF_PIPELINE_LOGIC_FILE:  something_PIPELINE_LOGIC.DAT
+    NEWMJD_DIF:              0.4000  # day-sep if > 1 detections required
+    SEARCHEFF_PIPELINE_EFF_FILE:  something_PIPELINE_DES.DAT
+    SEARCHEFF_SPEC_FILE:     ZERO
+    SEARCHEFF_zHOST_FILE:    something_zHOST_DES-SN5YR.DAT
+    APPLY_SEARCHEFF_OPT:     5  # += 1,2,4 => pipe,spec,zhost
+# Redshift inputs
+    GENRANGE_REDSHIFT:       0.0500  1.3000  
+    GENSIGMA_REDSHIFT:       1.0000e-05  
+    GENSIGMA_VPEC:           300.0000  # true vpec scatter (km/sec)
+    VPEC_ERR:                300.0000  # vpec error after correction (km/sec)
+# Epoch & sky coverage inputs
+    GENRANGE_TREST:          -40.0000  100.0000  
+    SOLID_ANGLE:             8.2000e-03  
+# Galactic extinction
+    OPT_MWEBV:        3   
+    OPT_MWCOLORLAW:   -99   
+    RV_MWCOLORLAW:           3.1 
+# Population and rate-model params
+    GENTAU_AV:               1.0000  
+    GENRANGE_AV:             1.0000e-04  2.0000e-03  
+    GENSIGMA_AV:             1.0000e-03  # sigma of half-Gauss
+    GENRATIO_AV:             1.0000  # Gauss(0)/Expon(0)
+    GENPEAK_RV:              3.1000  
+    GENSIGMA_RV:             0  0  
+    GENRANGE_RV:             3.0000  3.2000  
+    DNDZ:                    POWERLAW 3.0E-6 1.5 
+# Misc inputs
+    GENSOURCE:               RANDOM
+    PATH_USER_INPUT:         /somepath/1_SIM/DATADESSIM_CC
+    PATH_SNDATA_SIM:         /somepath/SIM
+    RANSEED:                 23501  
+    DEBUG_FLAG:              0  
+    CIDOFF:                  400000 
+    SIMGEN_DUMP:             37 CID GENTYPE SNTYPE NON1A_INDEX GENZ GALZTRUE LIBID RA DEC MWEBV MU PEAKMJD PEAKMAG_g PEAKMAG_r PEAKMAG_i PEAKMAG_z SNRMAX_g SNRMAX_r SNRMAX_i SNRMAX_z SNRMAX SNRMAX2 SNRMAX3 NOBS TRESTMIN TRESTMAX TGAPMAX CUTMASK SIM_EFFMASK HOSTMAG_g HOSTMAG_r HOSTMAG_i HOSTMAG_z SBFLUX_g SBFLUX_r SBFLUX_i SBFLUX_z 
+# CUTWIN inputs
+    APPLY_CUTWIN_OPT:        1  
+    CUTWIN_NEPOCH:           5 -5. 
+    CUTWIN_SNRMAX:           3 griz 2 -20. 60. 
+    CUTWIN_MWEBV:            0 0.30 
+# 
+  FILTERS:   # mean wavelength (A)
+    g:  4827.7
+    r:  6434.8
+    i:  7828.1
+    z:  9181.2
+# 
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+  INPUT_KEYS_NONIaMODEL02: 
+# Output data
+    FORMAT_MASK:             48  #  += 2,32,16 -> TEXT, FITS, randomCID
+    WRFLAG_MODELPAR:         0  
+    GENTYPE:                 20  # true type
+    SNTYPE:                  1  101  # spec Type, photID type
+# Source model
+    GENMODEL:                something/models/NON1ASED/NON1ASED.V19_CC_noHostXT 
+    UVLAM_EXTRAPFLUX:        500 
+    NON1A_KEYS:              5 INDEX WGT MAGOFF MAGSMEAR SNTYPE 
+    NON1A:                  
+    - 856 0.027069 0.75 0.70 25 
+    - 852 0.027069 0.75 0.70 25 
+    - 839 0.027069 0.75 0.70 25 
+    - 801 0.027069 0.75 0.70 25 
+    - 831 0.027069 0.75 0.70 25 
+    - 817 0.027069 0.75 0.70 25 
+    GENMAG_SMEAR:            1.0000e-03  # coherent scatter (mag)
+# Cosmology inputs
+    OMEGA_MATTER:            0.3150  
+    OMEGA_LAMBDA:            0.6850  
+    w0_LAMBDA:               -1.0000  
+    wa_LAMBDA:               0  
+    LENSING_PROBMAP_FILE:    something/models/lensing/name.DAT 
+# Instrumental inputs
+    GENFILTERS:          griz 
+    CALIB_FILE:          something/kcor/DES/DES-SN5YR/calib_.fits.gz    # aka KCOR_FILE
+    SIMLIB_FILE:             something.SIMLIB 
+    SMEARFLAG_FLUX:      1  # 1->add Poisson noise
+    SMEARFLAG_ZEROPT:    3  # +=1->apply scatter, +=2->add to FLUXERRCAL
+    FLUXERRMODEL_FILE:       something_FLUXERRMODEL_SIM.DAT 
+# HOSTLIB inputs
+    HOSTLIB_WGTMAP_FILE:     something/simlib/DES/DES-SN5YR_WGTmaps/_TypeII.WGT 
+    HOSTLIB_MSKOPT:          258 
+    HOSTLIB_FILE:            something.HOSTLIB 
+    HOSTLIB_MAXDDLR:      4.00    # DDLR cut for match
+# SEARCHEFF/detections
+    SEARCHEFF_PIPELINE_LOGIC_FILE:  something/models/searcheff/SEARCHEFF_PIPELINE_LOGIC.DAT
+    NEWMJD_DIF:              0.4000  # day-sep if > 1 detections required
+    SEARCHEFF_PIPELINE_EFF_FILE:  something/models/searcheff/SEARCHEFF_PIPELINE_DES.DAT
+    SEARCHEFF_SPEC_FILE:     ZERO
+    SEARCHEFF_zHOST_FILE:    something/models/searcheff/SEARCHEFF_zHOST_DES-SN5YR.DAT
+    APPLY_SEARCHEFF_OPT:     5  # += 1,2,4 => pipe,spec,zhost
+# Redshift inputs
+    GENRANGE_REDSHIFT:       0.0500  1.3000  
+    GENSIGMA_REDSHIFT:       1.0000e-05  
+    GENSIGMA_VPEC:           300.0000  # true vpec scatter (km/sec)
+    VPEC_ERR:                300.0000  # vpec error after correction (km/sec)
+# Epoch & sky coverage inputs
+    GENRANGE_TREST:          -40.0000  100.0000  
+    SOLID_ANGLE:             8.2000e-03  
+# Galactic extinction
+    OPT_MWEBV:        3   
+    OPT_MWCOLORLAW:   -99   
+    RV_MWCOLORLAW:           3.1 
+# Population and rate-model params
+    GENTAU_AV:               1.0000  
+    GENRANGE_AV:             1.0000e-04  2.0000e-03  
+    GENSIGMA_AV:             1.0000e-03  # sigma of half-Gauss
+    GENRATIO_AV:             1.0000  # Gauss(0)/Expon(0)
+    GENPEAK_RV:              3.1000  
+    GENSIGMA_RV:             0  0  
+    GENRANGE_RV:             3.0000  3.2000  
+    DNDZ:                    MD14 5.6E-05 
+# Misc inputs
+    GENSOURCE:               RANDOM
+    PATH_USER_INPUT:         /somepath/PIPPIN_OUTPUT/D5YR_LYRE_SIM_NOMINAL/1_SIM/DATADESSIM_CC
+    PATH_SNDATA_SIM:         /somepath/SNDATA_ROOT/SIM
+    RANSEED:                 23501  
+    DEBUG_FLAG:              0  
+    CIDOFF:                  600000 
+    SIMGEN_DUMP:             37 CID GENTYPE SNTYPE NON1A_INDEX GENZ GALZTRUE LIBID RA DEC MWEBV MU PEAKMJD PEAKMAG_g PEAKMAG_r PEAKMAG_i PEAKMAG_z SNRMAX_g SNRMAX_r SNRMAX_i SNRMAX_z SNRMAX SNRMAX2 SNRMAX3 NOBS TRESTMIN TRESTMAX TGAPMAX CUTMASK SIM_EFFMASK HOSTMAG_g HOSTMAG_r HOSTMAG_i HOSTMAG_z SBFLUX_g SBFLUX_r SBFLUX_i SBFLUX_z 
+# CUTWIN inputs
+    APPLY_CUTWIN_OPT:        1  
+    CUTWIN_NEPOCH:           5 -5. 
+    CUTWIN_SNRMAX:           3 griz 2 -20. 60. 
+    CUTWIN_MWEBV:            0 0.30 
+# 
+  FILTERS:   # mean wavelength (A)
+    g:  4827.7
+    r:  6434.8
+    i:  7828.1
+    z:  9181.2
+# 
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+  INPUT_KEYS_NONIaMODEL03: 
+# Output data
+    FORMAT_MASK:             48  #  += 2,32,16 -> TEXT, FITS, randomCID
+    WRFLAG_MODELPAR:         0  
+    GENTYPE:                 20  # true type
+    SNTYPE:                  1  101  # spec Type, photID type
+# Source model
+    GENMODEL:                something/models/NON1ASED/NON1ASED.V19_CC_noHostXT 
+    UVLAM_EXTRAPFLUX:        500 
+    NON1A_KEYS:              5 INDEX WGT MAGOFF MAGSMEAR SNTYPE 
+    NON1A:                  
+    - 830 0.009919 -0.10 1.15 23 
+    - 829 0.009919 -0.10 1.15 23 
+    - 842 0.008316 1.22 1.12 32 
+    - 841 0.008316 1.22 1.12 32 
+    - 828 0.008316 1.22 1.12 32 
+    - 818 0.008316 1.22 1.12 32 
+    - 846 0.010725 -2.99 0.78 33 
+    - 809 0.001835 0.46 0.78 35 
+    GENMAG_SMEAR:            1.0000e-03  # coherent scatter (mag)
+# Cosmology inputs
+    OMEGA_MATTER:            0.3150  
+    OMEGA_LAMBDA:            0.6850  
+    w0_LAMBDA:               -1.0000  
+    wa_LAMBDA:               0  
+    LENSING_PROBMAP_FILE:    something/models/lensing/LENSING_PROBMAP_LogNormal+MICECATv1.DAT 
+# Instrumental inputs
+    GENFILTERS:          griz 
+    CALIB_FILE:          something/kcor/DES/DES-SN5YR/calib_DES-SN5YR_DES.fits.gz    # aka KCOR_FILE
+    SIMLIB_FILE:             something.SIMLIB 
+    SMEARFLAG_FLUX:      1  # 1->add Poisson noise
+    SMEARFLAG_ZEROPT:    3  # +=1->apply scatter, +=2->add to FLUXERRCAL
+    FLUXERRMODEL_FILE:       something_FLUXERRMODEL_SIM.DAT 
+# HOSTLIB inputs
+    HOSTLIB_WGTMAP_FILE:     something/simlib/DES/DES-SN5YR_WGTmaps/DES-SN5YR_DES_TypeIbc.WGT 
+    HOSTLIB_GENRANGE_NSIGZ:  -3. +3. 
+    HOSTLIB_SCALE_PROPERTY_ERR: 0.0(LOGMASS),0.0(LOGSFR),0.0(LOGsSFR),0.0(COLOR) 
+    HOSTLIB_MSKOPT:          258 
+    HOSTLIB_FILE:            something.HOSTLIB 
+    HOSTLIB_MAXDDLR:      4.00    # DDLR cut for match
+    HOSTLIB_MAXDDLR2:     7.00    # DDLR cut for 2nd match (for confusion)
+# SEARCHEFF/detections
+    SEARCHEFF_PIPELINE_LOGIC_FILE:  something/models/searcheff/SEARCHEFF_PIPELINE_LOGIC.DAT
+    NEWMJD_DIF:              0.4000  # day-sep if > 1 detections required
+    SEARCHEFF_PIPELINE_EFF_FILE:  something/models/searcheff/SEARCHEFF_PIPELINE_DES.DAT
+    SEARCHEFF_SPEC_FILE:     ZERO
+    SEARCHEFF_zHOST_FILE:    something/models/searcheff/SEARCHEFF_zHOST_DES-SN5YR.DAT
+    APPLY_SEARCHEFF_OPT:     5  # += 1,2,4 => pipe,spec,zhost
+# Redshift inputs
+    GENRANGE_REDSHIFT:       0.0500  1.3000  
+    GENSIGMA_REDSHIFT:       1.0000e-05  
+    GENSIGMA_VPEC:           300.0000  # true vpec scatter (km/sec)
+    VPEC_ERR:                300.0000  # vpec error after correction (km/sec)
+# Epoch & sky coverage inputs
+    GENRANGE_TREST:          -40.0000  100.0000  
+    SOLID_ANGLE:             8.2000e-03  
+# Galactic extinction
+    OPT_MWEBV:        3   
+    OPT_MWCOLORLAW:   -99   
+    RV_MWCOLORLAW:           3.1 
+# Population and rate-model params
+    GENTAU_AV:               1.0000  
+    GENRANGE_AV:             1.0000e-04  2.0000e-03  
+    GENSIGMA_AV:             1.0000e-03  # sigma of half-Gauss
+    GENRATIO_AV:             1.0000  # Gauss(0)/Expon(0)
+    GENPEAK_RV:              3.1000  
+    GENSIGMA_RV:             0  0  
+    GENRANGE_RV:             3.0000  3.2000  
+    DNDZ:                    MD14 2.4E-05 
+# Misc inputs
+    GENSOURCE:               RANDOM
+    PATH_USER_INPUT:         /somepath/PIPPIN_OUTPUT/D5YR_LYRE_SIM_NOMINAL/1_SIM/DATADESSIM_CC
+    PATH_SNDATA_SIM:         /somepath/SNDATA_ROOT/SIM
+    RANSEED:                 23501  
+    DEBUG_FLAG:              0  
+    CIDOFF:                  4000000 
+    SIMGEN_DUMP:             37 CID GENTYPE SNTYPE NON1A_INDEX GENZ GALZTRUE LIBID RA DEC MWEBV MU PEAKMJD PEAKMAG_g PEAKMAG_r PEAKMAG_i PEAKMAG_z SNRMAX_g SNRMAX_r SNRMAX_i SNRMAX_z SNRMAX SNRMAX2 SNRMAX3 NOBS TRESTMIN TRESTMAX TGAPMAX CUTMASK SIM_EFFMASK HOSTMAG_g HOSTMAG_r HOSTMAG_i HOSTMAG_z SBFLUX_g SBFLUX_r SBFLUX_i SBFLUX_z 
+# CUTWIN inputs
+    APPLY_CUTWIN_OPT:        1  
+    CUTWIN_NEPOCH:           5 -5. 
+    CUTWIN_SNRMAX:           3 griz 2 -20. 60. 
+    CUTWIN_MWEBV:            0 0.30 
+# 
+  FILTERS:   # mean wavelength (A)
+    g:  4827.7
+    r:  6434.8
+    i:  7828.1
+    z:  9181.2
+# 
+DOCUMENTATION_END:
