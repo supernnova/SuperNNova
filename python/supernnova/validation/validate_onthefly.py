@@ -157,7 +157,10 @@ def classify_lcs(df, model_file, device):
     list_lcs = []
 
     for _, sel in df.groupby(level=0):
-        X_all = sel.values
+        # Cast to float64: pd.get_dummies inside format_data produces bool columns
+        # which, mixed with float64, give sel.values an object dtype that breaks
+        # np.log inside normalize_arr.
+        X_all = sel.values.astype(np.float64)
         # check if normalization converges
         # using clipping in case of min<model_min
         X_clip = X_all.copy()
