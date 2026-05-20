@@ -286,3 +286,131 @@ class TestProcessHeaderFITSWithMultidim:
         assert "FLUXCAL_ARR" not in df.columns
         assert "SNID" in df.columns
         assert "target_2classes" in df.columns
+
+
+def _write_fits_with_custom_type_col(path, type_col_name, n_rows=5):
+    """HEAD-like FITS where the type column has a non-default name."""
+    t = Table()
+    t["SNID"] = np.array([f"{i:05d}" for i in range(n_rows)], dtype="S20")
+    t[type_col_name] = np.array(["42"] * n_rows, dtype="S10")
+    t["PEAKMJD"] = np.linspace(50000.0, 60000.0, n_rows).astype(np.float32)
+    # Multi-D noise alongside the type column to make sure the helper
+    # doesn't accidentally drop the renamed type column.
+    t["PSF_SIG"] = np.zeros((n_rows, 3), dtype=np.float32)
+    t.write(str(path), format="fits", overwrite=True)
+
+
+class TestCustomSnTypeVar:
+    """When settings.sntype_var is not 'SNTYPE', the read still works."""
+
+    def test_process_header_FITS_with_custom_sntype_var(self, tmp_path):
+        """A custom type-column name flows through the read + whitelist."""
+        fits_path = tmp_path / "DES_HEAD.fits"
+        _write_fits_with_custom_type_col(fits_path, type_col_name="GENTYPE")
+
+        # Settings point sntype_var at GENTYPE; the sntypes dict uses
+        # the custom value ("42") so tag_type can map it.
+        cli_args = {
+            "sntypes": OrderedDict({"42": "Ia"}),
+            "sntype_var": "GENTYPE",
+            "target_sntype": "Ia",
+            "data_testing": False,
+            "no_dump": True,
+            "use_cuda": False,
+            "model": "vanilla",
+            "weight_decay": 0.0,
+        }
+        settings = experiment_settings.ExperimentSettings(cli_args)
+
+        df = data_utils.process_header_FITS(
+            str(fits_path),
+            settings,
+            columns=["SNID", "target_2classes", "GENTYPE"],
+        )
+
+        assert sorted(df.columns) == sorted(
+            ["SNID", "target_2classes", "GENTYPE"]
+        )
+        assert len(df) == 5
+        # All rows have GENTYPE='42' -> Ia (target_sntype) -> class 0
+        assert (df["target_2classes"] == 0).all()
+        # And the multi-D noise column did not sneak in
+        assert "PSF_SIG" not in df.columns
+
+    def test_custom_sntype_var_not_dropped_as_multidim(self, tmp_path):
+        """The custom type column survives the multi-D drop step."""
+        fits_path = tmp_path / "DES_HEAD.fits"
+        _write_fits_with_custom_type_col(fits_path, type_col_name="MY_TYPE")
+
+        df = data_utils.load_pandas_from_fit(str(fits_path))
+
+        assert "MY_TYPE" in df.columns
+        assert "PSF_SIG" not in df.columns
+
+
+def _write_head_fits_with_custom_redshift(path, redshift_col, n_rows=5):
+    """HEAD-like FITS carrying a non-default redshift column + multi-D noise."""
+    t = Table()
+    t["SNID"] = np.array([f"{i:05d}" for i in range(n_rows)], dtype="S20")
+    t["SNTYPE"] = np.array(["101"] * n_rows, dtype="S10")
+    t["PEAKMJD"] = np.linspace(50000.0, 60000.0, n_rows).astype(np.float32)
+    # Custom redshift column + its _ERR companion (the override block in
+    # process_single_FITS expects both)
+    t[redshift_col] = np.linspace(0.1, 0.8, n_rows).astype(np.float32)
+    t[f"{redshift_col}_ERR"] = np.full(n_rows, 0.01, dtype=np.float32)
+    # Multi-D noise to confirm the drop step doesn't strip the redshift cols
+    t["PSF_SIG"] = np.zeros((n_rows, 4), dtype=np.float32)
+    t.write(str(path), format="fits", overwrite=True)
+
+
+class TestCustomRedshiftLabel:
+    """HEAD read in process_single_FITS uses columns=None, so any custom
+    redshift column the user wants to override HOSTGAL_SPECZ with must
+    survive the multi-D drop step."""
+
+    def test_custom_redshift_column_preserved(self, tmp_path):
+        """A non-standard redshift column stays in the DataFrame after
+        the multi-D drop, so the redshift_label override block can use it."""
+        fits_path = tmp_path / "DES_HEAD.fits"
+        _write_head_fits_with_custom_redshift(
+            fits_path, redshift_col="HOSTGAL_ZPHOT_SPECIAL"
+        )
+
+        # Mirrors process_single_FITS HEAD read: no columns whitelist
+        df = data_utils.load_pandas_from_fit(str(fits_path))
+
+        # Custom redshift and its _ERR survive
+        assert "HOSTGAL_ZPHOT_SPECIAL" in df.columns
+        assert "HOSTGAL_ZPHOT_SPECIAL_ERR" in df.columns
+        # Values are preserved
+        np.testing.assert_allclose(
+            df["HOSTGAL_ZPHOT_SPECIAL"].values,
+            np.linspace(0.1, 0.8, 5).astype(np.float32),
+            rtol=1e-5,
+        )
+        # Multi-D noise was dropped
+        assert "PSF_SIG" not in df.columns
+
+    def test_redshift_override_block_can_run(self, tmp_path):
+        """Sanity check: the assignments in process_single_FITS's redshift
+        override block succeed against the loaded DataFrame."""
+        fits_path = tmp_path / "DES_HEAD.fits"
+        _write_head_fits_with_custom_redshift(
+            fits_path, redshift_col="ZPHOT_HOST_MINE"
+        )
+
+        df = data_utils.load_pandas_from_fit(str(fits_path))
+
+        # Reproduce the override block from make_dataset.process_single_FITS
+        redshift_label = "ZPHOT_HOST_MINE"
+        df["HOSTGAL_SPECZ"] = df[redshift_label]
+        df["HOSTGAL_SPECZ_ERR"] = df[f"{redshift_label}_ERR"]
+        df["SIM_REDSHIFT_CMB"] = df[redshift_label]
+
+        # Values made it through the override
+        np.testing.assert_allclose(
+            df["HOSTGAL_SPECZ"].values, df[redshift_label].values
+        )
+        np.testing.assert_allclose(
+            df["HOSTGAL_SPECZ_ERR"].values, df[f"{redshift_label}_ERR"].values
+        )
