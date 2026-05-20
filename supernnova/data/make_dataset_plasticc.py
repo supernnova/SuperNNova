@@ -145,7 +145,7 @@ def pivot_dataframe(df):
     for flt in list_filters[1:]:
         df["FLT"] += df[flt]
     # Drop some irrelevant columns
-    df = df.drop(list_filters, 1)
+    df = df.drop(columns=list_filters)
     # Finally replace NaN with 0
     df = df.fillna(0)
     # Add delta_time back. We removed all delta time columns above as they get

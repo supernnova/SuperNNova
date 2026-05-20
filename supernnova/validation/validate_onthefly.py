@@ -61,7 +61,7 @@ def format_data(df, settings):
     # onehot
     # Fit a one hot encoder for FLT
     # to have the same onehot for all datasets
-    tmp = pd.Series(settings.list_filters_combination).append(df["FLT"])
+    tmp = pd.concat([pd.Series(settings.list_filters_combination), df["FLT"]])
     tmp_onehot = pd.get_dummies(tmp)
     # this is ok since it goes by length not by index (which I never reset)
     # beware: this requires index int!

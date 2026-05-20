@@ -670,11 +670,11 @@ def pivot_dataframe_single_from_df(df, settings):
     # The correct PEAKMJDNORM is the first one hence the use of first after groupby
     df_PEAKMJDNORM = df[["SNID", "PEAKMJDNORM"]].groupby("SNID").first().reset_index()
     # Remove PEAKMJDNORM
-    df = df.drop("PEAKMJDNORM", 1)
+    df = df.drop(columns="PEAKMJDNORM")
     # Add PEAKMJDNORM back to df with a merge on SNID
     df = df.merge(df_PEAKMJDNORM, how="left", on="SNID")
     # drop columns that won"t be used onwards
-    df = df.drop(["MJD", "delta_time"], 1)
+    df = df.drop(columns=["MJD", "delta_time"])
     class_columns = []
     for c_ in list(set([2, len(settings.sntypes.keys())])):
         class_columns += [f"target_{c_}classes"]
@@ -722,7 +722,7 @@ def pivot_dataframe_single_from_df(df, settings):
     for flt in list_filters[1:]:
         df["FLT"] += df[flt]
     # Drop some irrelevant columns
-    df = df.drop(list_filters, 1)
+    df = df.drop(columns=list_filters)
     # Finally replace NaN with 0
     df = df.fillna(0)
     # Add delta_time back. We removed all delta time columns above as they get
