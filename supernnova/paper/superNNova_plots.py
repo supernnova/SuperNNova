@@ -384,6 +384,9 @@ def multiplot_violin_paper(df, fname, settings):
     g.set_ylim(20, 28)
     g.spines["right"].set_visible(False)
     g.spines["top"].set_visible(False)
+    # Pin tick positions before relabeling so matplotlib doesn't warn
+    # ("FixedFormatter should only be used together with FixedLocator").
+    g.set_xticks([0, 1])
     g.set_xticklabels(["Ia", "nonIa"], fontsize=14)
 
     g = sns.violinplot(
@@ -404,6 +407,7 @@ def multiplot_violin_paper(df, fname, settings):
     g.spines["right"].set_visible(False)
     g.spines["top"].set_visible(False)
     g.spines["left"].set_visible(False)
+    g.set_xticks([0, 1])
     g.set_xticklabels(["Ia", "nonIa"], fontsize=14)
     plt.setp(axes[1].get_yticklabels(), visible=False)
 
@@ -426,6 +430,7 @@ def multiplot_violin_paper(df, fname, settings):
     g.spines["right"].set_visible(False)
     g.spines["top"].set_visible(False)
     g.spines["left"].set_visible(False)
+    g.set_xticks([0, 1])
     g.set_xticklabels(["Ia", "nonIa"], fontsize=14)
     plt.setp(axes[2].get_yticklabels(), visible=False)
 
@@ -447,6 +452,7 @@ def multiplot_violin_paper(df, fname, settings):
     g.spines["right"].set_visible(False)
     g.spines["top"].set_visible(False)
     g.spines["left"].set_visible(False)
+    g.set_xticks([0, 1])
     g.set_xticklabels(["Ia", "nonIa"], fontsize=14)
     plt.setp(axes[3].get_yticklabels(), visible=False)
 
@@ -463,7 +469,9 @@ def multiplot_violin_paper(df, fname, settings):
     g.set_ylabel("simulated redshift", fontsize=14)
     g.set_xlabel("")
     g.set_ylim(0, 1.0)
-    g.set_xticklabels([a for a in settings.sntypes.values()], fontsize=14)
+    _sntype_labels = [a for a in settings.sntypes.values()]
+    g.set_xticks(range(len(_sntype_labels)))
+    g.set_xticklabels(_sntype_labels, fontsize=14)
     g.xaxis.set_tick_params(labelsize=14)
     g.yaxis.set_tick_params(labelsize=14)
     g.legend_.remove()

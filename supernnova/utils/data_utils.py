@@ -46,19 +46,60 @@ DICT_PLASTICC_CLASS = OrderedDict(
 LogStandardized = namedtuple("LogStandardized", ["arr_min", "arr_mean", "arr_std"])
 
 
-def load_pandas_from_fit(fit_file_path):
-    """Load a FIT file and cast it to a PANDAS dataframe
+def load_pandas_from_fit(fit_file_path, columns=None, multidim="drop"):
+    """Load a FIT file and cast it to a PANDAS dataframe.
+
+    ``astropy.Table.to_pandas()`` raises on FITS columns with ``ndim > 1``
+    (vector/array-valued columns such as a per-row PSF stamp). This helper
+    protects against that in two ways:
+
+    * If ``columns`` is given, the in-memory table is reduced to that
+      subset before ``to_pandas()`` is called. This means a multi-dim
+      column the caller doesn't want never has a chance to trigger the
+      bug. Requested names that aren't present in the file are silently
+      ignored, so callers may pass alternative-form column names (e.g.
+      both ``"FLT"`` and ``"BAND"``) without knowing which is in this
+      file.
+    * Anything still multi-dimensional after the subset step is handled
+      per ``multidim`` (currently only ``"drop"`` is implemented: remove
+      with a warning). The hook leaves room for future ``"first"`` /
+      ``"explode"`` strategies without changing call sites.
+
+    Note: astropy's FITS reader does not accept ``include_names``, so the
+    raw IO still reads the whole table; the win from ``columns`` is
+    avoiding the ``to_pandas()`` failure on unwanted multi-dim columns and
+    matching the caller's existing column-filter step.
 
     Args:
         fit_file_path (str): path to FIT file
+        columns (list, optional): subset of columns to keep. ``None`` keeps
+            everything.
+        multidim (str): how to handle remaining multi-dim columns.
+            ``"drop"`` (default) removes them with a warning.
 
     Returns:
         (pandas.DataFrame) load dataframe from FIT file
     """
-    dat = Table.read(fit_file_path, format="fits")
-    df = dat.to_pandas()
+    tbl = Table.read(fit_file_path, format="fits")
 
-    return df
+    if columns is not None:
+        available = set(tbl.colnames)
+        keep = [c for c in columns if c in available]
+        # If the intersection is empty, fall through with the full table so
+        # the multi-dim drop below can still recover something sensible.
+        if keep:
+            tbl = tbl[keep]
+
+    bad = [c for c in tbl.colnames if tbl[c].ndim > 1]
+    if bad:
+        if multidim == "drop":
+            logging_utils.print_yellow(
+                f"Skipping multi-dim FITS cols in {fit_file_path}: {bad}"
+            )
+            tbl.remove_columns(bad)
+        # Future hooks (e.g. multidim="first" or "explode") plug in here.
+
+    return tbl.to_pandas()
 
 
 def sntype_decoded(target, settings):
@@ -225,7 +266,12 @@ def process_header_FITS(file_path, settings, columns=None):
     """
 
     # Data
-    df = load_pandas_from_fit(file_path)
+    # Forward `columns` so that we skip IO for unused fields and avoid the
+    # multi-dim to_pandas() bug for unrelated columns. SNID/SNTYPE are
+    # already in the caller-supplied list; any synthetic columns the caller
+    # plans to add later (e.g. target_Nclasses) are silently ignored by the
+    # helper since they aren't in the FITS file.
+    df = load_pandas_from_fit(file_path, columns=columns)
 
     try:
         df["SNID"] = df["SNID"].str.decode("utf-8")
@@ -636,7 +682,7 @@ def save_to_HDF5(settings, df):
 
         # Fit a one hot encoder for FLT
         # to have the same onehot for all datasets
-        tmp = pd.Series(settings.list_filters_combination).append(df["FLT"])
+        tmp = pd.concat([pd.Series(settings.list_filters_combination), df["FLT"]])
         tmp_onehot = pd.get_dummies(tmp)
         # this is ok since it goes by length not by index (which I never reset)
         FLT_onehot = tmp_onehot[len(settings.list_filters_combination) :]

@@ -9,7 +9,6 @@ import multiprocessing
 from pathlib import Path
 from natsort import natsorted
 from functools import partial
-from astropy.table import Table
 from concurrent.futures import ProcessPoolExecutor
 
 from ..utils import data_utils
@@ -250,8 +249,17 @@ def process_single_FITS(file_path, settings):
         settings (ExperimentSettings): controls experiment hyperparameters
 
     """
+    # Columns we want from the PHOT FITS. BAND is included as an alternative
+    # name for FLT (the helper silently drops requested columns that aren't
+    # present, so passing both is safe). Restricting include_names at IO time
+    # skips the cost — and the multi-dim to_pandas() bug — for unrelated cols.
+    keep_col = ["MJD", "FLUXCAL", "FLUXCALERR", "FLT"]
+    phot_columns = keep_col + ["BAND"]
+    if settings.phot_reject:
+        phot_columns = phot_columns + [settings.phot_reject]
+
     # Load the PHOT file
-    df = data_utils.load_pandas_from_fit(file_path)
+    df = data_utils.load_pandas_from_fit(file_path, columns=phot_columns)
 
     if len(df) < 1:
         logging_utils.print_red("Do not provide empty photometry file", file_path)
@@ -261,7 +269,6 @@ def process_single_FITS(file_path, settings):
         df = df.drop(df.index[-1])
 
     # Keep only columns of interest
-    keep_col = ["MJD", "FLUXCAL", "FLUXCALERR", "FLT"]
     # BAND and FLT are exchangeable
     if "FLT" not in df.keys() and "BAND" in df.keys():
         df = df.rename(columns={"BAND": "FLT"})
@@ -270,21 +277,9 @@ def process_single_FITS(file_path, settings):
         if settings.phot_reject
         else df[keep_col].copy()
     )
-    # Load the companion HEAD file
-    header = Table.read(file_path.replace("PHOT", "HEAD"), format="fits")
-    df_header = header.to_pandas()
-    try:
-        df_header["SNID"] = df_header["SNID"].str.decode("utf-8")
-    except Exception:
-        df_header["SNID"] = df_header["SNID"].astype(str)
-    # Keep only columns of interest
-    # Hack for using the final redshift not the galaxy
-    if settings.redshift_label != "none":
-        logging_utils.print_yellow("Changed redshift to", settings.redshift_label)
-        df_header["HOSTGAL_SPECZ"] = df_header[settings.redshift_label]
-        df_header["HOSTGAL_SPECZ_ERR"] = df_header[f"{settings.redshift_label}_ERR"]
-        df_header["SIM_REDSHIFT_CMB"] = df_header[settings.redshift_label]
 
+    # Columns we want from the HEAD FITS. Defined before the read so we can
+    # pass them via include_names (same reasoning as for the PHOT file).
     keep_col_header = [
         "SNID",
         "PEAKMJD",
@@ -299,6 +294,30 @@ def process_single_FITS(file_path, settings):
         "SIM_PEAKMAG_i",
         "SNTYPE",
     ]
+    header_columns = list(keep_col_header)
+    # If we'll override HOSTGAL_SPECZ with a different redshift label below,
+    # the source columns need to come along too.
+    if settings.redshift_label != "none":
+        header_columns += [
+            settings.redshift_label,
+            f"{settings.redshift_label}_ERR",
+        ]
+    # Load the companion HEAD file
+    df_header = data_utils.load_pandas_from_fit(
+        file_path.replace("PHOT", "HEAD"), columns=header_columns
+    )
+    try:
+        df_header["SNID"] = df_header["SNID"].str.decode("utf-8")
+    except Exception:
+        df_header["SNID"] = df_header["SNID"].astype(str)
+    # Keep only columns of interest
+    # Hack for using the final redshift not the galaxy
+    if settings.redshift_label != "none":
+        logging_utils.print_yellow("Changed redshift to", settings.redshift_label)
+        df_header["HOSTGAL_SPECZ"] = df_header[settings.redshift_label]
+        df_header["HOSTGAL_SPECZ_ERR"] = df_header[f"{settings.redshift_label}_ERR"]
+        df_header["SIM_REDSHIFT_CMB"] = df_header[settings.redshift_label]
+
     # check if keys are in header
     keep_col_header = [k for k in keep_col_header if k in df_header.keys()]
     df_header = df_header[keep_col_header].copy()
@@ -670,11 +689,11 @@ def pivot_dataframe_single_from_df(df, settings):
     # The correct PEAKMJDNORM is the first one hence the use of first after groupby
     df_PEAKMJDNORM = df[["SNID", "PEAKMJDNORM"]].groupby("SNID").first().reset_index()
     # Remove PEAKMJDNORM
-    df = df.drop("PEAKMJDNORM", 1)
+    df = df.drop(columns="PEAKMJDNORM")
     # Add PEAKMJDNORM back to df with a merge on SNID
     df = df.merge(df_PEAKMJDNORM, how="left", on="SNID")
     # drop columns that won"t be used onwards
-    df = df.drop(["MJD", "delta_time"], 1)
+    df = df.drop(columns=["MJD", "delta_time"])
     class_columns = []
     for c_ in list(set([2, len(settings.sntypes.keys())])):
         class_columns += [f"target_{c_}classes"]
@@ -722,7 +741,7 @@ def pivot_dataframe_single_from_df(df, settings):
     for flt in list_filters[1:]:
         df["FLT"] += df[flt]
     # Drop some irrelevant columns
-    df = df.drop(list_filters, 1)
+    df = df.drop(columns=list_filters)
     # Finally replace NaN with 0
     df = df.fillna(0)
     # Add delta_time back. We removed all delta time columns above as they get
