@@ -21,16 +21,57 @@ for v in OFFSETS_STR:
 LogStandardized = namedtuple("LogStandardized", ["arr_min", "arr_mean", "arr_std"])
 
 
-def load_pandas_from_fit(fit_file_path):
-    """Load a FIT file and cast it to a PANDAS dataframe
+def load_pandas_from_fit(fit_file_path, columns=None, multidim="drop"):
+    """Load a FIT file and cast it to a PANDAS dataframe.
+
+    FITS tables can contain vector / array-valued columns (``TDIM > 1``).
+    ``astropy.Table.to_pandas`` raises ``ValueError`` on such columns because
+    pandas DataFrames cannot natively hold n-dim arrays in a column. This
+    helper handles them so the pipeline does not crash on otherwise valid
+    FITS files.
 
     Args:
         fit_file_path (str): path to FIT file
+        columns (list, optional): if given, only these columns are kept
+            before the pandas conversion. Acts as a whitelist that
+            avoids loading multi-D columns we don't care about into
+            pandas in the first place. Names that are not present in
+            the FITS table are silently ignored.
+        multidim (str): strategy for multi-dimensional columns that
+            survive the ``columns`` filter. One of:
+
+            * ``"drop"`` (default): remove them with a yellow warning
+              listing which columns were skipped.
+            * ``"error"``: raise ``ValueError`` so the caller is forced
+              to deal with them explicitly.
 
     Returns:
         (pandas.DataFrame) load dataframe from FIT file
     """
     dat = Table.read(fit_file_path, format="fits")
+
+    if columns is not None:
+        keep = [c for c in columns if c in dat.colnames]
+        dat = dat[keep]
+
+    bad = [c for c in dat.colnames if dat[c].ndim > 1]
+    if bad:
+        if multidim == "drop":
+            logging_utils.print_yellow(
+                f"Skipping multi-dim FITS cols in {fit_file_path}: {bad}"
+            )
+            dat.remove_columns(bad)
+        elif multidim == "error":
+            raise ValueError(
+                f"Multi-dim FITS columns {bad} cannot be cast to pandas; "
+                f"use multidim='drop' or pass a `columns` whitelist"
+            )
+        else:
+            raise ValueError(
+                f"Unknown multidim strategy {multidim!r}; "
+                f"expected 'drop' or 'error'"
+            )
+
     df = dat.to_pandas()
 
     return df
@@ -230,7 +271,15 @@ def process_header_FITS(file_path, settings, columns=None):
     """
 
     # Data
-    df = load_pandas_from_fit(file_path)
+    # If a `columns` whitelist is provided, we must also read SNID and the
+    # type variable since they're used below to build the target columns.
+    # Pass them to load_pandas_from_fit so we only touch the columns we need
+    # and avoid loading multi-dim columns we don't care about.
+    if columns is not None:
+        read_cols = list(set(list(columns) + ["SNID", settings.sntype_var]))
+        df = load_pandas_from_fit(file_path, columns=read_cols)
+    else:
+        df = load_pandas_from_fit(file_path)
 
     try:
         df["SNID"] = df["SNID"].str.decode("utf-8")

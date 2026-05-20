@@ -5,7 +5,13 @@ channels:
   - defaults
 dependencies:
   - python=3.11
-  - pytorch=2.0
+  # PyTorch 2.0 linked against an old MKL ITT layout that no longer ships
+  # in mkl 2024.x, causing `undefined symbol: iJIT_NotifyEvent` at import
+  # time. PyTorch >=2.1 was built without that dependency. The mkl<2024
+  # pin is a belt-and-braces guard in case the solver picks an older
+  # pytorch build.
+  - pytorch>=2.1,<2.5
+  - mkl<2024
 
   - pip
   - pip:

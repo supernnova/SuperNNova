@@ -10,7 +10,6 @@ import multiprocessing
 from pathlib import Path
 from natsort import natsorted
 from functools import partial
-from astropy.table import Table
 from concurrent.futures import ProcessPoolExecutor
 
 from collections import OrderedDict
@@ -330,8 +329,18 @@ def process_single_FITS(file_path, settings):
         settings (ExperimentSettings): controls experiment hyperparameters
 
     """
+    # Columns we want from the PHOT FITS. BAND is included as an alternative
+    # name for FLT (the helper silently drops requested columns that aren't
+    # present, so passing both is safe). Restricting the column set before
+    # to_pandas() skips the multi-dim conversion bug for any unrelated
+    # array-valued columns the FITS file might carry.
+    keep_col = ["MJD", "FLUXCAL", "FLUXCALERR", "FLT"]
+    phot_columns = keep_col + ["BAND"]
+    if settings.phot_reject:
+        phot_columns = phot_columns + [settings.phot_reject]
+
     # Load the PHOT file
-    df = data_utils.load_pandas_from_fit(file_path)
+    df = data_utils.load_pandas_from_fit(file_path, columns=phot_columns)
 
     if len(df) < 1:
         logging_utils.print_red("Do not provide empty photometry file", file_path)
@@ -340,8 +349,6 @@ def process_single_FITS(file_path, settings):
     if df.MJD.values[-1] == -777.0:
         df = df.drop(df.index[-1])
 
-    # Keep only columns of interest
-    keep_col = ["MJD", "FLUXCAL", "FLUXCALERR", "FLT"]
     # BAND and FLT are exchangeable
     if "FLT" not in df.keys() and "BAND" in df.keys():
         df = df.rename(columns={"BAND": "FLT"})
@@ -356,9 +363,11 @@ def process_single_FITS(file_path, settings):
             x.decode("utf-8").rstrip() if isinstance(x, bytes) else str(x).rstrip()
         )
     )
-    # Load the companion HEAD file
-    header = Table.read(file_path.replace("PHOT", "HEAD"), format="fits")
-    df_header = header.to_pandas()
+    # Load the companion HEAD file via the shared helper so multi-dim FITS
+    # columns are dropped (with a warning) instead of crashing to_pandas().
+    df_header = data_utils.load_pandas_from_fit(
+        file_path.replace("PHOT", "HEAD")
+    )
     try:
         df_header["SNID"] = df_header["SNID"].str.decode("utf-8")
     except Exception:
@@ -1105,7 +1114,11 @@ def detect_contaminant_types(settings):
         if fmt == "csv":
             df_head = pd.read_csv(fil, usecols=[settings.sntype_var])
         else:
-            df_head = Table.read(str(fil), format="fits").to_pandas()
+            # Only read the type column to avoid loading (and crashing on)
+            # unrelated multi-dim FITS columns.
+            df_head = data_utils.load_pandas_from_fit(
+                str(fil), columns=[settings.sntype_var]
+            )
         all_types.update(df_head[settings.sntype_var].astype(str).unique())
 
     missing_types = [t for t in sorted(all_types) if t not in settings.sntypes]

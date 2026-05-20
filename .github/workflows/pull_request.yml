@@ -5,45 +5,52 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
-jobs:
+# Cancel any in-progress run for the same PR when a new commit lands.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
-  # Useful for workflow debugging
-  # printJob:    
-  #   name: Print event
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - name: Dump GitHub context
-  #     env:
-  #       GITHUB_CONTEXT: ${{ toJson(github) }}
-  #     run: |
-  #       echo "$GITHUB_CONTEXT"
+jobs:
 
   run_tests:
     runs-on: ubuntu-latest
     strategy:
+      # Keep fail-fast off so a failure in one matrix entry never hides
+      # the result of another. Previously a disk-pressure failure in the
+      # CUDA env auto-cancelled the CPU job and made diagnosis confusing.
+      fail-fast: false
       matrix:
         include:
           - conda_env: supernnova
             conda_env_file: env/conda_env.yml
+            require_cuda_build: "0"   # CPU env, no CUDA expected
           - conda_env: supernnova-cuda
             conda_env_file: env/conda_gpu_env.yml
+            require_cuda_build: "1"
 
     steps:
 
       # Set-up dependencies
       - name: Check-out repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0 # Needed for tags to be fetched; see https://github.com/actions/checkout/issues/290
 
-      # Uncomment if you need mpi
-      # - name: Set-up MPI
-      #   uses: mpi4py/setup-mpi@v1
-
-      - name: Set-up Cuda Toolkit
-        run: |
-            sudo apt-get update
-            sudo apt-get install nvidia-cuda-toolkit nvidia-cuda-toolkit-gcc
+      # Hosted runners only have ~14GB free disk. The CUDA conda env
+      # (pytorch + pytorch-cuda + libs) is enough to blow past that
+      # during package extraction, which manifests as a mysterious
+      # "operation was canceled" mid-step. Freeing the preinstalled
+      # toolchains gives us ~20GB headroom and keeps both matrix
+      # entries reliable. Harmless for the CPU env.
+      - name: Free runner disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: false
 
       - name: Setup miniconda
         uses: conda-incubator/setup-miniconda@v3
@@ -56,10 +63,15 @@ jobs:
         run: |
           conda info
           conda list
-          
+
       - name: Verify cuda support
         if: ${{ matrix.conda_env == 'supernnova-cuda' }}
         shell: bash -l {0}
+        env:
+          REQUIRE_CUDA_BUILD: ${{ matrix.require_cuda_build }}
+          # Hosted runners have no GPU, so the runtime check stays off.
+          # Flip to "1" on a self-hosted GPU runner if/when added.
+          REQUIRE_CUDA_RUNTIME: "0"
         run: python env/verify_cuda_support.py
 
       # Configure project
@@ -98,4 +110,3 @@ jobs:
         run: |
           cd docs
           poetry run make html
-

@@ -8,7 +8,8 @@ import supernnova.utils.logging_utils as lu
 from supernnova.conf import get_norm_from_model
 from supernnova.utils import experiment_settings
 from supernnova.utils import training_utils as tu
-from supernnova.validation.validate_rnn import get_batch_predictions
+from supernnova.utils.swag_utils import SwagModel
+from supernnova.validation.validate_rnn import get_batch_predictions, get_batch_predictions_SWAG
 from supernnova.data.make_dataset import pivot_dataframe_single_from_df
 
 
@@ -186,33 +187,48 @@ def classify_lcs(df, model_file, device):
         list_lcs, np.arange(len(list_lcs)), settings
     )
 
-    # load model
-    rnn = tu.get_model(settings, len(settings.training_features))
+    # load model — detect SWAG vs vanilla/variational
     rnn_state = torch.load(
         model_file,
         map_location=lambda storage, loc: storage,
         weights_only=False,
     )
-    try:
-        rnn.load_state_dict(rnn_state)
-    except Exception:
-        if len(settings.training_features) < len(settings.all_features):
-            lu.print_red("Model has less features than data (check model filters)")
-        else:
-            lu.print_red("Check correct model is chosen")
-        raise ValueError
-    rnn.to(device)
-    rnn.eval()
-    # obtain predictions
+
     list_preds = []
-    for iter_ in range(settings.num_inference_samples):
 
-        arr_preds, _ = get_batch_predictions(rnn, packed, target_tensor)
-
-        # Rever sorting that occurs in get_batch_predictions
-        arr_preds = arr_preds[idxs_rev_sort]
-
-        list_preds.append(arr_preds)
+    if isinstance(rnn_state, SwagModel):
+        # ── SWAG model: the .pt file is the full SwagModel object ─────────────
+        swag_rnn = rnn_state
+        swag_rnn.to(device)
+        swag_rnn.eval()
+        swag_cov = not getattr(settings, "swag_no_lr_cov", False)
+        swag_scale = getattr(settings, "swag_scale", 0.5)
+        swag_samples = getattr(settings, "swag_samples", 30)
+        for _ in range(swag_samples):
+            arr_preds, _ = get_batch_predictions_SWAG(
+                swag_rnn, packed, target_tensor,
+                scale=swag_scale, cov=swag_cov,
+            )
+            arr_preds = arr_preds[idxs_rev_sort]
+            list_preds.append(arr_preds)
+    else:
+        # ── Standard model: rnn_state is a state dict ──────────────────────────
+        rnn = tu.get_model(settings, len(settings.training_features))
+        try:
+            rnn.load_state_dict(rnn_state)
+        except Exception:
+            if len(settings.training_features) < len(settings.all_features):
+                lu.print_red("Model has less features than data (check model filters)")
+            else:
+                lu.print_red("Check correct model is chosen")
+            raise ValueError
+        rnn.to(device)
+        rnn.eval()
+        for _ in range(settings.num_inference_samples):
+            arr_preds, _ = get_batch_predictions(rnn, packed, target_tensor)
+            # Revert sorting that occurs in get_batch_predictions
+            arr_preds = arr_preds[idxs_rev_sort]
+            list_preds.append(arr_preds)
 
     # B, inf_samples, nb_classes
     preds = np.stack(list_preds, axis=1)
